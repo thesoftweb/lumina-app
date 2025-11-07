@@ -85,7 +85,7 @@ class StudentForm
                                     ->required(),
                             ]),
                     ]),
-                Section::make('Filiaçao')
+                Section::make('Filiação')
                     ->columnSpanFull()
                     ->schema([
                         Grid::make()
@@ -108,7 +108,7 @@ class StudentForm
                                     ->label('Contato do Responsável')
                             ]),
                     ]),
-                Section::make('Dados do Cliente')
+                Section::make('Dados do Cliente e Responsável Financeiro')
                     ->columnSpanFull()
                     ->schema([
                         Grid::make()
