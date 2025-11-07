@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrícula Online - Mundo Mágico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --azul-principal: #0094d2;
+            --verde-secundaria: #78a934;
+            --laranja-accent: #ff9500;
+        }
+
+        .bg-azul-principal {
+            background-color: #0094d2;
+        }
+
+        .bg-azul-claro {
+            background-color: #e6f3f9;
+        }
+
+        .bg-verde-secundaria {
+            background-color: #78a934;
+        }
+
+        .bg-verde-claro {
+            background-color: #f0f5e8;
+        }
+
+        .text-azul-principal {
+            color: #0094d2;
+        }
+
+        .text-verde-secundaria {
+            color: #78a934;
+        }
+
+        .btn-azul {
+            background-color: #0094d2;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-azul:hover {
+            background-color: #0078a8;
+        }
+
+        .btn-verde {
+            background-color: #78a934;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-verde:hover {
+            background-color: #5f8829;
+        }
+
+        .input-focus:focus {
+            border-color: #0094d2 !important;
+            box-shadow: 0 0 0 3px rgba(0, 148, 210, 0.1);
+        }
+
+        .step-active {
+            background-color: #0094d2;
+            color: white;
+        }
+
+        .step-completed {
+            background-color: #78a934;
+            color: white;
+        }
+
+        .step-inactive {
+            background-color: #e6f3f9;
+            color: #0094d2;
+        }
+
+        .step-line {
+            height: 2px;
+            background-color: #e6f3f9;
+            margin: 0 -8px;
+        }
+
+        .step-line.completed {
+            background-color: #78a934;
+        }
+
+        .form-section {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .radio-custom:checked + label {
+            background-color: #0094d2;
+            color: white;
+            border-color: #0094d2;
+        }
+
+        .checkbox-custom:checked {
+            accent-color: #0094d2;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- HEADER -->
+    <header class="bg-azul-principal shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                <span class="text-azul-principal text-xl font-bold">🌟</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white">Mundo Mágico</h1>
+                <p class="text-blue-100 text-sm">Matrícula Online</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- PROGRESS STEPS -->
+        <div class="mb-12">
+            <div class="flex items-center justify-between mb-8">
+                <!-- STEP 1 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold step-active mb-2" id="step1-indicator">
+                        ✓
+                    </div>
+                    <p class="text-sm font-bold text-center text-gray-700 hidden md:block">Dados da<br>Criança</p>
+                </div>
+
+                <!-- LINE 1 -->
+                <div class="flex-1 h-1 mx-2 step-line" id="line1"></div>
+
+                <!-- STEP 2 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold step-inactive mb-2" id="step2-indicator">
+                        2
+                    </div>
+                    <p class="text-sm font-bold text-center text-gray-700 hidden md:block">Dados do<br>Responsável</p>
+                </div>
+
+                <!-- LINE 2 -->
+                <div class="flex-1 h-1 mx-2 step-line" id="line2"></div>
+
+                <!-- STEP 3 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold step-inactive mb-2" id="step3-indicator">
+                        3
+                    </div>
+                    <p class="text-sm font-bold text-center text-gray-700 hidden md:block">Informações<br>Adicionais</p>
+                </div>
+
+                <!-- LINE 3 -->
+                <div class="flex-1 h-1 mx-2 step-line" id="line3"></div>
+
+                <!-- STEP 4 -->
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold step-inactive mb-2" id="step4-indicator">
+                        4
+                    </div>
+                    <p class="text-sm font-bold text-center text-gray-700 hidden md:block">Revisão e<br>Pagamento</p>
+                </div>
+            </div>
+
+            <!-- MOBILE STEP INDICATOR -->
+            <div class="md:hidden text-center">
+                <p class="text-sm font-bold text-azul-principal">Etapa <span id="current-step">1</span> de 4</p>
+                <p id="step-title" class="text-lg font-bold text-gray-800 mt-2">Dados da Criança</p>
+            </div>
+        </div>
+
+        <!-- FORM CONTAINER -->
+        <form id="matriculaForm" onsubmit="handleSubmit(event)">
+            <!-- STEP 1: DADOS DA CRIANÇA -->
+            <section id="step1" class="form-section bg-white rounded-lg p-6 shadow-sm">
+                <h2 class="text-2xl font-bold text-azul-principal mb-6">Dados da Criança</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Nome Completo *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Nome completo da criança" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Data de Nascimento *</label>
+                        <input type="date" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">CPF (sem pontuação) *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="00000000000" maxlength="11" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Gênero *</label>
+                        <select class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" required>
+                            <option value="">Selecione...</option>
+                            <option value="masculino">Masculino</option>
+                            <option value="feminino">Feminino</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Turma Desejada *</label>
+                        <select class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" required>
+                            <option value="">Selecione...</option>
+                            <option value="bercario">Berçário (0-1 ano)</option>
+                            <option value="maternal1">Maternal I (1-2 anos)</option>
+                            <option value="maternal2">Maternal II (2-3 anos)</option>
+                            <option value="pre">Pré-Escolar (3-4 anos)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Período *</label>
+                        <select class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" required>
+                            <option value="">Selecione...</option>
+                            <option value="matutino">Matutino (07:00 - 12:00)</option>
+                            <option value="vespertino">Vespertino (13:00 - 18:00)</option>
+                            <option value="integral">Integral (07:00 - 18:00)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <label class="block text-gray-700 font-bold mb-3">Informações Médicas</label>
+                    <textarea class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" rows="4" placeholder="Alergias, medicamentos, condições especiais..."></textarea>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-4">
+                    <button type="button" onclick="goToStep(2)" class="btn-azul text-white px-8 py-3 rounded-lg font-bold transition">
+                        Próximo →
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 2: DADOS DO RESPONSÁVEL -->
+            <section id="step2" class="form-section bg-white rounded-lg p-6 shadow-sm hidden">
+                <h2 class="text-2xl font-bold text-azul-principal mb-6">Dados do Responsável</h2>
+
+                <div class="bg-azul-claro p-4 rounded-lg mb-6">
+                    <p class="text-sm text-gray-700"><strong>Preencha os dados de quem irá buscar a criança</strong></p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Nome Completo *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Nome completo" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Parentesco *</label>
+                        <select class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" required>
+                            <option value="">Selecione...</option>
+                            <option value="mae">Mãe</option>
+                            <option value="pai">Pai</option>
+                            <option value="avo">Avó</option>
+                            <option value="avo">Avô</option>
+                            <option value="tio">Tio(a)</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">CPF *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="000.000.000-00" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Email *</label>
+                        <input type="email" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="email@exemplo.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Telefone Principal *</label>
+                        <input type="tel" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="(11) 9XXXX-XXXX" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">Telefone Secundário</label>
+                        <input type="tel" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="(11) 9XXXX-XXXX">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-gray-700 font-bold mb-2">Profissão</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Profissão">
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Autorizado para Buscar</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-azul-principal">
+                            <div class="flex gap-4">
+                                <input type="text" class="flex-1 px-3 py-2 rounded border border-gray-300 input-focus outline-none" placeholder="Nome da pessoa autorizada">
+                                <input type="tel" class="flex-1 px-3 py-2 rounded border border-gray-300 input-focus outline-none" placeholder="Telefone">
+                                <button type="button" class="px-4 py-2 rounded bg-gray-300 text-gray-700 font-bold hover:bg-gray-400 transition">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-between gap-4">
+                    <button type="button" onclick="goToStep(1)" class="border-2 border-azul-principal text-azul-principal px-8 py-3 rounded-lg font-bold hover:bg-azul-claro transition">
+                        ← Anterior
+                    </button>
+                    <button type="button" onclick="goToStep(3)" class="btn-azul text-white px-8 py-3 rounded-lg font-bold transition">
+                        Próximo →
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 3: INFORMAÇÕES ADICIONAIS -->
+            <section id="step3" class="form-section bg-white rounded-lg p-6 shadow-sm hidden">
+                <h2 class="text-2xl font-bold text-azul-principal mb-6">Informações Adicionais</h2>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-3">Endereço</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Rua *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Rua" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Número *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Número" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Complemento</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Apto, sala...">
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Bairro *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Bairro" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Cidade *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="Cidade" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 text-sm mb-1">Estado *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="SP" maxlength="2" required>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-600 text-sm mb-1">CEP *</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 input-focus outline-none" placeholder="00000-000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-4">Como você conheceu nossa escola?</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="conhecimento" value="indicacao" class="checkbox-custom">
+                                <span class="text-gray-700">Indicação de amigos/familiares</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="conhecimento" value="internet" class="checkbox-custom">
+                                <span class="text-gray-700">Internet / Redes Sociais</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="conhecimento" value="vizinhanca" class="checkbox-custom">
+                                <span class="text-gray-700">Vizinhança</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="conhecimento" value="outro" class="checkbox-custom">
+                                <span class="text-gray-700">Outro</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center gap-3 cursor-pointer mb-3">
+                            <input type="checkbox" class="checkbox-custom" required>
+                            <span class="text-gray-700">Concordo com as <strong>políticas da escola</strong> *</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" class="checkbox-custom">
+                            <span class="text-gray-700">Desejo receber informações por email</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-between gap-4">
+                    <button type="button" onclick="goToStep(2)" class="border-2 border-azul-principal text-azul-principal px-8 py-3 rounded-lg font-bold hover:bg-azul-claro transition">
+                        ← Anterior
+                    </button>
+                    <button type="button" onclick="goToStep(4)" class="btn-azul text-white px-8 py-3 rounded-lg font-bold transition">
+                        Próximo →
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 4: REVISÃO E PAGAMENTO -->
+            <section id="step4" class="form-section bg-white rounded-lg p-6 shadow-sm hidden">
+                <h2 class="text-2xl font-bold text-azul-principal mb-6">Revisão e Pagamento</h2>
+
+                <!-- RESUMO -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- RESUMO CRIANÇA -->
+                    <div class="bg-azul-claro p-6 rounded-lg">
+                        <h3 class="font-bold text-azul-principal mb-4">👦 Criança</h3>
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <p><strong>Nome:</strong> João Silva Santos</p>
+                            <p><strong>Data Nasc.:</strong> 15/03/2020</p>
+                            <p><strong>Turma:</strong> Maternal I</p>
+                            <p><strong>Período:</strong> Integral</p>
+                        </div>
+                    </div>
+
+                    <!-- RESUMO RESPONSÁVEL -->
+                    <div class="bg-verde-claro p-6 rounded-lg">
+                        <h3 class="font-bold text-verde-secundaria mb-4">👤 Responsável</h3>
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <p><strong>Nome:</strong> Maria Silva</p>
+                            <p><strong>Email:</strong> maria@email.com</p>
+                            <p><strong>Telefone:</strong> (11) 98765-4321</p>
+                        </div>
+                    </div>
+
+                    <!-- RESUMO VALORES -->
+                    <div class="p-6 rounded-lg" style="background-color: #fff9f0;">
+                        <h3 class="font-bold mb-4" style="color: #ff9500;">💰 Valores</h3>
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <p><strong>Matrícula:</strong> R$ 500,00</p>
+                            <p><strong>1ª Mensalidade:</strong> R$ 1.200,00</p>
+                            <p class="border-t border-gray-300 pt-2 mt-2">
+                                <strong style="color: #ff9500;">Total:</strong> <strong style="font-size: 18px; color: #ff9500;">R$ 1.700,00</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TERMOS -->
+                <div class="bg-gray-50 p-6 rounded-lg mb-6 border-l-4 border-azul-principal">
+                    <h3 class="font-bold text-gray-800 mb-4">📋 Termos e Condições</h3>
+                    <div class="space-y-2 text-sm text-gray-700 max-h-48 overflow-y-auto">
+                        <p>1. A matrícula é válida para o período letivo em vigor.</p>
+                        <p>2. A taxa de matrícula é não reembolsável.</p>
+                        <p>3. O pagamento deve ser realizado integralmente.</p>
+                        <p>4. A escola se reserva o direito de cancelar a matrícula em caso de não cumprimento das normas.</p>
+                        <p>5. As mensalidades devem ser pagas até o 5º dia útil do mês.</p>
+                        <p>6. Em caso de atraso, serão cobrados juros de 2% + multa de R$ 50,00.</p>
+                    </div>
+                    <label class="flex items-center gap-3 cursor-pointer mt-4">
+                        <input type="checkbox" class="checkbox-custom" id="agreeTerms" required>
+                        <span class="text-gray-700 font-bold">Concordo com os termos e condições *</span>
+                    </label>
+                </div>
+
+                <!-- MÉTODO DE PAGAMENTO -->
+                <div class="mb-6">
+                    <h3 class="font-bold text-gray-800 mb-4">💳 Método de Pagamento</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 cursor-pointer p-4 border-2 border-gray-300 rounded-lg hover:border-azul-principal transition">
+                            <input type="radio" name="pagamento" value="pix" class="checkbox-custom">
+                            <span class="text-gray-700 font-bold">🔷 PIX</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-4 border-2 border-azul-principal rounded-lg">
+                            <input type="radio" name="pagamento" value="cartao" class="checkbox-custom" checked>
+                            <span class="text-gray-700 font-bold">💳 Cartão de Crédito</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-4 border-2 border-gray-300 rounded-lg hover:border-azul-principal transition">
+                            <input type="radio" name="pagamento" value="boleto" class="checkbox-custom">
+                            <span class="text-gray-700 font-bold">📄 Boleto Bancário</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-4 border-2 border-gray-300 rounded-lg hover:border-azul-principal transition">
+                            <input type="radio" name="pagamento" value="transferencia" class="checkbox-custom">
+                            <span class="text-gray-700 font-bold">🏦 Transferência</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- AVISOS -->
+                <div class="bg-blue-50 border-l-4 border-azul-principal p-4 rounded mb-6">
+                    <p class="text-sm text-gray-700">
+                        <strong>ℹ️ Informação:</strong> Após confirmar seu pedido, você será redirecionado para o gateway de pagamento seguro. Seus dados estão protegidos com criptografia SSL.
+                    </p>
+                </div>
+
+                <div class="flex justify-between gap-4">
+                    <button type="button" onclick="goToStep(3)" class="border-2 border-azul-principal text-azul-principal px-8 py-3 rounded-lg font-bold hover:bg-azul-claro transition">
+                        ← Anterior
+                    </button>
+                    <button type="submit" class="btn-verde text-white px-8 py-3 rounded-lg font-bold transition">
+                        Confirmar Matrícula → R$ 1.700,00
+                    </button>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <!-- MODAL SUCESSO -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full text-center">
+            <div class="text-6xl mb-4">✅</div>
+            <h2 class="text-3xl font-bold text-verde-secundaria mb-2">Matrícula Realizada!</h2>
+            <p class="text-gray-700 mb-6">Sua pré-matrícula foi enviada com sucesso. Em breve você receberá um email com as instruções de pagamento.</p>
+            
+            <div class="bg-azul-claro p-4 rounded-lg mb-6">
+                <p class="text-sm text-gray-700"><strong>Número da Pré-Matrícula:</strong></p>
+                <p class="text-2xl font-bold text-azul-principal">PM-2025-0001</p>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-6">Um email foi enviado para <strong>maria@email.com</strong></p>
+
+            <button onclick="handleFinalizar()" class="w-full btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                Retornar ao Site
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function goToStep(step) {
+            // Validar dados antes de prosseguir
+            if (!validateStep(currentStep)) {
+                alert('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Ocultar seção atual
+            document.getElementById(`step${currentStep}`).classList.add('hidden');
+
+            // Mostrar nova seção
+            document.getElementById(`step${step}`).classList.remove('hidden');
+
+            // Atualizar indicadores
+            updateStepIndicators(step);
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+
+            currentStep = step;
+        }
+
+        function updateStepIndicators(activeStep) {// Atualizar indicadores de step
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById(`step${i}-indicator`);
+                const line = document.getElementById(`line${i}`);
+
+                if (i < activeStep) {
+                    // Completado
+                    indicator.classList.remove('step-active', 'step-inactive');
+                    indicator.classList.add('step-completed');
+                    indicator.textContent = '✓';
+                    if (line) {
+                        line.classList.add('completed');
+                    }
+                } else if (i === activeStep) {
+                    // Ativo
+                    indicator.classList.remove('step-completed', 'step-inactive');
+                    indicator.classList.add('step-active');
+                    indicator.textContent = i;
+                    if (line) {
+                        line.classList.remove('completed');
+                    }
+                } else {
+                    // Inativo
+                    indicator.classList.remove('step-active', 'step-completed');
+                    indicator.classList.add('step-inactive');
+                    indicator.textContent = i;
+                    if (line) {
+                        line.classList.remove('completed');
+                    }
+                }
+            }
+
+            // Atualizar mobile step indicator
+            document.getElementById('current-step').textContent = activeStep;
+            
+            const titles = [
+                'Dados da Criança',
+                'Dados do Responsável',
+                'Informações Adicionais',
+                'Revisão e Pagamento'
+            ];
+            document.getElementById('step-title').textContent = titles[activeStep - 1];
+        }
+
+        function validateStep(step) {
+            const section = document.getElementById(`step${step}`);
+            const inputs = section.querySelectorAll('input[required], select[required], textarea[required]');
+
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    input.style.borderColor = '#ff6b6b';
+                }
+            });
+
+            return isValid;
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+
+            // Validar último step
+            if (!validateStep(currentStep)) {
+                alert('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Validar termo de concordância
+            const agreeTerms = document.getElementById('agreeTerms');
+            if (!agreeTerms.checked) {
+                alert('Você deve concordar com os termos e condições!');
+                return;
+            }
+
+            // Mostrar modal de sucesso
+            document.getElementById('successModal').classList.remove('hidden');
+
+            // Simular envio de dados
+            console.log('Formulário enviado com sucesso!');
+        }
+
+        function handleFinalizar() {
+            // Redirecionar ou voltar ao site
+            window.location.href = '/';
+        }
+
+        // Limpar erro ao focar no input
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('focus', function() {
+                this.style.borderColor = '';
+            });
+        });
+
+        // Máscara para CPF
+        document.querySelectorAll('input[placeholder*="00000000000"]').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.slice(0, 11);
+                e.target.value = value;
+            });
+        });
+
+        // Máscara para Telefone
+        document.querySelectorAll('input[type="tel"]').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.slice(0, 11);
+                
+                if (value.length > 6) {
+                    value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+                } else if (value.length > 2) {
+                    value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                }
+                e.target.value = value;
+            });
+        });
+
+        // Máscara para CEP
+        document.querySelectorAll('input[placeholder*="00000-000"]').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.slice(0, 8);
+                
+                if (value.length > 5) {
+                    value = `${value.slice(0, 5)}-${value.slice(5)}`;
+                }
+                e.target.value = value;
+            });
+        });
+
+        // Máscara para CPF com formatação
+        document.querySelectorAll('input[placeholder*="000.000.000-00"]').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.slice(0, 11);
+                
+                if (value.length > 8) {
+                    value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
+                } else if (value.length > 5) {
+                    value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
+                } else if (value.length > 2) {
+                    value = `${value.slice(0, 3)}.${value.slice(3)}`;
+                }
+                e.target.value = value;
+            });
+        });
+
+        // Inicializar
+        window.addEventListener('load', function() {
+            updateStepIndicators(1);
+        });
+    </script>
+</body>
+</html>

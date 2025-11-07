@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Aluno - Mundo Mágico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --azul-principal: #0094d2;
+            --verde-secundaria: #78a934;
+            --laranja-accent: #ff9500;
+        }
+
+        .bg-azul-principal {
+            background-color: #0094d2;
+        }
+
+        .bg-azul-claro {
+            background-color: #e6f3f9;
+        }
+
+        .bg-verde-secundaria {
+            background-color: #78a934;
+        }
+
+        .bg-verde-claro {
+            background-color: #f0f5e8;
+        }
+
+        .text-azul-principal {
+            color: #0094d2;
+        }
+
+        .text-verde-secundaria {
+            color: #78a934;
+        }
+
+        .hover-azul:hover {
+            background-color: #0078a8;
+        }
+
+        .input-focus:focus {
+            border-color: #0094d2 !important;
+            box-shadow: 0 0 0 3px rgba(0, 148, 210, 0.1);
+        }
+
+        .btn-azul {
+            background-color: #0094d2;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-azul:hover {
+            background-color: #0078a8;
+        }
+
+        .decoration-wave {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body class="bg-azul-claro min-h-screen">
+    <!-- HEADER -->
+    <header class="bg-azul-principal shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                <span class="text-azul-principal text-xl font-bold">🌟</span>
+            </div>
+            <span class="text-xl font-bold text-white">Mundo Mágico - Portal do Aluno</span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="min-h-screen flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-md">
+            <!-- CARD LOGIN -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <!-- TOPO DO CARD -->
+                <div class="bg-azul-principal p-8 text-center relative">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                        <span class="text-5xl">👨‍🎓</span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white mb-2">Acesso ao Portal</h1>
+                    <p class="text-blue-100">Entre com seus dados de login</p>
+                </div>
+
+                <!-- FORMULÁRIO -->
+                <div class="p-8">
+                    <form onsubmit="handleLogin(event)">
+                        <!-- Email/Usuário -->
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-bold mb-2">Email ou Usuário</label>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 input-focus outline-none text-gray-800" 
+                                    placeholder="seu@email.com"
+                                    required
+                                >
+                                <span class="absolute right-4 top-3 text-gray-400">👤</span>
+                            </div>
+                        </div>
+
+                        <!-- Senha -->
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-bold mb-2">Senha</label>
+                            <div class="relative">
+                                <input 
+                                    type="password" 
+                                    id="password"
+                                    class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 input-focus outline-none text-gray-800" 
+                                    placeholder="••••••••"
+                                    required
+                                >
+                                <button 
+                                    type="button"
+                                    onclick="togglePassword()"
+                                    class="absolute right-4 top-3 text-gray-400 hover:text-gray-600 transition"
+                                >
+                                    👁️
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Lembrar dados -->
+                        <div class="mb-6 flex items-center gap-2">
+                            <input type="checkbox" id="remember" class="w-4 h-4 rounded cursor-pointer" style="accent-color: #0094d2;">
+                            <label for="remember" class="text-gray-700 text-sm cursor-pointer">Lembrar meus dados</label>
+                        </div>
+
+                        <!-- Botão Login -->
+                        <button type="submit" class="w-full btn-azul text-white px-6 py-3 rounded-lg font-bold text-lg mb-4 transition">
+                            Entrar no Portal
+                        </button>
+
+                        <!-- Divisor -->
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="flex-1 h-px bg-gray-300"></div>
+                            <span class="text-gray-500 text-sm">ou</span>
+                            <div class="flex-1 h-px bg-gray-300"></div>
+                        </div>
+
+                        <!-- Botão Esqueci Senha -->
+                        <button type="button" onclick="handleForgotPassword()" class="w-full border-2 border-azul-principal text-azul-principal px-6 py-3 rounded-lg font-bold transition hover:bg-azul-claro">
+                            Esqueci minha senha
+                        </button>
+                    </form>
+                </div>
+
+                <!-- RODAPÉ DO CARD -->
+                <div class="bg-azul-claro px-8 py-6 text-center border-t border-gray-200">
+                    <p class="text-gray-700 mb-2">Não tem acesso ao portal?</p>
+                    <button onclick="handleContactSupport()" class="text-azul-principal font-bold hover:text-verde-secundaria transition">
+                        Entre em contato conosco →
+                    </button>
+                </div>
+            </div>
+
+            <!-- LINKS INFORMATIVOS -->
+            <div class="mt-8 grid grid-cols-2 gap-4">
+                <a href="#" onclick="handleHelp(event)" class="bg-white hover:shadow-md transition rounded-lg p-6 text-center">
+                    <div class="text-4xl mb-2">❓</div>
+                    <p class="text-sm font-bold text-gray-700">Precisa de ajuda?</p>
+                </a>
+                <a href="#" onclick="handleInfo(event)" class="bg-white hover:shadow-md transition rounded-lg p-6 text-center">
+                    <div class="text-4xl mb-2">ℹ️</div>
+                    <p class="text-sm font-bold text-gray-700">Saiba mais</p>
+                </a>
+            </div>
+
+            <!-- INFORMAÇÕES -->
+            <div class="mt-8 bg-white rounded-lg p-6 shadow-sm">
+                <h3 class="font-bold text-azul-principal mb-4">📱 Dicas de acesso</h3>
+                <ul class="text-sm text-gray-700 space-y-2">
+                    <li>✓ Use o email ou usuário cadastrado</li>
+                    <li>✓ Verifique se o CAPS LOCK está desativado</li>
+                    <li>✓ Você pode acessar de qualquer dispositivo</li>
+                    <li>✓ Mantenha seus dados em sigilo</li>
+                </ul>
+            </div>
+
+            <!-- CONTATO RODAPÉ -->
+            <div class="mt-8 text-center text-gray-600 text-sm">
+                <p class="mb-2">Dúvidas? Fale com a gente</p>
+                <p class="font-bold text-azul-principal">(11) 3456-7890</p>
+                <p class="text-gray-500">contato@mundomagico.com.br</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAIS -->
+    <!-- Modal Sucesso -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full text-center">
+            <div class="text-5xl mb-4">✅</div>
+            <h2 class="text-2xl font-bold text-azul-principal mb-2">Login Realizado!</h2>
+            <p class="text-gray-700 mb-6">Bem-vindo ao Portal do Aluno Mundo Mágico</p>
+            <button onclick="closeModal('successModal')" class="btn-azul text-white px-6 py-3 rounded-lg font-bold w-full">
+                Continuar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Esqueci Senha -->
+    <div id="forgotModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full">
+            <h2 class="text-2xl font-bold text-azul-principal mb-4">Recuperar Senha</h2>
+            <p class="text-gray-700 mb-6">Digite seu email ou usuário para receber as instruções de recuperação</p>
+            
+            <form onsubmit="handleRecovery(event)">
+                <input 
+                    type="text" 
+                    class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 input-focus outline-none mb-4" 
+                    placeholder="seu@email.com"
+                    required
+                >
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                        Enviar
+                    </button>
+                    <button type="button" onclick="closeModal('forgotModal')" class="flex-1 border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Contato -->
+    <div id="contactModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full">
+            <h2 class="text-2xl font-bold text-azul-principal mb-4">Entrar em Contato</h2>
+            
+            <div class="space-y-4 mb-6">
+                <div class="flex gap-3 items-start">
+                    <span class="text-2xl">📞</span>
+                    <div>
+                        <p class="font-bold text-gray-800">Telefone</p>
+                        <p class="text-gray-600">(11) 3456-7890</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 items-start">
+                    <span class="text-2xl">✉️</span>
+                    <div>
+                        <p class="font-bold text-gray-800">Email</p>
+                        <p class="text-gray-600">contato@mundomagico.com.br</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-start">
+                    <span class="text-2xl">⏰</span>
+                    <div>
+                        <p class="font-bold text-gray-800">Horário</p>
+                        <p class="text-gray-600">Seg-Sex: 07:00 - 18:00</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeModal('contactModal')" class="w-full btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Ajuda -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full max-h-96 overflow-y-auto">
+            <h2 class="text-2xl font-bold text-azul-principal mb-4">Perguntas Frequentes</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <p class="font-bold text-gray-800 mb-1">🔑 Qual é meu usuário?</p>
+                    <p class="text-gray-600 text-sm">Seu usuário foi enviado por email. Se não recebeu, entre em contato.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold text-gray-800 mb-1">🔒 Como recuperar a senha?</p>
+                    <p class="text-gray-600 text-sm">Clique em "Esqueci minha senha" e siga as instruções no seu email.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold text-gray-800 mb-1">📱 Posso acessar pelo celular?</p>
+                    <p class="text-gray-600 text-sm">Sim! O portal é totalmente responsivo e funciona em qualquer dispositivo.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold text-gray-800 mb-1">🛡️ Meus dados são seguros?</p>
+                    <p class="text-gray-600 text-sm">Sim, utilizamos criptografia de ponta a ponta para proteger seus dados.</p>
+                </div>
+            </div>
+
+            <button onclick="closeModal('helpModal')" class="w-full btn-azul text-white px-6 py-3 rounded-lg font-bold mt-6 transition">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Informações -->
+    <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full">
+            <h2 class="text-2xl font-bold text-azul-principal mb-4">Sobre o Portal</h2>
+            
+            <div class="space-y-4 text-gray-700 mb-6">
+                <p>O Portal do Aluno foi desenvolvido para facilitar o acompanhamento do desempenho e atividades do seu filho na Escola Infantil Mundo Mágico.</p>
+                
+                <div>
+                    <p class="font-bold text-azul-principal mb-2">Funcionalidades:</p>
+                    <ul class="text-sm space-y-1 list-disc list-inside">
+                        <li>Visualizar notas e avaliações</li>
+                        <li>Acompanhar frequência</li>
+                        <li>Ver comunicados da escola</li>
+                        <li>Consultar cardápio</li>
+                        <li>Gerenciar informações cadastrais</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeModal('infoModal')" class="w-full btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            // Simular login bem-sucedido
+            document.getElementById('successModal').classList.remove('hidden');
+            
+            // Redirecionar após 2 segundos
+            setTimeout(() => {
+                // window.location.href = '/dashboard'; // Descomente para redirecionar
+                console.log('Redirecionando para o dashboard...');
+            }, 2000);
+        }
+
+        function handleForgotPassword() {
+            document.getElementById('forgotModal').classList.remove('hidden');
+        }
+
+        function handleRecovery(event) {
+            event.preventDefault();
+            alert('Email de recuperação enviado! Verifique sua caixa de entrada.');
+            closeModal('forgotModal');
+        }
+
+        function handleContactSupport() {
+            document.getElementById('contactModal').classList.remove('hidden');
+        }
+
+        function handleHelp(event) {
+            event.preventDefault();
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function handleInfo(event) {
+            event.preventDefault();
+            document.getElementById('infoModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Fechar modal ao clicar fora
+        document.addEventListener('click', function(event) {
+            const modals = document.querySelectorAll('[id$="Modal"]');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+
+        // Evitar fechar ao clicar dentro do modal
+        document.querySelectorAll('[id$="Modal"] > div').forEach(modalContent => {
+            modalContent.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        });
+    </script>
+</body>
+</html>

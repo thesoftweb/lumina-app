@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Aluno - Mundo Mágico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --azul-principal: #0094d2;
+            --verde-secundaria: #78a934;
+            --laranja-accent: #ff9500;
+        }
+
+        .bg-azul-principal {
+            background-color: #0094d2;
+        }
+
+        .bg-azul-claro {
+            background-color: #e6f3f9;
+        }
+
+        .bg-verde-secundaria {
+            background-color: #78a934;
+        }
+
+        .bg-verde-claro {
+            background-color: #f0f5e8;
+        }
+
+        .text-azul-principal {
+            color: #0094d2;
+        }
+
+        .text-verde-secundaria {
+            color: #78a934;
+        }
+
+        .sidebar-active {
+            background-color: #0094d2;
+            color: white;
+            border-radius: 8px;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #0094d2;
+            color: #0094d2;
+        }
+
+        .btn-azul {
+            background-color: #0094d2;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-azul:hover {
+            background-color: #0078a8;
+        }
+
+        .input-focus:focus {
+            border-color: #0094d2 !important;
+            box-shadow: 0 0 0 3px rgba(0, 148, 210, 0.1);
+        }
+
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 148, 210, 0.1);
+        }
+
+        .badge-info {
+            background-color: #cce7f1;
+            color: #0094d2;
+        }
+
+        .badge-success {
+            background-color: #f0f5e8;
+            color: #78a934;
+        }
+
+        .badge-warning {
+            background-color: #fff9f0;
+            color: #ff9500;
+        }
+
+        .sidebar {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .sidebar-hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-visible {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .overlay {
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay-visible {
+            opacity: 1;
+        }
+
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0) !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+
+            .overlay {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- HEADER -->
+    <header class="bg-azul-principal shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <!-- BOTÃO MENU MOBILE -->
+                <button onclick="toggleSidebar()" class="md:hidden text-white text-2xl hover:text-blue-100 transition">
+                    ☰
+                </button>
+
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                    <span class="text-azul-principal text-xl font-bold">🌟</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">Mundo Mágico</h1>
+                    <p class="text-blue-100 text-sm">Portal do Aluno</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="openNotifications()" class="relative text-white hover:text-blue-100 transition">
+                    <span class="text-2xl">🔔</span>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-orange-400 rounded-full"></span>
+                </button>
+                
+                <div class="flex items-center gap-2 text-white">
+                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-azul-principal font-bold">
+                        J
+                    </div>
+                    <span class="text-sm font-medium hidden sm:inline">João Silva</span>
+                </div>
+
+                <button onclick="handleLogout()" class="text-white hover:text-blue-100 transition ml-4">
+                    🚪
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- OVERLAY PARA MOBILE -->
+    <div id="sidebarOverlay" class="overlay overlay-hidden fixed inset-0 bg-black bg-opacity-50 md:hidden z-30" onclick="toggleSidebar()"></div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="flex min-h-screen bg-gray-50">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar sidebar-hidden md:sidebar-visible fixed md:static left-0 top-16 w-64 h-screen md:h-auto bg-white shadow-lg overflow-y-auto z-30 md:z-auto">
+            <nav class="p-6 space-y-2">
+                <button onclick="showSection('dashboard'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium sidebar-active text-white transition">
+                    📊 Dashboard
+                </button>
+                <button onclick="showSection('agenda'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    📅 Agenda
+                </button>
+                <button onclick="showSection('comunicados'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    📢 Comunicados
+                </button>
+                <button onclick="showSection('eventos'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    🎉 Eventos
+                </button>
+                <button onclick="showSection('financeiro'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    💰 Financeiro
+                </button>
+                <button onclick="showSection('dadosaluno'); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    👤 Meus Dados
+                </button>
+
+                <hr class="my-4">
+
+                <button onclick="handleSettings(); toggleSidebar();" class="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-azul-claro transition">
+                    ⚙️ Configurações
+                </button>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto">
+            <div class="max-w-6xl mx-auto p-4 md:p-6">
+
+                <!-- DASHBOARD -->
+                <section id="dashboard" class="space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">Bem-vindo, João!</h2>
+                        <p class="text-gray-600">Aqui está um resumo das informações do seu filho</p>
+                    </div>
+
+                    <!-- CARDS RESUMO -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-600 text-sm font-medium">Frequência</p>
+                                    <p class="text-3xl font-bold text-azul-principal mt-2">95%</p>
+                                </div>
+                                <span class="text-3xl">📚</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3">Este mês</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-600 text-sm font-medium">Atividades</p>
+                                    <p class="text-3xl font-bold text-verde-secundaria mt-2">12</p>
+                                </div>
+                                <span class="text-3xl">✅</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3">Completadas</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-600 text-sm font-medium">Mensalidade</p>
+                                    <p class="text-3xl font-bold text-orange-500 mt-2">R$ 0</p>
+                                </div>
+                                <span class="text-3xl">💳</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3">A vencer</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-600 text-sm font-medium">Comunicados</p>
+                                    <p class="text-3xl font-bold text-azul-principal mt-2">3</p>
+                                </div>
+                                <span class="text-3xl">📬</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3">Não lidos</p>
+                        </div>
+                    </div>
+
+                    <!-- PRÓXIMOS EVENTOS E COMUNICADOS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- PRÓXIMOS EVENTOS -->
+                        <div class="bg-white rounded-lg p-6 shadow-sm">
+                            <h3 class="text-xl font-bold text-azul-principal mb-4">📅 Próximos Eventos</h3>
+                            <div class="space-y-3">
+                                <div class="flex gap-4 pb-3 border-b border-gray-200">
+                                    <div class="text-3xl">🎨</div>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-gray-800">Aula de Arte</p>
+                                        <p class="text-sm text-gray-600">Amanhã às 14:30</p>
+                                    </div>
+                                    <span class="badge-info px-3 py-1 rounded text-xs font-medium whitespace-nowrap">Em breve</span>
+                                </div>
+                                <div class="flex gap-4 pb-3 border-b border-gray-200">
+                                    <div class="text-3xl">🎭</div>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-gray-800">Apresentação de Teatro</p>
+                                        <p class="text-sm text-gray-600">25 de Outubro</p>
+                                    </div>
+                                    <span class="badge-info px-3 py-1 rounded text-xs font-medium whitespace-nowrap">Em breve</span>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div class="text-3xl">🎉</div>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-gray-800">Festa de Encerramento</p>
+                                        <p class="text-sm text-gray-600">15 de Dezembro</p>
+                                    </div>
+                                    <span class="badge-info px-3 py-1 rounded text-xs font-medium whitespace-nowrap">Futuro</span>
+                                </div>
+                            </div>
+                            <button onclick="showSection('eventos')" class="mt-4 text-azul-principal font-bold hover:text-verde-secundaria transition">
+                                Ver todos →
+                            </button>
+                        </div>
+
+                        <!-- ÚLTIMOS COMUNICADOS -->
+                        <div class="bg-white rounded-lg p-6 shadow-sm">
+                            <h3 class="text-xl font-bold text-azul-principal mb-4">📢 Últimos Comunicados</h3>
+                            <div class="space-y-3">
+                                <div class="pb-3 border-b border-gray-200">
+                                    <p class="font-bold text-gray-800">Rodízio de Brinquedos</p>
+                                    <p class="text-sm text-gray-600 mt-1">Na próxima segunda-feira haverá rodízio de brinquedos. Favor não trazer...</p>
+                                    <p class="text-xs text-gray-400 mt-2">Há 2 dias</p>
+                                </div>
+                                <div class="pb-3 border-b border-gray-200">
+                                    <p class="font-bold text-gray-800">Reunião de Pais</p>
+                                    <p class="text-sm text-gray-600 mt-1">Convidamos todos os responsáveis para uma reunião especial...</p>
+                                    <p class="text-xs text-gray-400 mt-2">Há 5 dias</p>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800">Semana da Conscientização</p>
+                                    <p class="text-sm text-gray-600 mt-1">Teremos atividades especiais focadas em conscientização ambiental...</p>
+                                    <p class="text-xs text-gray-400 mt-2">Há 1 semana</p>
+                                </div>
+                            </div>
+                            <button onclick="showSection('comunicados')" class="mt-4 text-azul-principal font-bold hover:text-verde-secundaria transition">
+                                Ver todos →
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AGENDA -->
+                <section id="agenda" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">📅 Agenda Escolar</h2>
+                        <p class="text-gray-600">Visualize a agenda da semana e compromissos do seu filho</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-6 shadow-sm">
+                        <div class="flex gap-4 mb-6 overflow-x-auto pb-2">
+                            <button class="px-4 py-2 rounded-lg bg-azul-principal text-white font-medium whitespace-nowrap">Semana Atual</button>
+                            <button class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium whitespace-nowrap hover:bg-azul-claro transition">Próxima Semana</button>
+                            <button class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium whitespace-nowrap hover:bg-azul-claro transition">Mês</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <!-- Segunda -->
+                            <div class="border-2 border-azul-claro rounded-lg p-4">
+                                <p class="font-bold text-azul-principal mb-4">Segunda, 14</p>
+                                <div class="space-y-3">
+                                    <div class="bg-azul-claro p-3 rounded-lg">
+                                        <p class="font-bold text-sm text-azul-principal">Aula de Português</p>
+                                        <p class="text-xs text-gray-600 mt-1">09:00 - 10:30</p>
+                                    </div>
+                                    <div class="bg-verde-claro p-3 rounded-lg">
+                                        <p class="font-bold text-sm text-verde-secundaria">Recreio</p>
+                                        <p class="text-xs text-gray-600 mt-1">15:30 - 16:00</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Terça -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4">
+                                <p class="font-bold text-gray-700 mb-4">Terça, 15</p>
+                                <div class="space-y-3">
+                                    <div class="bg-azul-claro p-3 rounded-lg">
+                                        <p class="font-bold text-sm text-azul-principal">Aula de Matemática</p>
+                                        <p class="text-xs text-gray-600 mt-1">10:00 - 11:30</p>
+                                    </div>
+                                    <div style="background-color: #fff9f0;" class="p-3 rounded-lg">
+                                        <p class="font-bold text-sm" style="color: #ff9500;">Aula de Arte</p>
+                                        <p class="text-xs text-gray-600 mt-1">14:00 - 15:30</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quarta -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4">
+                                <p class="font-bold text-gray-700 mb-4">Quarta, 16</p>
+                                <div class="space-y-3">
+                                    <div class="bg-verde-claro p-3 rounded-lg">
+                                        <p class="font-bold text-sm text-verde-secundaria">Educação Física</p>
+                                        <p class="text-xs text-gray-600 mt-1">11:00 - 12:00</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quinta -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4">
+                                <p class="font-bold text-gray-700 mb-4">Quinta, 17</p>
+                                <div class="space-y-3">
+                                    <div class="bg-azul-claro p-3 rounded-lg">
+                                        <p class="font-bold text-sm text-azul-principal">Aula de Ciências</p>
+                                        <p class="text-xs text-gray-600 mt-1">09:30 - 10:30</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sexta -->
+                            <div class="border-2 border-gray-200 rounded-lg p-4">
+                                <p class="font-bold text-gray-700 mb-4">Sexta, 18</p>
+                                <div class="space-y-3">
+                                    <div style="background-color: #fff9f0;" class="p-3 rounded-lg">
+                                        <p class="font-bold text-sm" style="color: #ff9500;">Música</p>
+                                        <p class="text-xs text-gray-600 mt-1">10:00 - 11:00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- COMUNICADOS -->
+                <section id="comunicados" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">📢 Comunicados</h2>
+                        <p class="text-gray-600">Fique atualizado com os comunicados da escola</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4 border-azul-principal">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">Rodízio de Brinquedos</h3>
+                                    <p class="text-gray-700 mb-4">Na próxima segunda-feira haverá rodízio de brinquedos conforme combinado. Pedimos que não tragam mais de um brinquedo por dia. Todos os brinquedos devem estar identificados com o nome da criança.</p>
+                                    <p class="text-sm text-gray-500">📅 Publicado há 2 dias</p>
+                                </div>
+                                <span class="text-2xl flex-shrink-0">🧸</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4 border-verde-secundaria">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">Reunião de Pais</h3>
+                                    <p class="text-gray-700 mb-4">Convidamos todos os responsáveis para participar de uma reunião especial onde discutiremos o desenvolvimento do seu filho. A reunião será no dia 28 de outubro às 18:30 na sala de reuniões.</p>
+                                    <p class="text-sm text-gray-500">📅 Publicado há 5 dias</p>
+                                </div>
+                                <span class="text-2xl flex-shrink-0">👨‍👩‍👧</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4" style="border-left-color: #ff9500;">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">Semana da Conscientização Ambiental</h3>
+                                    <p class="text-gray-700 mb-4">Teremos atividades especiais focadas em conscientização ambiental. As crianças aprenderão sobre sustentabilidade, reciclagem e cuidados com a natureza através de atividades lúdicas.</p>
+                                    <p class="text-sm text-gray-500">📅 Publicado há 1 semana</p>
+                                </div>
+                                <span class="text-2xl flex-shrink-0">🌍</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- EVENTOS -->
+                <section id="eventos" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">🎉 Eventos</h2>
+                        <p class="text-gray-600">Acompanhe os eventos e atividades especiais</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                            <div class="flex flex-col md:flex-row">
+                                <div class="bg-azul-claro p-6 flex items-center justify-center md:w-32 flex-shrink-0">
+                                    <div class="text-center">
+                                        <p class="text-3xl font-bold text-azul-principal">25</p>
+                                        <p class="text-azul-principal font-bold">OUT</p>
+                                    </div>
+                                </div>
+                                <div class="p-6 flex-1">
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">🎭 Apresentação de Teatro</h3>
+                                    <p class="text-gray-700 mb-4">As crianças apresentarão uma peça de teatro especial preparada durante as aulas de arte e expressão. As apresentações começam às 18:00 no auditório da escola.</p>
+                                    <div class="flex gap-4 flex-wrap">
+                                        <span class="badge-info px-3 py-1 rounded text-sm font-medium">Data confirmada</span>
+                                        <span class="text-sm text-gray-600">📍 Auditório da Escola</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                            <div class="flex flex-col md:flex-row">
+                                <div class="bg-verde-claro p-6 flex items-center justify-center md:w-32 flex-shrink-0">
+                                    <div class="text-center">
+                                        <p class="text-3xl font-bold text-verde-secundaria">31</p>
+                                        <p class="text-verde-secundaria font-bold">OUT</p>
+                                    </div>
+                                </div>
+                                <div class="p-6 flex-1">
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">🎃 Festa de Halloween</h3>
+                                    <p class="text-gray-700 mb-4">Celebração especial de Halloween com fantasias, brincadeiras temáticas e distribuição de prêmios. As crianças são bem-vindas a vir fantasiadas!</p>
+                                    <div class="flex gap-4 flex-wrap">
+                                        <span class="badge-success px-3 py-1 rounded text-sm font-medium">Confirmado</span>
+                                        <span class="text-sm text-gray-600">📍 Pátio da Escola</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                            <div class="flex flex-col md:flex-row">
+                                <div style="background-color: #fff9f0;" class="p-6 flex items-center justify-center md:w-32 flex-shrink-0">
+                                    <div class="text-center">
+                                        <p class="text-3xl font-bold" style="color: #ff9500;">15</p>
+                                        <p class="font-bold" style="color: #ff9500;">DEZ</p>
+                                    </div>
+                                </div>
+                                <div class="p-6 flex-1">
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">🎄 Festa de Encerramento</h3>
+                                    <p class="text-gray-700 mb-4">Encerramento do semestre com festa especial, apresentações das crianças e encontro com familiares. Será servido um lanche especial para todos.</p>
+                                    <div class="flex gap-4 flex-wrap">
+                                        <span class="badge-warning px-3 py-1 rounded text-sm font-medium">Confirmado</span>
+                                        <span class="text-sm text-gray-600">📍 Auditório da Escola</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FINANCEIRO -->
+                <section id="financeiro" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">💰 Financeiro</h2>
+                        <p class="text-gray-600">Acompanhe as informações de pagamento e boletos</p>
+                    </div>
+
+                    <!-- RESUMO FINANCEIRO -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4 border-verde-secundaria">
+                            <p class="text-gray-600 text-sm font-medium">Situação</p>
+                            <p class="text-2xl font-bold text-verde-secundaria mt-2">EM DIA</p>
+                            <p class="text-xs text-gray-500 mt-3">✓ Sem débitos</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4 border-azul-principal">
+                            <p class="text-gray-600 text-sm font-medium">Mensalidade Atual</p>
+                            <p class="text-2xl font-bold text-azul-principal mt-2">R$ 1.200,00</p>
+                            <p class="text-xs text-gray-500 mt-3">Outubro/2025</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 shadow-sm card-hover border-l-4 border-orange-400">
+                            <p class="text-gray-600 text-sm font-medium">Próximo Vencimento</p>
+                            <p class="text-2xl font-bold text-orange-500 mt-2">05/11/2025</p>
+                            <p class="text-xs text-gray-500 mt-3">21 dias</p>
+                        </div>
+                    </div>
+
+                    <!-- HISTÓRICO DE PAGAMENTOS -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm overflow-x-auto">
+                        <h3 class="text-xl font-bold text-azul-principal mb-4">Histórico de Pagamentos</h3>
+                        <table class="w-full min-w-max">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200">
+                                    <th class="text-left py-3 px-4 font-bold text-gray-700">Mês</th>
+                                    <th class="text-left py-3 px-4 font-bold text-gray-700">Valor</th>
+                                    <th class="text-left py-3 px-4 font-bold text-gray-700">Data Pagamento</th>
+                                    <th class="text-left py-3 px-4 font-bold text-gray-700">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-3 px-4">Outubro/2025</td>
+                                    <td class="py-3 px-4 font-bold text-gray-800">R$ 1.200,00</td>
+                                    <td class="py-3 px-4">Vence em 05/11</td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge-warning px-3 py-1 rounded text-xs font-medium">Pendente</span>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-3 px-4">Setembro/2025</td>
+                                    <td class="py-3 px-4 font-bold text-gray-800">R$ 1.200,00</td>
+                                    <td class="py-3 px-4">30/09/2025</td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge-success px-3 py-1 rounded text-xs font-medium">Pago</span>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-3 px-4">Agosto/2025</td>
+                                    <td class="py-3 px-4 font-bold text-gray-800">R$ 1.200,00</td>
+                                    <td class="py-3 px-4">28/08/2025</td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge-success px-3 py-1 rounded text-xs font-medium">Pago</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-4">Julho/2025</td>
+                                    <td class="py-3 px-4 font-bold text-gray-800">R$ 1.200,00</td>
+                                    <td class="py-3 px-4">31/07/2025</td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge-success px-3 py-1 rounded text-xs font-medium">Pago</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- BOLETO -->
+                    <div class="bg-white rounded-lg p-6 shadow-sm">
+                        <h3 class="text-xl font-bold text-azul-principal mb-4">📋 Gerar Boleto</h3>
+                        <p class="text-gray-700 mb-4">Clique abaixo para gerar o boleto referente à próxima mensalidade</p>
+                        <button class="btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                            Gerar Boleto para Outubro
+                        </button>
+                    </div>
+                </section>
+
+                <!-- DADOS DO ALUNO -->
+                <section id="dadosaluno" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-azul-principal mb-2">👤 Meus Dados</h2>
+                        <p class="text-gray-600">Visualize e atualize as informações do seu filho</p>
+                    </div>
+
+                    <!-- ABAS -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="flex border-b border-gray-200 overflow-x-auto">
+                            <button onclick="showTab('aluno')" class="tab-active px-4 sm:px-6 py-4 font-bold whitespace-nowrap">👦 Dados do Aluno</button>
+                            <button onclick="showTab('responsavel')" class="px-4 sm:px-6 py-4 font-bold text-gray-700 hover:text-azul-principal whitespace-nowrap">👨‍👩‍👧 Responsável</button>
+                            <button onclick="showTab('endereco')" class="px-4 sm:px-6 py-4 font-bold text-gray-700 hover:text-azul-principal whitespace-nowrap">🏠 Endereço</button>
+                        </div>
+
+                        <!-- TAB ALUNO -->
+                        <div id="tab-aluno" class="p-6 space-y-6">
+                            <div class="flex justify-center mb-6">
+                                <div class="w-24 h-24 bg-azul-claro rounded-full flex items-center justify-center text-5xl">
+                                    👦
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Nome Completo</label>
+                                    <input type="text" value="João Silva Santos" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Data de Nascimento</label>
+                                    <input type="text" value="15/03/2020" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Matrícula</label>
+                                    <input type="text" value="2025-0001" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Turma</label>
+                                    <input type="text" value="Berçário B" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">CPF</label>
+                                    <input type="text" value="123.456.789-00" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Gênero</label>
+                                    <input type="text" value="Masculino" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50" readonly>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Informações Médicas</label>
+                                <textarea class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none" rows="4" placeholder="Alergias, medicamentos, condições especiais...">Alergia a amendoim</textarea>
+                            </div>
+
+                            <button class="btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                                Salvar Alterações
+                            </button>
+                        </div>
+
+                        <!-- TAB RESPONSÁVEL -->
+                        <div id="tab-responsavel" class="p-6 space-y-6 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Nome do Responsável</label>
+                                    <input type="text" value="Maria Silva Santos" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Parentesco</label>
+                                    <input type="text" value="Mãe" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">CPF</label>
+                                    <input type="text" value="987.654.321-00" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Email</label>
+                                    <input type="email" value="maria.silva@email.com" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Telefone Principal</label>
+                                    <input type="tel" value="(11) 98765-4321" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Telefone Secundário</label>
+                                    <input type="tel" value="(11) 3456-7890" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Profissão</label>
+                                    <input type="text" value="Engenheira" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Empresa</label>
+                                    <input type="text" value="Tech Solutions" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+                            </div>
+
+                            <button class="btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                                Salvar Alterações
+                            </button>
+                        </div>
+
+                        <!-- TAB ENDEREÇO -->
+                        <div id="tab-endereco" class="p-6 space-y-6 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Rua</label>
+                                    <input type="text" value="Rua das Flores" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Número</label>
+                                    <input type="text" value="123" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Complemento</label>
+                                    <input type="text" value="Apto 456" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Bairro</label>
+                                    <input type="text" value="Consolação" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Cidade</label>
+                                    <input type="text" value="São Paulo" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-700 font-bold mb-2">Estado</label>
+                                    <input type="text" value="SP" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-gray-700 font-bold mb-2">CEP</label>
+                                    <input type="text" value="01234-567" class="w-full px-4 py-2 rounded-lg border border-gray-300 input-focus outline-none">
+                                </div>
+                            </div>
+
+                            <button class="btn-azul text-white px-6 py-3 rounded-lg font-bold transition">
+                                Salvar Alterações
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL NOTIFICAÇÕES -->
+    <div id="notificationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-azul-principal">Notificações</h2>
+                <button onclick="closeNotificationModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-azul-claro rounded-lg">
+                    <p class="font-bold text-gray-800">Aula de Arte Amanhã</p>
+                    <p class="text-sm text-gray-600 mt-1">Não esqueça de trazer material de pintura</p>
+                    <p class="text-xs text-gray-400 mt-2">Há 2 horas</p>
+                </div>
+
+                <div class="p-4 bg-verde-claro rounded-lg">
+                    <p class="font-bold text-gray-800">Frequência Atualizada</p>
+                    <p class="text-sm text-gray-600 mt-1">Frequência do seu filho foi atualizada para 95%</p>
+                    <p class="text-xs text-gray-400 mt-2">Há 1 dia</p>
+                </div>
+
+                <div class="p-4" style="background-color: #fff9f0;">
+                    <p class="font-bold text-gray-800" style="color: #ff9500;">Nova Mensagem</p>
+                    <p class="text-sm text-gray-600 mt-1">Você recebeu uma nova mensagem da professora</p>
+                    <p class="text-xs text-gray-400 mt-2">Há 3 dias</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('sidebar-hidden');
+            sidebar.classList.toggle('sidebar-visible');
+            overlay.classList.toggle('overlay-hidden');
+            overlay.classList.toggle('overlay-visible');
+        }
+
+        // Show Section
+        function showSection(sectionId) {
+            // Ocultar todas as seções
+            const sections = document.querySelectorAll('main > div > section');
+            sections.forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Mostrar seção selecionada
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.classList.remove('hidden');
+            }
+
+            // Atualizar sidebar ativo
+            const buttons = document.querySelectorAll('aside button');
+            buttons.forEach(btn => {
+                btn.classList.remove('sidebar-active', 'text-white');
+                btn.classList.add('text-gray-700', 'hover:bg-azul-claro');
+            });
+
+            // Encontrar o botão correspondente e marcar como ativo
+            const activeButton = Array.from(buttons).find(btn => 
+                btn.textContent.includes(sectionId === 'dashboard' ? 'Dashboard' :
+                                       sectionId === 'agenda' ? 'Agenda' :
+                                       sectionId === 'comunicados' ? 'Comunicados' :
+                                       sectionId === 'eventos' ? 'Eventos' :
+                                       sectionId === 'financeiro' ? 'Financeiro' :
+                                       sectionId === 'dadosaluno' ? 'Meus Dados' : '')
+            );
+
+            if (activeButton) {
+                activeButton.classList.add('sidebar-active', 'text-white');
+                activeButton.classList.remove('text-gray-700', 'hover:bg-azul-claro');
+            }
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Show Tab
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('[id^="tab-"]');
+            const buttons = document.querySelectorAll('div[class*="border-b"] button');
+
+            tabs.forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            buttons.forEach(btn => {
+                btn.classList.remove('tab-active', 'text-azul-principal');
+                btn.classList.add('text-gray-700', 'hover:text-azul-principal');
+            });
+
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+            }
+
+            const activeButton = event.target;
+            activeButton.classList.add('tab-active', 'text-azul-principal');
+            activeButton.classList.remove('text-gray-700', 'hover:text-azul-principal');
+        }
+
+        // Notificações
+        function openNotifications() {
+            document.getElementById('notificationModal').classList.remove('hidden');
+        }
+
+        function closeNotificationModal() {
+            document.getElementById('notificationModal').classList.add('hidden');
+        }
+
+        // Configurações
+        function handleSettings() {
+            alert('Redirecionando para configurações...');
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Tem certeza que deseja sair?')) {
+                alert('Você foi desconectado!');
+                // window.location.href = '/login'; // Descomente para redirecionar
+            }
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('notificationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNotificationModal();
+            }
+        });
+
+        // Inicializar com dashboard
+        window.addEventListener('load', function() {
+            showSection('dashboard');
+        });
+    </script>
+</body>
+</html>
