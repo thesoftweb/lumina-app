@@ -65,7 +65,7 @@
         <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-20">
             <!-- Logo -->
             <a href="/" class="flex items-center">
-                <img src="{{ asset('assets/images/logo_positive.png') }}" alt="Centro Educacional Criança Inteligente"
+                <img src="{{ asset('assets/images/positive.png') }}" alt="Centro Educacional Criança Inteligente"
                     class="h-20" />
             </a>
 
