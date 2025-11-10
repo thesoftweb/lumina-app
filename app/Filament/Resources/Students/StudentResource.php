@@ -24,6 +24,8 @@ class StudentResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $modelLabel = 'Alunos';
+
     public static function form(Schema $schema): Schema
     {
         return StudentForm::configure($schema);
