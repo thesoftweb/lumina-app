@@ -116,31 +116,34 @@ class StudentForm
                                 Select::make('customer_id')
                                     ->searchable()
                                     ->preload()
-                                    ->createOptionForm([
-                                        TextInput::make('name')
-                                            ->label('Nome Completo')
-                                            ->prefixIcon('heroicon-o-user')
-                                            ->required()
-                                            ->maxLength(255),
-                                        TextInput::make('document')
-                                            ->label('CPF')
-                                            ->required()
-                                            ->unique()
-                                            ->prefixIcon('heroicon-o-identification')
-                                            ->mask('999.999.999-99')
-                                            ->placeholder('999.999.999-99')
-                                            ->maxLength(14),
-                                        TextInput::make('email')
-                                            ->prefixIcon('heroicon-o-envelope')
-                                            ->label('E-mail')
-                                            ->email(),
-                                        TextInput::make('phone')
-                                            ->label('Telefone')
-                                            ->prefixIcon('heroicon-o-phone')
-                                            ->mask('(99) 99999-9999')
-                                            ->placeholder('(99) 99999-9999')
-                                            ->maxLength(15),
-                                    ])
+                                    ->createOptionForm(function (Schema $schema){
+                                        return $schema->components([                                    
+                                            TextInput::make('name')
+                                                ->label('Nome Completo')
+                                                ->prefixIcon('heroicon-o-user')
+                                                ->required()
+                                                ->maxLength(255),
+                                            TextInput::make('document')
+                                                ->label('CPF')
+                                                ->required()
+                                                ->unique()
+                                                ->prefixIcon('heroicon-o-identification')
+                                                ->mask('999.999.999-99')
+                                                ->placeholder('999.999.999-99')
+                                                ->maxLength(14),
+                                            TextInput::make('email')
+                                                ->prefixIcon('heroicon-o-envelope')
+                                                ->label('E-mail')
+                                                ->email(),
+                                            TextInput::make('phone')
+                                                ->label('Telefone')
+                                                ->prefixIcon('heroicon-o-phone')
+                                                ->mask('(99) 99999-9999')
+                                                ->placeholder('(99) 99999-9999')
+                                                ->maxLength(15),
+                                            ]
+                                        ]);
+                                    })
                                     ->prefixIcon('heroicon-o-briefcase')
                                     ->label('Responsável Financeiro')
                                     ->required()
