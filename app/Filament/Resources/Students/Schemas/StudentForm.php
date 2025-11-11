@@ -116,7 +116,8 @@ class StudentForm
                                 Select::make('customer_id')
                                     ->searchable()
                                     ->preload()
-                                    ->createOptionForm([                                    
+                                    ->createOptionForm(function (Schema $schema)){
+                                        return $schema->components([                                                                             
                                             TextInput::make('name')
                                                 ->label('Nome Completo')
                                                 ->prefixIcon('heroicon-o-user')
@@ -139,8 +140,9 @@ class StudentForm
                                                 ->prefixIcon('heroicon-o-phone')
                                                 ->mask('(99) 99999-9999')
                                                 ->placeholder('(99) 99999-9999')
-                                                ->maxLength(15),
-                                     ])
+                                                ->maxLength(15),                                     
+                                        ]);
+                                    })
                                     ->prefixIcon('heroicon-o-briefcase')
                                     ->label('Responsável Financeiro')
                                     ->required()
