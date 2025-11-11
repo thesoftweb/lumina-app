@@ -140,8 +140,7 @@ class StudentForm
                                                 ->mask('(99) 99999-9999')
                                                 ->placeholder('(99) 99999-9999')
                                                 ->maxLength(15),
-                                        ])
-                                     )
+                                     ])
                                     ->prefixIcon('heroicon-o-briefcase')
                                     ->label('Responsável Financeiro')
                                     ->required()
