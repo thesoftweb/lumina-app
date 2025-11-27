@@ -10,6 +10,8 @@ class Enrollment extends Model
         'student_id',
         'classroom_id',
         'enrollment_date',
+        'academic_year',
+        'day_of_payment',
         'status',
     ];
 
@@ -21,5 +23,10 @@ class Enrollment extends Model
     public function classroom()
     {
         return $this->belongsTo(Classroom::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->hasOne(AcademicYear::class);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Students\Schemas;
 
+use App\Enums\DegreeOfKinship;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Models\Customer;
@@ -73,6 +74,7 @@ class StudentForm
                                     ->label('RG'),
                                 TextInput::make('doc_number')
                                     ->prefixIcon('heroicon-o-identification')
+                                    ->mask('999.999.999-99')
                                     ->label('CPF'),
                                 Radio::make('gender')
                                     ->label('Gênero')
@@ -126,6 +128,10 @@ class StudentForm
                                     ->options(function () {
                                         return Customer::all()->pluck('name', 'id');
                                     }),
+                                Select::make('degree_of_kinship')
+                                    ->label('Grau Parentesco')
+                                    ->options(DegreeOfKinship::options())
+                                    ->required()
                             ]),
                     ]),
             ]);

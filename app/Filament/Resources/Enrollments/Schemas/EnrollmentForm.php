@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Enrollments\Schemas;
 
 use App\Models\Classroom;
 use App\Models\Student;
+use App\Models\AcademicYear;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
@@ -14,6 +15,10 @@ class EnrollmentForm
     {
         return $schema
             ->components([
+                Select::make('academic_year')
+                    ->options(AcademicYear::query()->where('is_default',true)->pluck('description','id'))
+                    ->label('Ano Escolar')
+                    ->columnSpanFull(),
                 DatePicker::make('enrollment_date')
                     ->label('Data da Matrícula')
                     ->required(),

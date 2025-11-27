@@ -18,6 +18,7 @@ class Student extends Model
         'reg_number',
         'doc_number',
         'customer_id',
+        'degree_of_kinship',
         'gender'
     ];
 
