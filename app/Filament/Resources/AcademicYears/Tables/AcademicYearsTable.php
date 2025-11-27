@@ -16,23 +16,24 @@ class AcademicYearsTable
     {
         return $table
             ->columns([
-               TextColumn::make('description')
+                TextColumn::make('description')
                     ->label('Descrição')
                     ->searchable()
                     ->sortable(),
-				TextColumn::make('year')
-					->label('Ano')
-					->searchable()
-					->sortable(),
-				TextColumn::make('start_at')
+                TextColumn::make('year')
+                    ->numeric()
+                    ->label('Ano')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('start_at')
                     ->date('d/m/Y')
-					->label('Inicio'),
-				TextColumn::make('end_at')
+                    ->label('Inicio'),
+                TextColumn::make('end_at')
                     ->date('d/m/Y')
-					->label('Fim'),
-				ToggleColumn::make('is_default')
-					->label('Padrão')					
-					
+                    ->label('Fim'),
+                ToggleColumn::make('is_default')
+                    ->label('Padrão')
+
             ])
             ->filters([
                 //
