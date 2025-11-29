@@ -23,6 +23,6 @@ class Classroom extends Model
 
     public function subjects()
     {
-        return $this->belongsToMany(Subject::class);
+        return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
     }
 }
