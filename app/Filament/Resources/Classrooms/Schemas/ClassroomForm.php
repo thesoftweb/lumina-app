@@ -39,8 +39,12 @@ class ClassroomForm
                     ->relationship('level', 'name')
                     ->required(),
                 Select::make('teacher_ids')
+                    ->options(function () {
+                        return \App\Models\Teacher::all()->pluck('name', 'id');
+                    })
                     ->prefixIcon('heroicon-o-user-group')
                     ->label('Profesores')
+                    ->preload()
                     ->multiple()
                     ->relationship('teachers', 'name'),
             ]);

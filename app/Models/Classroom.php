@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Bootstrap\BootProviders;
 
 class Classroom extends Model
 {
@@ -10,6 +11,13 @@ class Classroom extends Model
         'name',
         'level_id',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('ordered', function ($query) {
+            $query->orderBy('name');
+        });
+    }
 
     public function level()
     {
