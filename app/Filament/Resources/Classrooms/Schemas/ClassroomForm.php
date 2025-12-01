@@ -2,9 +2,13 @@
 
 namespace App\Filament\Resources\Classrooms\Schemas;
 
+use App\Models\Subject;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 
 class ClassroomForm
@@ -39,10 +43,25 @@ class ClassroomForm
                     ->relationship('level', 'name')
                     ->required(),
                 Select::make('teacher_ids')
+                    ->options(function () {
+                        return \App\Models\Teacher::all()->pluck('name', 'id');
+                    })
                     ->prefixIcon('heroicon-o-user-group')
                     ->label('Profesores')
+                    ->preload()
                     ->multiple()
                     ->relationship('teachers', 'name'),
+                Fieldset::make('Disciplinas')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->schema([
+                        CheckboxList::make('subject_ids')
+                            ->columnSpanFull()
+                            ->label('Disciplinas')
+                            ->relationship('subjects', 'name')
+                            ->columns(2)
+                            ->options(Subject::all()->pluck('name', 'id')),
+                    ]),
             ]);
     }
 }

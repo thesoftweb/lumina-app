@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Bootstrap\BootProviders;
 
 class Classroom extends Model
 {
@@ -10,6 +11,13 @@ class Classroom extends Model
         'name',
         'level_id',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('ordered', function ($query) {
+            $query->orderBy('name');
+        });
+    }
 
     public function level()
     {
@@ -19,5 +27,10 @@ class Classroom extends Model
     public function teachers()
     {
         return $this->belongsToMany(Teacher::class, 'level_teacher', 'level_id', 'teacher_id');
+    }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
     }
 }
