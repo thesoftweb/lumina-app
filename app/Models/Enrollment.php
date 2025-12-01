@@ -29,4 +29,9 @@ class Enrollment extends Model
     {
         return $this->hasOne(AcademicYear::class);
     }
+
+    public function grade()
+    {
+        return $this->hasMany(Grade::class);
+    }
 }

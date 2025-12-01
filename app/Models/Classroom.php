@@ -28,4 +28,9 @@ class Classroom extends Model
     {
         return $this->belongsToMany(Teacher::class, 'level_teacher', 'level_id', 'teacher_id');
     }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
+    }
 }

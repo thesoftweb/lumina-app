@@ -16,7 +16,7 @@ class EnrollmentForm
         return $schema
             ->components([
                 Select::make('academic_year')
-                    ->options(AcademicYear::query()->where('is_default',true)->pluck('description','id'))
+                    ->options(AcademicYear::query()->where('is_default', true)->pluck('description', 'id'))
                     ->label('Ano Escolar')
                     ->columnSpanFull(),
                 DatePicker::make('enrollment_date')
@@ -42,6 +42,14 @@ class EnrollmentForm
                     ->options(Classroom::all()->pluck('name', 'id')->toArray())
                     ->relationship('classroom', 'name')
                     ->required(),
+                Select::make('day_of_payment')
+                    ->label('Dia Vencimento')
+                    ->required()
+                    ->options([
+                        '5' => 'Todo dia 05 de cada mês',
+                        '10' => 'Todo dia 10 de cada mês',
+                        '15' => 'Todo dia 15 de cada mês',
+                    ])
             ]);
     }
 }
