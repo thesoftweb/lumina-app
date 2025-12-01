@@ -6,6 +6,7 @@ use App\Filament\Resources\Enrollments\Pages\CreateEnrollment;
 use App\Filament\Resources\Enrollments\Pages\EditEnrollment;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
 use App\Filament\Resources\Enrollments\Pages\ViewEnrollment;
+use App\Filament\Resources\Enrollments\RelationManagers\GradeRelationManager;
 use App\Filament\Resources\Enrollments\Schemas\EnrollmentForm;
 use App\Filament\Resources\Enrollments\Schemas\EnrollmentInfolist;
 use App\Filament\Resources\Enrollments\Tables\EnrollmentsTable;
@@ -44,7 +45,7 @@ class EnrollmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            GradeRelationManager::class,
         ];
     }
 

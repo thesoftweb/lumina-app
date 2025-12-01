@@ -15,16 +15,21 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class AcademicYearResource extends Resource
 {
     protected static ?string $model = AcademicYear::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
+    protected static string|UnitEnum|null $navigationGroup = 'Configurações';
 
     protected static ?string $recordTitleAttribute = 'description';
 
-    protected static ?string $modelLabel = 'Ano Escolar';
+    protected static ?string $label = 'Ano Escolar';
+
+    protected static ?string $pluralModelLabel = 'Ano Escolar';
+
 
     public static function form(Schema $schema): Schema
     {
