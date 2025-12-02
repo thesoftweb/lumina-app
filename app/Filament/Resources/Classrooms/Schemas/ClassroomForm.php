@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Classrooms\Schemas;
 
+use App\Models\Plan;
 use App\Models\Subject;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Field;
@@ -51,6 +52,14 @@ class ClassroomForm
                     ->preload()
                     ->multiple()
                     ->relationship('teachers', 'name'),
+                Select::make('plan_ids')
+                    ->options(function () {
+                        return Plan::query()->where('active', true)->pluck('name', 'id');
+                    })
+                    ->label('Plano de Pagamentos')
+                    ->preload()
+                    ->multiple()
+                    ->relationship('plans', 'name'),
                 Fieldset::make('Disciplinas')
                     ->columnSpanFull()
                     ->columns(2)

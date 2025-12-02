@@ -22,5 +22,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(SubjectTableSeeder::class);
         $this->call(TermTableSeeder::class);
+        $this->call(AccountPlanTableSeeder::class);
     }
 }

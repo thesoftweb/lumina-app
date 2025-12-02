@@ -33,4 +33,9 @@ class Classroom extends Model
     {
         return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
     }
+
+    public function plans()
+    {
+        return $this->belongsToMany(Plan::class)->using(ClassroomPlan::class);
+    }
 }
