@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Enrollments\Schemas;
 
+use App\Enums\EnrollmentStatus;
 use App\Models\Classroom;
 use App\Models\Student;
 use App\Models\AcademicYear;
+use App\Models\ClassroomPlan;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
@@ -24,12 +26,7 @@ class EnrollmentForm
                     ->required(),
                 Select::make('status')
                     ->label('Status da Matrícula')
-                    ->options([
-                        'active' => 'Ativa',
-                        'started' => 'Iniciada',
-                        'canceled' => 'Cancelada',
-                        'completed' => 'Concluída',
-                    ])
+                    ->options(EnrollmentStatus::class)
                     ->default('active')
                     ->required(),
                 Select::make('student_id')
@@ -39,8 +36,20 @@ class EnrollmentForm
                     ->required(),
                 Select::make('classroom_id')
                     ->label('Turma')
+                    ->live()
                     ->options(Classroom::all()->pluck('name', 'id')->toArray())
-                    ->relationship('classroom', 'name')
+                    ->required(),
+                Select::make('plan_id')
+                    ->label('Plano de Pagamento')
+                    ->live()
+                    ->options(
+                        fn(callable $get) =>
+                        ClassroomPlan::where('classroom_id', $get('classroom_id'))
+                            ->with('plan')
+                            ->get()
+                            ->pluck('plan.name', 'plan.id')
+                            ->toArray()
+                    )
                     ->required(),
                 Select::make('day_of_payment')
                     ->label('Dia Vencimento')

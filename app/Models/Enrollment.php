@@ -6,13 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Enrollment extends Model
 {
-    protected $fillable = [
-        'student_id',
-        'classroom_id',
-        'enrollment_date',
-        'academic_year',
-        'day_of_payment',
-        'status',
+    protected $guarded = [];
+
+    protected $casts = [
+        'enrollment_date' => 'date',
+        'status' => \App\Enums\EnrollmentStatus::class,
     ];
 
     public function student()
@@ -33,5 +31,10 @@ class Enrollment extends Model
     public function grade()
     {
         return $this->hasMany(Grade::class);
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
     }
 }

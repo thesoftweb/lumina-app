@@ -24,6 +24,16 @@ class ClassroomsTable
                     ->label('Nivel')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('enrollments_count')
+                    ->label('Estudantes')
+                    ->counts('enrollments')
+                    ->badge()
+                    ->sortable(),
+                TextColumn::make('teachers_count')
+                    ->label('Profesores')
+                    ->counts('teachers')
+                    ->badge()
+                    ->sortable(),
             ])
             ->filters([
                 //

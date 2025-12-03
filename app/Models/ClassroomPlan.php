@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 
-class ClassroomPlan extends Model
+use Illuminate\Database\Eloquent\Relations\Pivot;
+
+class ClassroomPlan extends Pivot
 {
     public $table = 'classroom_plan';
 
@@ -12,11 +13,11 @@ class ClassroomPlan extends Model
 
     public function classroom()
     {
-        return $this->belongsToMany(Classroom::class);
+        return $this->belongsTo(Classroom::class);
     }
 
     public function plan()
     {
-        return $this->belongsToMany(Plan::class);
+        return $this->belongsTo(Plan::class);
     }
 }

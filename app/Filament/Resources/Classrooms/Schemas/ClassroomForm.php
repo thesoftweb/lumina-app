@@ -5,11 +5,11 @@ namespace App\Filament\Resources\Classrooms\Schemas;
 use App\Models\Plan;
 use App\Models\Subject;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class ClassroomForm
@@ -18,59 +18,67 @@ class ClassroomForm
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->prefixIcon('heroicon-o-academic-cap')
-                    ->label('Titulo')
-                    ->required()
-                    ->maxLength(255),
-                Select::make('level_id')
-                    ->prefixIcon('heroicon-o-book-open')
-                    ->options(function () {
-                        return \App\Models\Level::all()->pluck('name', 'id');
-                    })
-                    ->createOptionForm(function (Schema $schema) {
-                        return $schema->components([
-                            TextInput::make('name')
-                                ->prefixIcon('heroicon-o-academic-cap')
-                                ->label('Titulo')
-                                ->required()
-                                ->maxLength(255),
-                            Textarea::make('description')
-                                ->label('Detalhes')
-                                ->maxLength(65535),
-                        ]);
-                    })
-                    ->label('Nivel')
-                    ->relationship('level', 'name')
-                    ->required(),
-                Select::make('teacher_ids')
-                    ->options(function () {
-                        return \App\Models\Teacher::all()->pluck('name', 'id');
-                    })
-                    ->prefixIcon('heroicon-o-user-group')
-                    ->label('Profesores')
-                    ->preload()
-                    ->multiple()
-                    ->relationship('teachers', 'name'),
-                Select::make('plan_ids')
-                    ->options(function () {
-                        return Plan::query()->where('active', true)->pluck('name', 'id');
-                    })
-                    ->label('Plano de Pagamentos')
-                    ->preload()
-                    ->multiple()
-                    ->relationship('plans', 'name'),
-                Fieldset::make('Disciplinas')
+                Section::make('Turmas')
+                    ->description('Gerencie as turmas aqui.')
                     ->columnSpanFull()
                     ->columns(2)
                     ->schema([
-                        CheckboxList::make('subject_ids')
+                        TextInput::make('name')
+                            ->prefixIcon('heroicon-o-academic-cap')
+                            ->label('Titulo')
+                            ->required()
+                            ->maxLength(255),
+                        Select::make('level_id')
+                            ->prefixIcon('heroicon-o-book-open')
+                            ->options(function () {
+                                return \App\Models\Level::all()->pluck('name', 'id');
+                            })
+                            ->createOptionForm(function (Schema $schema) {
+                                return $schema->components([
+                                    TextInput::make('name')
+                                        ->prefixIcon('heroicon-o-academic-cap')
+                                        ->label('Titulo')
+                                        ->required()
+                                        ->maxLength(255),
+                                    Textarea::make('description')
+                                        ->label('Detalhes')
+                                        ->maxLength(65535),
+                                ]);
+                            })
+                            ->label('Nivel')
+                            ->relationship('level', 'name')
+                            ->required(),
+                        Select::make('teacher_ids')
+                            ->options(function () {
+                                return \App\Models\Teacher::all()->pluck('name', 'id');
+                            })
+                            ->prefixIcon('heroicon-o-user-group')
+                            ->label('Docentes')
+                            ->preload()
+                            ->multiple()
+                            ->relationship('teachers', 'name'),
+                        Select::make('plan_ids')
+                            ->options(function () {
+                                return Plan::query()->where('active', true)->pluck('name', 'id');
+                            })
+                            ->helperText('Esses planos de pagamento estão disponíveis na matrícula para esta turma.')
+                            ->label('Plano de Pagamentos')
+                            ->preload()
+                            ->multiple()
+                            ->required()
+                            ->relationship('plans', 'name'),
+                        Fieldset::make('Disciplinas')
                             ->columnSpanFull()
-                            ->label('Disciplinas')
-                            ->relationship('subjects', 'name')
                             ->columns(2)
-                            ->options(Subject::all()->pluck('name', 'id')),
-                    ]),
+                            ->schema([
+                                CheckboxList::make('subject_ids')
+                                    ->columnSpanFull()
+                                    ->label('Disciplinas')
+                                    ->relationship('subjects', 'name')
+                                    ->columns(2)
+                                    ->options(Subject::all()->pluck('name', 'id')),
+                            ]),
+                    ])
             ]);
     }
 }

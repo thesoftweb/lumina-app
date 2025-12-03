@@ -15,10 +15,16 @@ class EnrollmentsTable
     {
         return $table
             ->columns([
-                TextColumn::make('student.name')->label('Aluno'),
-                TextColumn::make('classroom.name')->label('Turma'),
-                TextColumn::make('enrollment_date')->label('Data da Matrícula')->date(),
-                TextColumn::make('status')->label('Status da Matrícula'),
+                TextColumn::make('student.name')
+                    ->label('Aluno'),
+                TextColumn::make('classroom.name')
+                    ->label('Turma'),
+                TextColumn::make('enrollment_date')
+                    ->label('Data da Matrícula')
+                    ->date('d/m/Y'),
+                TextColumn::make('status')
+                    ->label('Situação')
+                    ->badge()
             ])
             ->filters([
                 //

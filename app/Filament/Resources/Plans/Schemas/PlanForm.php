@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Plans\Schemas;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -15,41 +16,52 @@ class PlanForm
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->label('Descrição do Plano'),
-                TextInput::make('base_amount')
-                    ->label('Valor Base')
-                    ->numeric()
-                    ->reactive()
-                    ->required(),
-                ToggleButtons::make('discount_type')
-                    ->label('Tipo de Desconto')
-                    ->inline()
-                    ->options([
-                        'percentage' => 'Percentual',
-                        'fixed'      => 'Fixo',
-                        'none'       => 'Nenhum',
+                Section::make('Planos de Pagamento')
+                    ->description('Configure os detalhes do plano de pagamento para mensalidades ou multiplas opções de pagamentos. Configure Descontos e valores finais automaticamente.')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('name')
+                            ->prefixIcon('heroicon-o-tag')
+                            ->label('Descrição do Plano'),
+                        TextInput::make('base_amount')
+                            ->prefix('R$')
+                            ->label('Valor Base')
+                            ->numeric()
+                            ->reactive()
+                            ->required(),
+                        ToggleButtons::make('discount_type')
+                            ->label('Tipo de Desconto')
+                            ->inline()
+                            ->options([
+                                'percentage' => 'Percentual',
+                                'fixed'      => 'Fixo',
+                                'none'       => 'Nenhum',
+                            ])
+                            ->default('none')
+                            ->reactive()
+                            ->required(),
+                        TextInput::make('discount_value')
+                            ->prefix(fn(Get $get) => $get('discount_type') === 'percentage' ? '%' : 'R$')
+                            ->label('Valor do Desconto')
+                            ->numeric()
+                            ->reactive()
+                            ->required()
+                            ->hidden(fn(Get $get) => $get('discount_type') === 'none'),
+                        TextInput::make('final_value')
+                            ->prefix('R$')
+                            ->label('Valor Final')
+                            ->numeric()
+                            ->readOnly()
+                            ->reactive()
+                            ->afterStateHydrated(function (Set $set, Get $get) {
+                                self::calculateFinalValue($set, $get);
+                            })
+                            ->dehydrated(),
+                        Toggle::make('is_active')
+                            ->columnSpanFull()
+                            ->label('Ativo')
                     ])
-                    ->default('none')
-                    ->reactive()
-                    ->required(),
-                TextInput::make('discount_value')
-                    ->label('Valor do Desconto')
-                    ->numeric()
-                    ->reactive()
-                    ->required()
-                    ->hidden(fn (Get $get) => $get('discount_type') === 'none'),
-                TextInput::make('final_value')
-                    ->label('Valor Final')
-                    ->numeric()
-                    ->readOnly()
-                    ->reactive()
-                    ->afterStateHydrated(function (Set $set, Get $get) {
-                        self::calculateFinalValue($set, $get);
-                    })
-                    ->dehydrated(),
-                Toggle::make('is_active')
-                    ->label('Ativo')
             ])
             ->reactive();
     }

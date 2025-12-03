@@ -32,17 +32,20 @@ class SupplierForm
                             ->inline(),
                         TextInput::make('document')
                             ->prefixIcon('heroicon-o-identification')
-                            ->label(fn (Get $get): string => $get('document_type') === 'F' ? 'CPF' : 'CNPJ')
+                            ->label(fn(Get $get): string => $get('document_type') === 'F' ? 'CPF' : 'CNPJ')
+                            ->mask(fn(Get $get): string => $get('document_type') === 'F' ? '999.999.999-99' : '99.999.999/9999-99')
                             ->required(),
                         TextInput::make('name')
                             ->label('Nome')
                             ->required(),
                         TextInput::make('description')
                             ->label('Descrição')
+                            ->helperText('Nome fantasia ou razão social do fornecedor')
                             ->required(),
                         TextInput::make('email')
                             ->label('E-mail'),
                         TextInput::make('phone')
+                            ->mask('(99) 99999-9999')
                             ->label('Contato'),
                         Textarea::make('details')
                             ->columnSpanFull()

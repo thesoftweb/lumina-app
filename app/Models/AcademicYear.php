@@ -6,13 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class AcademicYear extends Model
 {
-    protected $casts = [
+	protected $casts = [
 		'start_at' => 'date',
 		'end_at' => 'date',
 		'year' => 'integer',
-		'is_defaul' => 'boolean'
+		'is_default' => 'boolean'
 	];
-	
+
 	protected $fillable = [
 		'description',
 		'year',
