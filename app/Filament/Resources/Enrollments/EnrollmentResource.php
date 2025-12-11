@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class EnrollmentResource extends Resource
 {
@@ -26,6 +27,8 @@ class EnrollmentResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Matrículas';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Secretaria';
 
     public static function form(Schema $schema): Schema
     {
