@@ -61,12 +61,17 @@ class ClassroomForm
                             ->options(function () {
                                 return Plan::query()->where('active', true)->pluck('name', 'id');
                             })
-                            ->helperText('Esses planos de pagamento estão disponíveis na matrícula para esta turma.')
+                            ->prefixIcon('heroicon-o-credit-card')
                             ->label('Plano de Pagamentos')
                             ->preload()
                             ->multiple()
                             ->required()
                             ->relationship('plans', 'name'),
+                        TextInput::make('whatsapp_group')
+                            ->prefixIcon('heroicon-o-chat-bubble-left-right')
+                            ->helperText('Enviado automaticamente após matricula.')
+                            ->label('Grupo do WhatsApp')
+                            ->url(),
                         Fieldset::make('Disciplinas')
                             ->columnSpanFull()
                             ->columns(2)

@@ -29,8 +29,12 @@ class PlanForm
                             ->label('Valor Base')
                             ->numeric()
                             ->reactive()
-                            ->required(),
+                            ->required()
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                self::calculateFinalValue($set, $get);
+                            }),
                         ToggleButtons::make('discount_type')
+                            ->columnSpanFull()
                             ->label('Tipo de Desconto')
                             ->inline()
                             ->options([
@@ -47,6 +51,9 @@ class PlanForm
                             ->numeric()
                             ->reactive()
                             ->required()
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                self::calculateFinalValue($set, $get);
+                            })
                             ->hidden(fn(Get $get) => $get('discount_type') === 'none'),
                         TextInput::make('final_value')
                             ->prefix('R$')

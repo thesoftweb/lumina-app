@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('base_amount', 10, 2);
+            $table->boolean('has_discount')->default(false);
             $table->enum('discount_type', ['percentage', 'fixed', 'none']);
             $table->decimal('discount_value', 10, 2);
+            $table->integer('discount_days_valid')->nullable();
             $table->decimal('final_value');
             $table->boolean('is_active');
             $table->timestamps();

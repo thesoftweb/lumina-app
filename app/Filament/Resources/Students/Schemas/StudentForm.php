@@ -6,9 +6,12 @@ use App\Enums\DegreeOfKinship;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Models\Customer;
+use App\Models\State;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -36,39 +39,32 @@ class StudentForm
                                 Select::make('state_of_birth')
                                     ->prefixIcon('heroicon-o-map')
                                     ->label('UF de Nascimento')
-                                    ->options([
-                                        'AC' => 'Acre',
-                                        'AL' => 'Alagoas',
-                                        'AP' => 'Amapá',
-                                        'AM' => 'Amazonas',
-                                        'BA' => 'Bahia',
-                                        'CE' => 'Ceará',
-                                        'DF' => 'Distrito Federal',
-                                        'ES' => 'Espírito Santo',
-                                        'GO' => 'Goiás',
-                                        'MA' => 'Maranhão',
-                                        'MT' => 'Mato Grosso',
-                                        'MS' => 'Mato Grosso do Sul',
-                                        'MG' => 'Minas Gerais',
-                                        'PA' => 'Pará',
-                                        'PB' => 'Paraíba',
-                                        'PR' => 'Paraná',
-                                        'PE' => 'Pernambuco',
-                                        'PI' => 'Piauí',
-                                        'RJ' => 'Rio de Janeiro',
-                                        'RN' => 'Rio Grande do Norte',
-                                        'RS' => 'Rio Grande do Sul',
-                                        'RO' => 'Rondônia',
-                                        'RR' => 'Roraima',
-                                        'SC' => 'Santa Catarina',
-                                        'SP' => 'São Paulo',
-                                        'SE' => 'Sergipe',
-                                        'TO' => 'Tocantins',
-                                    ])->required(),
-                                TextInput::make('city_of_birth')
+                                    ->preload()
+                                    ->live()
+                                    ->options(
+                                        State::all()->pluck('name', 'code')
+                                    )->required()
+                                    ->afterStateUpdated(function (callable $set) {
+                                        $set('city_of_birth', null);
+                                    }),
+                                Select::make('city_of_birth')
                                     ->prefixIcon('heroicon-o-building-office')
-                                    ->label('Cidade de Nascimento')
-                                    ->required(),
+                                    ->reactive()
+                                    ->searchable()
+                                    ->options(
+                                        function (callable $get) {
+                                            $state = $get('state_of_birth');
+                                            if (!$state) {
+                                                return [];
+                                            }
+
+                                            return \App\Models\City::where('state_id', $state)
+                                                ->orderBy('name')
+                                                ->pluck('name', 'name');
+                                        }
+                                    )->label('Cidade de Nascimento')
+                                    ->required()
+                                    ->disabled(fn(callable $get) => !$get('state_of_birth')),
                                 TextInput::make('reg_number')
                                     ->prefixIcon('heroicon-o-identification')
                                     ->label('RG'),
@@ -108,6 +104,22 @@ class StudentForm
                                     ->prefixIcon('heroicon-o-phone')
                                     ->mask('(99) 99999-9999')
                                     ->label('Contato do Responsável')
+                            ]),
+                    ]),
+                Section::make('Informações Adicionais do Aluno')
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make()
+                            ->schema([
+                                CheckboxList::make('neurodiversy')
+                                    ->label('Neurodiversidade')
+                                    ->columns(2)
+                                    ->options(function () {
+                                        return \App\Models\StudentProfile::where('is_active', true)->pluck('name', 'id');
+                                    }),
+                                Textarea::make('observations')
+                                    ->label('Observações')
+                                    ->rows(4),
                             ]),
                     ]),
                 Section::make('Dados do Cliente e Responsável Financeiro')

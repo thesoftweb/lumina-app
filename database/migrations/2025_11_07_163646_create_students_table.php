@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('affiliation_2')->nullable();
             $table->string('phone_primary')->nullable();
             $table->string('phone_secondary')->nullable();
+            $table->text('neurodiversy')->nullable();
             $table->text('observations')->nullable();
             $table->timestamps();
         });
