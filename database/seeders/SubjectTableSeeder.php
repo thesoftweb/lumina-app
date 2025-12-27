@@ -25,6 +25,8 @@ class SubjectTableSeeder extends Seeder
             ['name' => 'Língua Estrangeira Moderna', 'code' => 'LEM101'],
         ];
 
+        DB::table('subjects')->truncate();
+
         DB::table('subjects')->insert($insert);
     }
 }

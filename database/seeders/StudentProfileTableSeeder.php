@@ -14,7 +14,6 @@ class StudentProfileTableSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('student_profiles')->truncate();
 
         $data = [
             ['name' => 'Altas Habilidades/Superdotação', 'is_active' => true],
@@ -33,6 +32,8 @@ class StudentProfileTableSeeder extends Seeder
             ['name' => 'Deficiência Visual', 'is_active' => true],
             ['name' => 'Outros', 'is_active' => true],
         ];
+
+        DB::table('student_profiles')->truncate();
 
         StudentProfile::insert($data);
     }

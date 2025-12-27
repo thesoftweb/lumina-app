@@ -22,10 +22,10 @@ return new class extends Migration
             $table->date('due_date');
             $table->decimal('amount', 10, 2);
             $table->decimal('balance')->nullable();
-            $table->enum('status', ['open', 'partial', 'paid', 'canceled'])->default('open');
+            $table->enum('status', ['open', 'partial', 'paid', 'canceled', 'overdue'])->default('open');
             $table->date('billing_period_start')->nullable();
             $table->date('billing_period_end')->nullable();
-            $table->enum('billing_type', ['tuition', 'service', 'material', 'other'])->default('tuition');
+            $table->enum('billing_type', ['tuition', 'service', 'material', 'other', 'enrollment'])->default('tuition');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

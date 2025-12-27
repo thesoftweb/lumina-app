@@ -12,6 +12,8 @@ class AccountPlanTableSeeder extends Seeder
      */
     public function run(): void
     {
+        DB::table('account_plans')->truncate();
+
         DB::table('account_plans')->insert([
             // -----------------------
             // ATIVO

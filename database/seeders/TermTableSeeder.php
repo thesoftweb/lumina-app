@@ -20,6 +20,8 @@ class TermTableSeeder extends Seeder
             ['name' => '4º Bimestre', 'start_date' => '2025-08-01', 'end_date' => '2025-09-30', 'year' => 2025, 'order' => 4],
         ];
 
+        DB::table('terms')->truncate();
+
         DB::table('terms')->insert($insert);
     }
 }

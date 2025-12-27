@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\Tables;
 
+use Dom\Text;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -19,7 +20,9 @@ class InvoicesTable
                 TextColumn::make('customer.name')->label('Cliente')->sortable()->searchable(),
                 TextColumn::make('amount')->label('Valor')->money('BRL')->sortable(),
                 TextColumn::make('status')->label('Status')->badge()->sortable()->searchable(),
-                TextColumn::make('due_date')->label('Data de Vencimento')->date()->sortable(),
+                TextColumn::make('balance')->label('Saldo')->money('BRL')->sortable(),
+                TextColumn::make('billing_type')->label('Tipo')->badge()->sortable()->searchable(),
+                TextColumn::make('due_date')->label('Data de Vencimento')->date('d/m/Y')->sortable(),
             ])
             ->filters([
                 //
