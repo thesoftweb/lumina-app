@@ -33,7 +33,7 @@ class StudentProfileTableSeeder extends Seeder
             ['name' => 'Outros', 'is_active' => true],
         ];
 
-        DB::table('student_profiles')->truncate();
+        // DB::table('student_profiles')->truncate();
 
         StudentProfile::insert($data);
     }

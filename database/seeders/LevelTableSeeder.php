@@ -23,7 +23,7 @@ class LevelTableSeeder extends Seeder
             ['name' => 'Pós-graduação', 'is_active' => true],
         ];
 
-        DB::table('levels')->truncate();
+        // DB::table('levels')->truncate();
 
         DB::table('levels')->insert($levels);
     }
