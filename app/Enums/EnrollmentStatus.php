@@ -11,6 +11,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
     case Started = 'started';
     case Canceled = 'canceled';
     case Completed = 'completed';
+    case Reserved = 'reserved';
 
     public function getColor(): string|array|null
     {
@@ -19,6 +20,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
             self::Started => 'warning',
             self::Canceled => 'danger',
             self::Completed => 'primary',
+            self::Reserved => 'info',
         };
     }
 
@@ -29,6 +31,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
             self::Started => 'Iniciada',
             self::Canceled => 'Cancelada',
             self::Completed => 'Concluída',
+            self::Reserved => 'Reservada',
         };
     }
 }

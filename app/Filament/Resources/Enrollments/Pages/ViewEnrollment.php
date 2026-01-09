@@ -7,6 +7,7 @@ use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -33,18 +34,30 @@ class ViewEnrollment extends ViewRecord
         return Action::make('createEnrollmentInvoice')
             ->label('Gerar Fatura de Matrícula')
             ->icon('heroicon-o-document-text')
-            ->color('success')
-            ->requiresConfirmation()
+            ->schema([
+                TextInput::make('enrollment_amount')
+                    ->label('Valor da Matrícula')
+                    ->numeric()
+                    ->required()
+                    ->prefix('R$')
+                    ->helperText('Informe o valor da taxa de matrícula'),
+                Checkbox::make('generate_invoice')
+                    ->label('Gerar fatura')
+                    ->default(true),
+                Checkbox::make('send_notification')
+                    ->label('Encaminhar por email/WhatsApp')
+                    ->helperText('Enviar notificação ao responsável sobre a fatura gerada'),
+            ])
             ->modalHeading('Gerar Fatura de Matrícula')
             ->modalDescription('Tem certeza que deseja gerar a fatura de matrícula para este aluno?')
             ->modalSubmitActionLabel('Gerar')
-            ->action(function (InvoiceService $invoiceService) {
+            ->action(function (InvoiceService $invoiceService, array $data) {
                 try {
                     $invoice = $invoiceService->createEnrollmentInvoiceFromEnrollment(
                         enrollment: $this->record,
-                        amount: 200, // Ajuste conforme necessário
-                        companyId: 1,   // Ajuste conforme necessário
-                        notes: "Taxa de matrícula gerada automaticamente"
+                        amount: (float) $data['enrollment_amount'],
+                        companyId: 1,
+                        notes: "Taxa de matrícula pelo sistema"
                     );
 
                     Notification::make()
@@ -70,7 +83,6 @@ class ViewEnrollment extends ViewRecord
         return Action::make('createTuitionInvoice')
             ->label('Gerar Mensalidades')
             ->icon('heroicon-o-calendar')
-            ->color('info')
             ->schema([
                 TextInput::make('quantity')
                     ->label('Quantidade de Meses')

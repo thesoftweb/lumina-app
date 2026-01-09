@@ -23,16 +23,24 @@ class InvoiceService
         $issueDate = now();
         $dueDate = Carbon::parse($enrollment->enrollment_date)->copy()->addDays(7);
 
+        // Calcula desconto
+        $discount = $this->calculateDiscount($enrollment, $amount);
+
         return $this->createInvoice(
             new CreateInvoiceDTO(
                 customer_id: $enrollment->student->customer_id,
-                amount: $amount,
+                amount: $discount['final_amount'],
                 type: InvoiceType::ENROLLMENT,
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
                 reference: "MAT-" . $enrollment->id . "-" . now()->format('Ymd'),
                 notes: $notes ?? "Taxa de matrícula",
+                discountSource: $discount['discount_source'],
+                discountType: $discount['discount_type'],
+                discountValue: $discount['discount_value'],
+                originalAmount: $discount['original_amount'],
+                finalAmount: $discount['final_amount'],
             )
         );
     }
@@ -83,10 +91,13 @@ class InvoiceService
         $paymentDay = $enrollment->day_of_payment ?? 5; // Default: 5 se não definido
         $dueDate = $billingPeriodStart->copy()->setDay(min($paymentDay, $billingPeriodStart->daysInMonth));
 
+        // Calcula desconto
+        $discount = $this->calculateDiscount($enrollment, $amount);
+
         return $this->createInvoice(
             new CreateInvoiceDTO(
                 customer_id: $enrollment->student->customer_id,
-                amount: $amount,
+                amount: $discount['final_amount'],
                 type: InvoiceType::TUITION,
                 issue_date: $issueDate,
                 due_date: $dueDate,
@@ -96,6 +107,11 @@ class InvoiceService
                 billing_period_end: $billingPeriodEnd,
                 reference: "TUI-" . $enrollment->id . "-" . $billingPeriodStart->format('Y-m'),
                 notes: $notes ?? "Mensalidade - {$billingPeriodStart->format('m/Y')}",
+                discountSource: $discount['discount_source'],
+                discountType: $discount['discount_type'],
+                discountValue: $discount['discount_value'],
+                originalAmount: $discount['original_amount'],
+                finalAmount: $discount['final_amount'],
             )
         );
     }
@@ -219,6 +235,47 @@ class InvoiceService
     }
 
     /**
+     * Calcula desconto baseado na enrollment ou plan
+     * Retorna array com: [discountValue, discountType, discountSource, originalAmount, finalAmount]
+     */
+    private function calculateDiscount(Enrollment $enrollment, float $baseAmount): array
+    {
+        // Verifica se há desconto personalizado na enrollment
+        if ($enrollment->use_custom_discount && $enrollment->discount_value > 0) {
+            $discountValue = $enrollment->discount_value;
+            $discountType = $enrollment->discount_type;
+            $discountSource = 'enrollment_custom';
+        } else {
+            // Sem desconto (Plan não tem campos de desconto neste projeto)
+            return [
+                'discount_value' => 0,
+                'discount_type' => null,
+                'discount_source' => 'plan',
+                'original_amount' => $baseAmount,
+                'final_amount' => $baseAmount,
+            ];
+        }
+
+        // Calcula o valor final com desconto
+        $finalAmount = $baseAmount;
+        if ($discountType === 'percentage') {
+            $finalAmount = $baseAmount * (1 - ($discountValue / 100));
+        } else {
+            $finalAmount = $baseAmount - $discountValue;
+        }
+
+        $finalAmount = max(0, $finalAmount); // Não pode ser negativo
+
+        return [
+            'discount_value' => $discountValue,
+            'discount_type' => $discountType,
+            'discount_source' => $discountSource,
+            'original_amount' => $baseAmount,
+            'final_amount' => $finalAmount,
+        ];
+    }
+
+    /**
      * Cria uma fatura através do DTO
      */
     public function createInvoice(CreateInvoiceDTO $dto): Invoice
@@ -242,6 +299,11 @@ class InvoiceService
             'billing_period_start' => $dto->billing_period_start?->toDateString(),
             'billing_period_end' => $dto->billing_period_end?->toDateString(),
             'notes' => $dto->notes,
+            'discount_source' => $dto->discountSource ?? 'plan',
+            'discount_type' => $dto->discountType,
+            'discount_value' => $dto->discountValue,
+            'original_amount' => $dto->originalAmount,
+            'final_amount' => $dto->finalAmount,
         ]);
 
         return $invoice;

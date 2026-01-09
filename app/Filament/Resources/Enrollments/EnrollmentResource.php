@@ -48,7 +48,7 @@ class EnrollmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            GradeRelationManager::class,
+            //GradeRelationManager::class,
         ];
     }
 

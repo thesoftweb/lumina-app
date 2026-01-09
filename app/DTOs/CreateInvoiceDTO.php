@@ -20,6 +20,11 @@ class CreateInvoiceDTO
         public readonly ?Carbon $billing_period_start = null,
         public readonly ?Carbon $billing_period_end = null,
         public readonly ?string $notes = null,
+        public readonly ?string $discountSource = null,
+        public readonly ?string $discountType = null,
+        public readonly float $discountValue = 0,
+        public readonly ?float $originalAmount = null,
+        public readonly ?float $finalAmount = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -37,6 +42,11 @@ class CreateInvoiceDTO
             billing_period_start: isset($data['billing_period_start']) ? Carbon::parse($data['billing_period_start']) : null,
             billing_period_end: isset($data['billing_period_end']) ? Carbon::parse($data['billing_period_end']) : null,
             notes: $data['notes'] ?? null,
+            discountSource: $data['discountSource'] ?? null,
+            discountType: $data['discountType'] ?? null,
+            discountValue: $data['discountValue'] ?? 0,
+            originalAmount: $data['originalAmount'] ?? null,
+            finalAmount: $data['finalAmount'] ?? null,
         );
     }
 }
