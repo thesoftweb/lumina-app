@@ -21,9 +21,35 @@ class ViewEnrollment extends ViewRecord
     {
         return [
             EditAction::make(),
+            $this->createSchoolContractPrintAction(),
+            $this->createSchoolContractPdfAction(),
             $this->createEnrollmentInvoiceAction(),
             $this->createTuitionInvoiceAction(),
         ];
+    }
+
+    /**
+     * Action para imprimir contrato escolar
+     */
+    private function createSchoolContractPrintAction(): Action
+    {
+        return Action::make('printSchoolContract')
+            ->label('Imprimir Contrato')
+            ->icon('heroicon-o-document-text')
+            ->url(fn() => route('enrollments.contract.print', $this->record))
+            ->openUrlInNewTab();
+    }
+
+    /**
+     * Action para baixar contrato escolar em PDF
+     */
+    private function createSchoolContractPdfAction(): Action
+    {
+        return Action::make('pdfSchoolContract')
+            ->label('Baixar Contrato PDF')
+            ->icon('heroicon-o-arrow-down-tray')
+            ->url(fn() => route('enrollments.contract.pdf', $this->record))
+            ->openUrlInNewTab();
     }
 
     /**
