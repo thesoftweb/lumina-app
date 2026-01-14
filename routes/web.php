@@ -2,12 +2,20 @@
 
 use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\SchoolContractController;
+use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Portal Routes
+Route::prefix('portal')->name('portal.')->group(function () {
+    Route::get('login', [PortalController::class, 'login'])->name('login');
+    Route::post('access', [PortalController::class, 'accessPortal'])->name('access');
+    Route::get('student', [PortalController::class, 'showStudent'])->name('show');
 });
 
 // Document Routes
