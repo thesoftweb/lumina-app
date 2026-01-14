@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class AcademicYearResource extends Resource
@@ -22,6 +23,7 @@ class AcademicYearResource extends Resource
     protected static ?string $model = AcademicYear::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
+
     protected static string|UnitEnum|null $navigationGroup = 'Configurações';
 
     protected static ?string $recordTitleAttribute = 'description';
@@ -30,6 +32,10 @@ class AcademicYearResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Ano Escolar';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !Auth::user()->hasRole('teacher');
+    }
 
     public static function form(Schema $schema): Schema
     {

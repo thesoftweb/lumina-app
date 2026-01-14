@@ -15,6 +15,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class ClassroomResource extends Resource
@@ -59,5 +61,22 @@ class ClassroomResource extends Resource
             'view' => ViewClassroom::route('/{record}'),
             'edit' => EditClassroom::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (Auth::user()->hasRole('teacher')) {
+            // Filter classrooms to only those of the current teacher
+            $teacher = Auth::user()->teacher;
+            if ($teacher) {
+                $query->whereHas('teachers', function ($q) use ($teacher) {
+                    $q->where('teacher_id', $teacher->id);
+                });
+            }
+        }
+
+        return $query;
     }
 }

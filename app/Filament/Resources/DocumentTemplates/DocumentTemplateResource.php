@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class DocumentTemplateResource extends Resource
@@ -27,6 +28,11 @@ class DocumentTemplateResource extends Resource
     protected static ?string $modelLabel = 'Modelos de Documentos';
 
     protected static string|UnitEnum|null $navigationGroup = 'Documentos';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !Auth::user()->hasRole('teacher');
+    }
 
     public static function form(Schema $schema): Schema
     {
