@@ -99,9 +99,3 @@ class LessonPlanForm
             ]);
     }
 }
-                    ])
-                    ->default('draft')
-                    ->label('Status'),
-            ]);
-    }
-}
