@@ -86,7 +86,7 @@
                 <a href="#contato" class="text-gray-700 hover:text-azul-principal font-medium">
                     Contato
                 </a>
-                <a href="portal.html" class="text-gray-700 hover:text-azul-principal font-medium">
+                <a href="{{ route('portal.login') }}" class="text-gray-700 hover:text-azul-principal font-medium">
                     Portal
                 </a>
                 <a href="matricula.html"
@@ -121,7 +121,7 @@
                 <a href="#contato" class="block text-gray-700 hover:text-azul-principal font-medium">
                     Contato
                 </a>
-                <a href="portal.html" class="block text-gray-700 hover:text-azul-principal font-medium">
+                <a href="{{ route('portal.login') }}" class="block text-gray-700 hover:text-azul-principal font-medium">
                     Portal
                 </a>
                 <a href="matricula.html"
