@@ -12,7 +12,13 @@ class Teacher extends Model
         'email',
         'phone',
         'document_number',
+        'user_id',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function classrooms()
     {

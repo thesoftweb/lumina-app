@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class InvoiceResource extends Resource
@@ -29,6 +30,10 @@ class InvoiceResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Financeiro';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !Auth::user()->hasRole('teacher');
+    }
 
     public static function form(Schema $schema): Schema
     {

@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class CompanyResource extends Resource
@@ -28,6 +29,11 @@ class CompanyResource extends Resource
     protected static ?string $navigationLabel = 'Empresa';
 
     protected static string|UnitEnum|null $navigationGroup = 'Configurações';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !Auth::user()->hasRole('teacher');
+    }
 
     public static function form(Schema $schema): Schema
     {

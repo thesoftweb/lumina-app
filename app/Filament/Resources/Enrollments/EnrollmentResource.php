@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class EnrollmentResource extends Resource
@@ -29,6 +30,11 @@ class EnrollmentResource extends Resource
     protected static ?string $modelLabel = 'Matrículas';
 
     protected static string|UnitEnum|null $navigationGroup = 'Secretaria';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !Auth::user()->hasRole('teacher');
+    }
 
     public static function form(Schema $schema): Schema
     {
