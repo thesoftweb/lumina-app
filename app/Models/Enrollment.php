@@ -18,6 +18,11 @@ class Enrollment extends Model
         return $this->belongsTo(Student::class);
     }
 
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public function classroom()
     {
         return $this->belongsTo(Classroom::class);

@@ -26,6 +26,9 @@ class InvoiceService
         // Calcula desconto
         $discount = $this->calculateDiscount($enrollment, $amount);
 
+        $enrollment->enrollment_tax_paid = true;
+        $enrollment->save();
+
         return $this->createInvoice(
             new CreateInvoiceDTO(
                 customer_id: $enrollment->student->customer_id,
@@ -93,6 +96,9 @@ class InvoiceService
 
         // Calcula desconto
         $discount = $this->calculateDiscount($enrollment, $amount);
+
+        $enrollment->tuition_generated = true;
+        $enrollment->save();
 
         return $this->createInvoice(
             new CreateInvoiceDTO(
