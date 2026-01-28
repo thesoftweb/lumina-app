@@ -153,6 +153,7 @@
                                 <th class="px-6 py-4 text-left font-bold">Vencimento</th>
                                 <th class="px-6 py-4 text-left font-bold">Valor</th>
                                 <th class="px-6 py-4 text-left font-bold">Status</th>
+                                <th class="px-6 py-4 text-left font-bold">Pagamento</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -187,6 +188,19 @@
                                         {{ $statusText }}
                                     </span>
                                 </td>
+                                <td class="px-6 py-4">
+                                    @if($invoice->asaas_invoice_id)
+                                        <div class="flex gap-2">
+                                            @if($invoice->asaas_invoice_id)
+                                                <a href="#" onclick="showAsaasLinks('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-azul-principal text-white rounded-md text-xs font-bold hover:bg-azul-hover transition">
+                                                    🔗 Pagar
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-gray-500 text-xs">Aguardando processamento</span>
+                                    @endif
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -205,6 +219,70 @@
             </div>
         </div>
     </footer>
+
+    <!-- Modal de Links Asaas -->
+    <div id="asaasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-xl font-bold text-azul-principal mb-4">
+                Opções de Pagamento
+            </h3>
+            <div id="asaasContent" class="space-y-3">
+                <!-- Conteúdo carregado dinamicamente -->
+            </div>
+            <button onclick="closeAsaasModal()" class="w-full mt-6 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-bold hover:bg-gray-400 transition">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Simular links de Asaas (em produção, esses viriam do backend)
+        const invoiceAsaasLinks = {
+            @foreach($invoices as $invoice)
+                @if($invoice->asaas_invoice_id)
+                    '{{ $invoice->id }}': {
+                        reference: '{{ $invoice->reference }}',
+                        boleto: 'https://sandbox.asaas.com/boleto/{{ $invoice->asaas_invoice_id }}',
+                        pix: 'https://sandbox.asaas.com/pix/{{ $invoice->asaas_invoice_id }}',
+                    },
+                @endif
+            @endforeach
+        };
+
+        function showAsaasLinks(invoiceId) {
+            const data = invoiceAsaasLinks[invoiceId];
+            if (!data) {
+                alert('Links de pagamento não disponíveis');
+                return;
+            }
+
+            let content = `
+                <p class="text-gray-600 mb-4"><strong>Referência:</strong> ${data.reference}</p>
+                <div class="space-y-3">
+                    <a href="${data.boleto}" target="_blank" class="block w-full px-4 py-3 bg-azul-principal text-white rounded-lg font-bold text-center hover:bg-azul-hover transition">
+                        📊 Boleto
+                    </a>
+                    <a href="${data.pix}" target="_blank" class="block w-full px-4 py-3 bg-verde-principal text-white rounded-lg font-bold text-center hover:bg-verde-hover transition">
+                        📱 PIX
+                    </a>
+                </div>
+            `;
+
+            document.getElementById('asaasContent').innerHTML = content;
+            document.getElementById('asaasModal').classList.remove('hidden');
+        }
+
+        function closeAsaasModal() {
+            document.getElementById('asaasModal').classList.add('hidden');
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('asaasModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAsaasModal();
+            }
+        });
+    </script>
 </body>
 
 </html>

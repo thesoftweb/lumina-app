@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\SchoolContractController;
 use App\Http\Controllers\PortalController;
@@ -10,6 +11,9 @@ Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Webhook Routes (público, sem CSRF)
+Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])->name('webhook.asaas')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // Portal Routes
 Route::prefix('portal')->name('portal.')->group(function () {

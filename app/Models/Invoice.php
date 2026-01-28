@@ -19,6 +19,7 @@ class Invoice extends Model
         'balance' => 'decimal:2',
         'status' => InvoiceStatus::class,
         'billing_type' => InvoiceType::class,
+        'asaas_synced_at' => 'datetime',
     ];
 
     public function customer()
