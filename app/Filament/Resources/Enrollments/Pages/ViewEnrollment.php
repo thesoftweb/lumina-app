@@ -155,7 +155,7 @@ class ViewEnrollment extends ViewRecord
                         return;
                     }
 
-                    $planValue = (float) $plan->final_value;
+                    $planValue = (float) $plan->base_amount;
                     $createdCount = 0;
 
                     // Create invoices for each month
