@@ -27,6 +27,11 @@ class Invoice extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function enrollment()
+    {
+        return $this->belongsTo(Enrollment::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(InvoicePayment::class);

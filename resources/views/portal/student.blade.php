@@ -193,7 +193,10 @@
                                         <div class="flex gap-2">
                                             @if($invoice->asaas_invoice_id)
                                                 <a href="#" onclick="showAsaasLinks('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-azul-principal text-white rounded-md text-xs font-bold hover:bg-azul-hover transition">
-                                                    🔗 Pagar
+                                                    � Pagar
+                                                </a>
+                                                <a href="#" onclick="viewAsaasInvoice('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-gray-600 text-white rounded-md text-xs font-bold hover:bg-gray-700 transition">
+                                                    📄 Ver
                                                 </a>
                                             @endif
                                         </div>
@@ -242,12 +245,22 @@
                 @if($invoice->asaas_invoice_id)
                     '{{ $invoice->id }}': {
                         reference: '{{ $invoice->reference }}',
-                        boleto: 'https://sandbox.asaas.com/boleto/{{ $invoice->asaas_invoice_id }}',
-                        pix: 'https://sandbox.asaas.com/pix/{{ $invoice->asaas_invoice_id }}',
+                        viewUrl: '{{ $invoice->asaas_invoice_id ? (config('asaas.environment') === 'production' ? 'https://app.asaas.com/i/' : 'https://sandbox.asaas.com/i/') . $invoice->asaas_invoice_id : '' }}',
+                        boleto: 'https://{{ config('asaas.environment') === 'production' ? 'app' : 'sandbox' }}.asaas.com/boleto/{{ $invoice->asaas_invoice_id }}',
+                        pix: 'https://{{ config('asaas.environment') === 'production' ? 'app' : 'sandbox' }}.asaas.com/pix/{{ $invoice->asaas_invoice_id }}',
                     },
                 @endif
             @endforeach
         };
+
+        function viewAsaasInvoice(invoiceId) {
+            const data = invoiceAsaasLinks[invoiceId];
+            if (!data || !data.viewUrl) {
+                alert('Link de visualização não disponível');
+                return;
+            }
+            window.open(data.viewUrl, '_blank');
+        }
 
         function showAsaasLinks(invoiceId) {
             const data = invoiceAsaasLinks[invoiceId];
@@ -259,6 +272,9 @@
             let content = `
                 <p class="text-gray-600 mb-4"><strong>Referência:</strong> ${data.reference}</p>
                 <div class="space-y-3">
+                    <a href="${data.viewUrl}" target="_blank" class="block w-full px-4 py-3 bg-gray-600 text-white rounded-lg font-bold text-center hover:bg-gray-700 transition">
+                        📄 Visualizar Fatura
+                    </a>
                     <a href="${data.boleto}" target="_blank" class="block w-full px-4 py-3 bg-azul-principal text-white rounded-lg font-bold text-center hover:bg-azul-hover transition">
                         📊 Boleto
                     </a>

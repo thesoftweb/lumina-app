@@ -43,7 +43,7 @@ class PortalController extends Controller
         }
 
         // Store document in session
-        session(['customer_document' => $document]);
+        session(['customer_document' => $request->document]);
 
         return redirect()->route('portal.show');
     }

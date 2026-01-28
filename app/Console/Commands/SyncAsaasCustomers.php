@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Customer;
 use App\Services\AsaasService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class SyncAsaasCustomers extends Command
 {

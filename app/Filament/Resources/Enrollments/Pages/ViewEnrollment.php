@@ -171,8 +171,7 @@ class ViewEnrollment extends ViewRecord
                             amount: $planValue,
                             billingPeriodStart: $billingStart,
                             billingPeriodEnd: $billingEnd,
-                            companyId: $companyId,
-                            notes: "Mensalidade gerada automaticamente"
+                            companyId: $companyId
                         );
 
                         $createdCount++;

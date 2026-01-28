@@ -7,7 +7,7 @@ use App\Enums\InvoiceType;
 use App\Models\Enrollment;
 use App\Models\Invoice;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Log;
 
 class InvoiceService
 {
@@ -34,6 +34,7 @@ class InvoiceService
                 customer_id: $enrollment->student->customer_id,
                 amount: $discount['final_amount'],
                 type: InvoiceType::ENROLLMENT,
+                enrollment_id: $enrollment->id,
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
@@ -100,6 +101,9 @@ class InvoiceService
         // Calcula desconto (baseado no plan e enrollment)
         $discount = $this->calculateTuitionDiscount($enrollment, $amount);
 
+        // Construir descrição dinamicamente
+        $description = $this->buildInvoiceDescription($enrollment, $billingPeriodStart);
+
         $enrollment->tuition_generated = true;
         $enrollment->save();
 
@@ -108,14 +112,15 @@ class InvoiceService
                 customer_id: $enrollment->student->customer_id,
                 amount: $discount['base_amount'],  // Sempre o base_amount (valor sem desconto)
                 type: InvoiceType::TUITION,
+                enrollment_id: $enrollment->id,
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
                 account_id: $accountId,
                 billing_period_start: $billingPeriodStart,
                 billing_period_end: $billingPeriodEnd,
-                reference: "TUI-" . $enrollment->id . "-" . $billingPeriodStart->format('Y-m'),
-                notes: $notes ?? "Mensalidade - {$billingPeriodStart->format('m/Y')}",
+                reference: "MENS-" . $enrollment->id . "-" . $billingPeriodStart->format('Y-m'),
+                notes: $notes ?? $description,
                 discountSource: $discount['discount_source'],
                 discountType: $discount['discount_type'],
                 discountValue: $discount['discount_value'],
@@ -152,7 +157,7 @@ class InvoiceService
                 account_id: $accountId,
                 billing_period_start: $billingPeriodStart,
                 billing_period_end: $billingPeriodEnd,
-                reference: "TUI-" . $billingPeriodStart->format('Y-m'),
+                reference: "MENS-" . $billingPeriodStart->format('Y-m'),
                 notes: $notes ?? "Mensalidade - {$billingPeriodStart->format('m/Y')}",
             )
         );
@@ -180,7 +185,7 @@ class InvoiceService
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
-                reference: "SRV-" . now()->format('YmdHis'),
+                reference: "SERV-" . now()->format('YmdHis'),
                 notes: $notes ?? $description,
             )
         );
@@ -237,7 +242,7 @@ class InvoiceService
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
-                reference: $reference ?? "OTH-" . now()->format('YmdHis'),
+                reference: $reference ?? "AVU-" . now()->format('YmdHis'),
                 notes: $notes ?? $description ?? "Outra entrada",
             )
         );
@@ -313,6 +318,7 @@ class InvoiceService
 
         $invoice = Invoice::create([
             'customer_id' => $dto->customer_id,
+            'enrollment_id' => $dto->enrollment_id,
             'company_id' => $dto->company_id,
             'account_id' => $dto->account_id,
             'amount' => $dto->amount,
@@ -343,7 +349,7 @@ class InvoiceService
     {
         $prefix = match ($type) {
             InvoiceType::ENROLLMENT => 'MAT',
-            InvoiceType::TUITION => 'TUI',
+            InvoiceType::TUITION => 'MENS',
             InvoiceType::SERVICE => 'SRV',
             InvoiceType::MATERIAL => 'MATERIAL',
             InvoiceType::OTHER => 'OTH',
@@ -395,5 +401,30 @@ class InvoiceService
         ]);
 
         return $invoice;
+    }
+
+    /**
+     * Construir descrição dinâmica da fatura
+     * Formato: "Cobrança referente a mensalidade do mês de {mês} do aluno(a) {nome}, da turma {turma}"
+     *
+     * @param Enrollment $enrollment
+     * @param Carbon $billingPeriodStart
+     * @return string
+     */
+    private function buildInvoiceDescription(Enrollment $enrollment, Carbon $billingPeriodStart): string
+    {
+        try {
+            $monthName = $billingPeriodStart->locale('pt_BR')->translatedFormat('F');
+
+            return sprintf(
+                'Cobrança referente a mensalidade do mês de %s do aluno(a) %s, da turma %s',
+                ucfirst($monthName),
+                $enrollment->student->name,
+                $enrollment->classroom->name
+            );
+        } catch (\Exception $e) {
+            // Fallback se algo der errado
+            return "Mensalidade - {$billingPeriodStart->format('m/Y')}";
+        }
     }
 }

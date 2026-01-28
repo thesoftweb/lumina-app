@@ -4,13 +4,11 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Invoice;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class AsaasService
 {
-    private Client $client;
     private ?string $apiKey;
     private string $baseUrl;
 
@@ -25,12 +23,6 @@ class AsaasService
         ]);
 
         $this->baseUrl = $endpoints[$environment] ?? 'https://sandbox.asaas.com/api/v3';
-
-        $this->client = new Client([
-            'base_uri' => $this->baseUrl,
-            'timeout' => config('asaas.timeout', 30),
-            'connect_timeout' => config('asaas.connect_timeout', 10),
-        ]);
     }
 
     /**
@@ -47,15 +39,31 @@ class AsaasService
                 return $this->updateCustomer($customer);
             }
 
+            // Procurar cliente existente por CPF no Asaas
+            if ($customer->document) {
+                $existingCustomer = $this->findCustomerByCpf($customer->document);
+                if ($existingCustomer) {
+                    $customer->update(['asaas_customer_id' => $existingCustomer['id']]);
+                    Log::info("Asaas customer found for customer {$customer->id}: {$existingCustomer['id']} (CPF match)");
+                    return $existingCustomer;
+                }
+            }
+
             // Caso contrário, criar novo
             $payload = $this->buildCustomerPayload($customer);
 
-            $response = $this->client->post('/customers', [
-                'headers' => $this->getHeaders(),
-                'json' => $payload,
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->post("{$this->baseUrl}/customers", $payload);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            if ($response->failed()) {
+                $error = $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
+                Log::error("Asaas API error creating customer {$customer->id}: {$error}", $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
 
             if (isset($data['id'])) {
                 $customer->update(['asaas_customer_id' => $data['id']]);
@@ -63,9 +71,51 @@ class AsaasService
                 return $data;
             }
 
+            Log::warning("Asaas response without ID for customer {$customer->id}", $data ?? []);
             return null;
-        } catch (GuzzleException $e) {
-            Log::error("Asaas error creating customer {$customer->id}: " . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error("Asaas error creating customer {$customer->id}: " . $e->getMessage(), [
+                'code' => $e->getCode(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Procurar cliente no Asaas por CPF/CNPJ
+     *
+     * @param string $cpfCnpj
+     * @return array|null
+     */
+    private function findCustomerByCpf(string $cpfCnpj): ?array
+    {
+        try {
+            $cleanDocument = $this->cleanDocument($cpfCnpj);
+
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->get("{$this->baseUrl}/customers", [
+                    'cpfCnpj' => $cleanDocument,
+                    'limit' => 1,
+                ]);
+
+            if ($response->failed()) {
+                Log::warning("Asaas error searching customer by CPF {$cleanDocument}", $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
+            $customers = $data['data'] ?? [];
+
+            if (!empty($customers)) {
+                Log::debug("Asaas customer found by CPF {$cleanDocument}: {$customers[0]['id']}");
+                return $customers[0];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error("Asaas error finding customer by CPF: " . $e->getMessage());
             return null;
         }
     }
@@ -81,16 +131,23 @@ class AsaasService
         try {
             $payload = $this->buildCustomerPayload($customer);
 
-            $response = $this->client->put("/customers/{$customer->asaas_customer_id}", [
-                'headers' => $this->getHeaders(),
-                'json' => $payload,
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->put("{$this->baseUrl}/customers/{$customer->asaas_customer_id}", $payload);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            if ($response->failed()) {
+                Log::error("Asaas error updating customer {$customer->asaas_customer_id}: " . $response->json('message'), $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
             Log::info("Asaas customer updated: {$customer->asaas_customer_id}");
             return $data;
-        } catch (GuzzleException $e) {
-            Log::error("Asaas error updating customer {$customer->asaas_customer_id}: " . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error("Asaas error updating customer {$customer->asaas_customer_id}: " . $e->getMessage(), [
+                'code' => $e->getCode(),
+            ]);
             return null;
         }
     }
@@ -111,12 +168,17 @@ class AsaasService
 
             $payload = $this->buildChargePayload($invoice);
 
-            $response = $this->client->post('/payments', [
-                'headers' => $this->getHeaders(),
-                'json' => $payload,
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->post("{$this->baseUrl}/payments", $payload);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            if ($response->failed()) {
+                Log::error("Asaas error creating charge for invoice {$invoice->id}: " . $response->json('message'), $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
 
             if (isset($data['id'])) {
                 $invoice->update([
@@ -129,8 +191,10 @@ class AsaasService
             }
 
             return null;
-        } catch (GuzzleException $e) {
-            Log::error("Asaas error creating charge for invoice {$invoice->id}: " . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error("Asaas error creating charge for invoice {$invoice->id}: " . $e->getMessage(), [
+                'code' => $e->getCode(),
+            ]);
             return null;
         }
     }
@@ -148,13 +212,18 @@ class AsaasService
                 return null;
             }
 
-            $response = $this->client->get("/payments/{$invoice->asaas_invoice_id}", [
-                'headers' => $this->getHeaders(),
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->get("{$this->baseUrl}/payments/{$invoice->asaas_invoice_id}");
 
-            $data = json_decode($response->getBody()->getContents(), true);
-            return $data;
-        } catch (GuzzleException $e) {
+            if ($response->failed()) {
+                Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $response->json('message'), $response->json() ?? []);
+                return null;
+            }
+
+            return $response->json();
+        } catch (\Exception $e) {
             Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $e->getMessage());
             return null;
         }
@@ -237,14 +306,19 @@ class AsaasService
                 $query['customer'] = $customer->asaas_customer_id;
             }
 
-            $response = $this->client->get('/payments', [
-                'headers' => $this->getHeaders(),
-                'query' => $query,
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->get("{$this->baseUrl}/payments", $query);
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            if ($response->failed()) {
+                Log::error("Asaas error listing payments: " . $response->json('message'), $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
             return $data['data'] ?? [];
-        } catch (GuzzleException $e) {
+        } catch (\Exception $e) {
             Log::error("Asaas error listing payments: " . $e->getMessage());
             return null;
         }
@@ -263,11 +337,17 @@ class AsaasService
                 return false;
             }
 
-            $response = $this->client->delete("/payments/{$invoice->asaas_invoice_id}", [
-                'headers' => $this->getHeaders(),
-            ]);
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->delete("{$this->baseUrl}/payments/{$invoice->asaas_invoice_id}");
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            if ($response->failed()) {
+                Log::error("Asaas error canceling charge {$invoice->asaas_invoice_id}: " . $response->json('message'), $response->json() ?? []);
+                return false;
+            }
+
+            $data = $response->json();
 
             if ($data['deleted'] ?? false) {
                 $invoice->update([
@@ -280,10 +360,32 @@ class AsaasService
             }
 
             return false;
-        } catch (GuzzleException $e) {
+        } catch (\Exception $e) {
             Log::error("Asaas error canceling charge {$invoice->asaas_invoice_id}: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Obter URL de visualização da fatura no Asaas
+     *
+     * @param Invoice $invoice
+     * @return string|null
+     */
+    public function getInvoiceViewUrl(Invoice $invoice): ?string
+    {
+        if (!$invoice->asaas_invoice_id) {
+            return null;
+        }
+
+        $environment = config('asaas.environment', 'sandbox');
+        $baseUrl = $environment === 'production'
+            ? 'https://app.asaas.com/i'
+            : 'https://sandbox.asaas.com/i';
+
+        //codigo errado = pay_fm16jh9v2xo6kjz7, codigo certo fm16jh9v2xo6kjz7
+        $invoiceId = preg_replace('/^pay_/', '', $invoice->asaas_invoice_id);
+        return "{$baseUrl}/{$invoiceId}";
     }
 
     /**
@@ -322,19 +424,34 @@ class AsaasService
      */
     private function buildCustomerPayload(Customer $customer): array
     {
-        return [
+        $payload = [
             'name' => $customer->name,
             'email' => $customer->email,
-            'phone' => $customer->phone,
-            'cpfCnpj' => $this->cleanDocument($customer->document),
-            'addressStreet' => $customer->address,
-            'addressNumber' => $customer->address_number ?? '',
-            'addressComplement' => $customer->address_complement ?? '',
-            'addressCity' => $customer->city?->name ?? '',
-            'addressState' => $customer->city?->state ?? '',
-            'addressPostalCode' => $this->cleanPostalCode($customer->postal_code ?? ''),
+            'phone' => $customer->phone ?? '',
+            'cpfCnpj' => $this->cleanDocument($customer->document ?? ''),
             'externalReference' => (string) $customer->id,
         ];
+
+        // Adicionar endereço apenas se disponível
+        if ($customer->address) {
+            $payload['addressStreet'] = $customer->address;
+            $payload['addressNumber'] = $customer->address_number ?? '0';
+            if ($customer->address_complement) {
+                $payload['addressComplement'] = $customer->address_complement;
+            }
+            if ($customer->city) {
+                $payload['addressCity'] = $customer->city->name ?? '';
+                $payload['addressState'] = $customer->city->state ?? '';
+            }
+            if ($customer->postal_code) {
+                $payload['addressPostalCode'] = $this->cleanPostalCode($customer->postal_code);
+            }
+        }
+
+        // Log do payload para debug
+        Log::debug("Asaas customer payload for customer {$customer->id}", $payload ?? []);
+
+        return $payload;
     }
 
     /**
@@ -345,13 +462,28 @@ class AsaasService
      */
     private function buildChargePayload(Invoice $invoice): array
     {
+        // Usar o valor original se existir desconto, caso contrário usar o valor atual
+        $chargeValue = $invoice->original_amount ?? $invoice->balance ?? $invoice->amount;
+
         $payload = [
             'customer' => $invoice->customer->asaas_customer_id,
-            'description' => $invoice->getDescription(),
-            'value' => (float) $invoice->balance ?: $invoice->amount,
+            'description' => $invoice->notes ?? 'Mensalidade',
+            'value' => $chargeValue,
             'dueDate' => $invoice->due_date->format('Y-m-d'),
+            'billingType' => 'UNDEFINED',
             'externalReference' => (string) $invoice->id,
         ];
+
+        // Se existe desconto, adicionar ao payload
+        if ($invoice->discount_value > 0) {
+            $discountType = strtoupper($invoice->discount_type ?? 'PERCENTAGE');
+
+            $payload['discount'] = [
+                'value' => (float) $invoice->discount_value,
+                'type' => $discountType, // PERCENTAGE ou FIXED
+                'dueDateLimitDays' => 0, // 0 = até a data de vencimento
+            ];
+        }
 
         // Adicionar PIX dinâmico se configurado
         if (config('asaas.invoice.generate_pix', true)) {
@@ -362,6 +494,9 @@ class AsaasService
         if (config('asaas.invoice.notify_customer', true)) {
             $payload['notifyCustomer'] = true;
         }
+
+        // Log do payload para debug
+        Log::debug("Asaas charge payload for invoice {$invoice->id}", $payload ?? []);
 
         return $payload;
     }
@@ -396,8 +531,9 @@ class AsaasService
     private function getHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
+            'User-Agent' => config('app.name') . '/1.0',
+            'access_token' => $this->apiKey,
         ];
     }
 }
