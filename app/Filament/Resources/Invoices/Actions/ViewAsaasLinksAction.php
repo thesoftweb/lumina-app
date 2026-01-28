@@ -30,7 +30,7 @@ class ViewAsaasLinksAction
                 }
 
                 $message = "📋 Links de Pagamento - {$record->reference}\n\n";
-                
+
                 if ($links['boleto_url']) {
                     $message .= "🔗 Boleto: {$links['boleto_url']}\n";
                 }

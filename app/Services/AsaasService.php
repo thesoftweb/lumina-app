@@ -18,12 +18,12 @@ class AsaasService
     {
         $this->apiKey = config('asaas.api_key') ?: '';
         $environment = config('asaas.environment', 'sandbox');
-        
+
         $endpoints = config('asaas.endpoints', [
             'sandbox' => 'https://sandbox.asaas.com/api/v3',
             'production' => 'https://api.asaas.com/api/v3',
         ]);
-        
+
         $this->baseUrl = $endpoints[$environment] ?? 'https://sandbox.asaas.com/api/v3';
 
         $this->client = new Client([

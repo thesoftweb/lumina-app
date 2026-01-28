@@ -44,10 +44,10 @@ return [
     'invoice' => [
         // Gerar PIX dinâmico automaticamente para cada cobrança
         'generate_pix' => env('ASAAS_GENERATE_PIX', true),
-        
+
         // Enviar email de notificação automaticamente
         'notify_customer' => env('ASAAS_NOTIFY_CUSTOMER', true),
-        
+
         // Reemitir boletos vencidos automaticamente
         'auto_reissue_overdue' => env('ASAAS_AUTO_REISSUE_OVERDUE', false),
     ],
@@ -73,7 +73,7 @@ return [
     'sync' => [
         // Sincronizar pagamentos automaticamente
         'payments_enabled' => env('ASAAS_SYNC_PAYMENTS_ENABLED', true),
-        
+
         // Frequência de sincronização em minutos
         'frequency_minutes' => env('ASAAS_SYNC_FREQUENCY', 360), // 6 hours
     ],

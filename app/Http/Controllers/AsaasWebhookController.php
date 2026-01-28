@@ -18,7 +18,7 @@ class AsaasWebhookController extends Controller
 
     /**
      * Handle webhook notifications from Asaas
-     * 
+     *
      * Tipos de eventos suportados:
      * - PAYMENT_RECEIVED: Pagamento recebido
      * - PAYMENT_CONFIRMED: Pagamento confirmado
