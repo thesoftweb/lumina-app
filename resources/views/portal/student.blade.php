@@ -144,7 +144,8 @@
                     </p>
                 </div>
                 @else
-                <div class="overflow-x-auto rounded-lg shadow-sm">
+                <!-- Versão Desktop -->
+                <div class="hidden md:block overflow-x-auto rounded-lg shadow-sm">
                     <table class="w-full bg-white">
                         <thead>
                             <tr class="bg-azul-principal text-white">
@@ -191,14 +192,12 @@
                                 <td class="px-6 py-4">
                                     @if($invoice->asaas_invoice_id)
                                         <div class="flex gap-2">
-                                            @if($invoice->asaas_invoice_id)
-                                                <a href="#" onclick="showAsaasLinks('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-azul-principal text-white rounded-md text-xs font-bold hover:bg-azul-hover transition">
-                                                    � Pagar
-                                                </a>
-                                                <a href="#" onclick="viewAsaasInvoice('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-gray-600 text-white rounded-md text-xs font-bold hover:bg-gray-700 transition">
-                                                    📄 Ver
-                                                </a>
-                                            @endif
+                                            <a href="{{ $invoice->invoice_link }}" target="_blank" class="inline-block px-3 py-1 bg-gray-600 text-white rounded-md text-xs font-bold hover:bg-gray-700 transition">
+                                                📄 Ver
+                                            </a>
+                                            <a href="javascript:void(0)" onclick="showAsaasLinks('{{ $invoice->id }}')" class="inline-block px-3 py-1 bg-azul-principal text-white rounded-md text-xs font-bold hover:bg-azul-hover transition">
+                                                💳 Pagar
+                                            </a>
                                         </div>
                                     @else
                                         <span class="text-gray-500 text-xs">Aguardando processamento</span>
@@ -208,6 +207,64 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Versão Mobile -->
+                <div class="md:hidden space-y-4">
+                    @foreach($invoices as $invoice)
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-verde-secundaria">
+                        <div class="mb-3">
+                            <h3 class="font-bold text-gray-900">
+                                {{ $invoice->enrollment?->student?->name ?? 'N/A' }}
+                            </h3>
+                            <p class="text-sm text-gray-600">
+                                {{ $invoice->description ?? 'Mensalidade' }}
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                            <div>
+                                <p class="text-gray-600">Vencimento:</p>
+                                <p class="font-bold">{{ $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Valor:</p>
+                                <p class="font-bold text-azul-principal">R$ {{ number_format($invoice->amount ?? 0, 2, ',', '.') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            @php
+                            $statusClass = 'bg-gray-200 text-gray-800';
+                            $statusText = 'Pendente';
+
+                            if ($invoice->status === 'paid') {
+                            $statusClass = 'bg-verde-claro text-verde-secundaria';
+                            $statusText = 'Pago';
+                            } elseif ($invoice->status === 'overdue') {
+                            $statusClass = 'bg-red-100 text-red-800';
+                            $statusText = 'Vencido';
+                            }
+                            @endphp
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $statusClass }}">
+                                {{ $statusText }}
+                            </span>
+                        </div>
+
+                        @if($invoice->asaas_invoice_id)
+                            <div class="flex gap-2">
+                                <a href="{{ $invoice->invoice_link }}" target="_blank" class="flex-1 px-3 py-2 bg-gray-600 text-white rounded-md text-xs font-bold text-center hover:bg-gray-700 transition">
+                                    📄 Ver
+                                </a>
+                                <a href="javascript:void(0)" onclick="showAsaasLinks('{{ $invoice->id }}')" class="flex-1 px-3 py-2 bg-azul-principal text-white rounded-md text-xs font-bold text-center hover:bg-azul-hover transition">
+                                    💳 Pagar
+                                </a>
+                            </div>
+                        @else
+                            <p class="text-gray-500 text-xs text-center py-2">Aguardando processamento</p>
+                        @endif
+                    </div>
+                    @endforeach
                 </div>
                 @endif
             </div>
@@ -239,28 +296,18 @@
     </div>
 
     <script>
-        // Simular links de Asaas (em produção, esses viriam do backend)
+        // Dados das faturas carregados do backend
         const invoiceAsaasLinks = {
             @foreach($invoices as $invoice)
                 @if($invoice->asaas_invoice_id)
                     '{{ $invoice->id }}': {
                         reference: '{{ $invoice->reference }}',
-                        viewUrl: '{{ $invoice->asaas_invoice_id ? (config('asaas.environment') === 'production' ? 'https://app.asaas.com/i/' : 'https://sandbox.asaas.com/i/') . $invoice->asaas_invoice_id : '' }}',
-                        boleto: 'https://{{ config('asaas.environment') === 'production' ? 'app' : 'sandbox' }}.asaas.com/boleto/{{ $invoice->asaas_invoice_id }}',
-                        pix: 'https://{{ config('asaas.environment') === 'production' ? 'app' : 'sandbox' }}.asaas.com/pix/{{ $invoice->asaas_invoice_id }}',
+                        invoiceLink: '{{ $invoice->invoice_link ?? '' }}',
+                        qrCode: '{{ $invoice->invoice_qrcode ?? '' }}',
                     },
                 @endif
             @endforeach
         };
-
-        function viewAsaasInvoice(invoiceId) {
-            const data = invoiceAsaasLinks[invoiceId];
-            if (!data || !data.viewUrl) {
-                alert('Link de visualização não disponível');
-                return;
-            }
-            window.open(data.viewUrl, '_blank');
-        }
 
         function showAsaasLinks(invoiceId) {
             const data = invoiceAsaasLinks[invoiceId];
@@ -272,19 +319,51 @@
             let content = `
                 <p class="text-gray-600 mb-4"><strong>Referência:</strong> ${data.reference}</p>
                 <div class="space-y-3">
-                    <a href="${data.viewUrl}" target="_blank" class="block w-full px-4 py-3 bg-gray-600 text-white rounded-lg font-bold text-center hover:bg-gray-700 transition">
+            `;
+
+            // Adicionar botão de visualizar fatura
+            if (data.invoiceLink) {
+                content += `
+                    <a href="${data.invoiceLink}" target="_blank" class="block w-full px-4 py-3 bg-gray-600 text-white rounded-lg font-bold text-center hover:bg-gray-700 transition">
                         📄 Visualizar Fatura
                     </a>
-                    <a href="${data.boleto}" target="_blank" class="block w-full px-4 py-3 bg-azul-principal text-white rounded-lg font-bold text-center hover:bg-azul-hover transition">
-                        📊 Boleto
+                `;
+            }
+
+            // Adicionar botão de QR Code PIX
+            if (data.qrCode) {
+                content += `
+                    <a href="#" onclick="showQRCode('${invoiceId}')" class="block w-full px-4 py-3 bg-verde-principal text-white rounded-lg font-bold text-center hover:bg-verde-hover transition">
+                        📱 Ver QR Code PIX
                     </a>
-                    <a href="${data.pix}" target="_blank" class="block w-full px-4 py-3 bg-verde-principal text-white rounded-lg font-bold text-center hover:bg-verde-hover transition">
-                        📱 PIX
-                    </a>
+                `;
+            }
+
+            content += `
                 </div>
             `;
 
             document.getElementById('asaasContent').innerHTML = content;
+            document.getElementById('asaasModal').classList.remove('hidden');
+        }
+
+        function showQRCode(invoiceId) {
+            const data = invoiceAsaasLinks[invoiceId];
+            if (!data || !data.qrCode) {
+                alert('QR Code não disponível');
+                return;
+            }
+
+            let qrContent = `
+                <div class="text-center">
+                    <p class="text-gray-600 mb-4"><strong>Referência:</strong> ${data.reference}</p>
+                    <p class="text-sm text-gray-600 mb-3">Escaneie o código QR com seu app bancário ou celular:</p>
+                    <img src="data:image/svg+xml;base64,${data.qrCode}" alt="QR Code PIX" class="w-64 h-64 mx-auto mb-4" />
+                    <p class="text-xs text-gray-500">QR Code válido até o vencimento da fatura</p>
+                </div>
+            `;
+
+            document.getElementById('asaasContent').innerHTML = qrContent;
             document.getElementById('asaasModal').classList.remove('hidden');
         }
 
