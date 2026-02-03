@@ -8,6 +8,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\CheckboxColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -16,9 +17,14 @@ class EnrollmentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['student.customer', 'classroom']))
             ->columns([
                 TextColumn::make('student.name')
+                    ->searchable()
                     ->label('Aluno'),
+                TextColumn::make('student.customer.name')
+                    ->label('Responsável')
+                    ->searchable(),
                 TextColumn::make('classroom.name')
                     ->label('Turma'),
                 TextColumn::make('enrollment_date')
@@ -27,23 +33,30 @@ class EnrollmentsTable
                 TextColumn::make('status')
                     ->label('Situação')
                     ->badge(),
+                IconColumn::make('tuition_generated')
+                    ->label('MG')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
+                IconColumn::make('enrollment_tax_paid')
+                    ->label('TM')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
+
             ])
             ->filters([
                 //
             ])
+            ->defaultSort('enrollment_date', 'desc')
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                Action::make('contract_print')
-                    ->label('Imprimir Contrato')
-                    ->icon('heroicon-o-document-text')
-                    ->url(fn($record) => route('enrollments.contract.print', $record))
-                    ->openUrlInNewTab(),
-                Action::make('contract_pdf')
-                    ->label('Baixar PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn($record) => route('enrollments.contract.pdf', $record))
-                    ->openUrlInNewTab(),
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

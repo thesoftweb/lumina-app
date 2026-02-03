@@ -7,7 +7,7 @@ use App\Enums\InvoiceType;
 use App\Models\Enrollment;
 use App\Models\Invoice;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Log;
 
 class InvoiceService
 {
@@ -26,11 +26,15 @@ class InvoiceService
         // Calcula desconto
         $discount = $this->calculateDiscount($enrollment, $amount);
 
+        $enrollment->enrollment_tax_paid = true;
+        $enrollment->save();
+
         return $this->createInvoice(
             new CreateInvoiceDTO(
                 customer_id: $enrollment->student->customer_id,
                 amount: $discount['final_amount'],
                 type: InvoiceType::ENROLLMENT,
+                enrollment_id: $enrollment->id,
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
@@ -75,6 +79,9 @@ class InvoiceService
     /**
      * Gera uma fatura de mensalidade baseada em um Enrollment
      * A data de vencimento é fixa no dia_of_payment definido no enrollment
+     *
+     * O amount armazenado é sempre o base_amount do plan (valor sem desconto)
+     * O desconto é válido até a due_date. Após a due_date, cobra-se o base_amount
      */
     public function createTuitionInvoiceFromEnrollment(
         Enrollment $enrollment,
@@ -91,22 +98,29 @@ class InvoiceService
         $paymentDay = $enrollment->day_of_payment ?? 5; // Default: 5 se não definido
         $dueDate = $billingPeriodStart->copy()->setDay(min($paymentDay, $billingPeriodStart->daysInMonth));
 
-        // Calcula desconto
-        $discount = $this->calculateDiscount($enrollment, $amount);
+        // Calcula desconto (baseado no plan e enrollment)
+        $discount = $this->calculateTuitionDiscount($enrollment, $amount);
+
+        // Construir descrição dinamicamente
+        $description = $this->buildInvoiceDescription($enrollment, $billingPeriodStart);
+
+        $enrollment->tuition_generated = true;
+        $enrollment->save();
 
         return $this->createInvoice(
             new CreateInvoiceDTO(
                 customer_id: $enrollment->student->customer_id,
-                amount: $discount['final_amount'],
+                amount: $discount['base_amount'],  // Sempre o base_amount (valor sem desconto)
                 type: InvoiceType::TUITION,
+                enrollment_id: $enrollment->id,
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
                 account_id: $accountId,
                 billing_period_start: $billingPeriodStart,
                 billing_period_end: $billingPeriodEnd,
-                reference: "TUI-" . $enrollment->id . "-" . $billingPeriodStart->format('Y-m'),
-                notes: $notes ?? "Mensalidade - {$billingPeriodStart->format('m/Y')}",
+                reference: "MENS-" . $enrollment->id . "-" . $billingPeriodStart->format('Y-m'),
+                notes: $notes ?? $description,
                 discountSource: $discount['discount_source'],
                 discountType: $discount['discount_type'],
                 discountValue: $discount['discount_value'],
@@ -143,7 +157,7 @@ class InvoiceService
                 account_id: $accountId,
                 billing_period_start: $billingPeriodStart,
                 billing_period_end: $billingPeriodEnd,
-                reference: "TUI-" . $billingPeriodStart->format('Y-m'),
+                reference: "MENS-" . $billingPeriodStart->format('Y-m'),
                 notes: $notes ?? "Mensalidade - {$billingPeriodStart->format('m/Y')}",
             )
         );
@@ -171,7 +185,7 @@ class InvoiceService
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
-                reference: "SRV-" . now()->format('YmdHis'),
+                reference: "SERV-" . now()->format('YmdHis'),
                 notes: $notes ?? $description,
             )
         );
@@ -228,50 +242,68 @@ class InvoiceService
                 issue_date: $issueDate,
                 due_date: $dueDate,
                 company_id: $companyId,
-                reference: $reference ?? "OTH-" . now()->format('YmdHis'),
+                reference: $reference ?? "AVU-" . now()->format('YmdHis'),
                 notes: $notes ?? $description ?? "Outra entrada",
             )
         );
     }
 
     /**
-     * Calcula desconto baseado na enrollment ou plan
-     * Retorna array com: [discountValue, discountType, discountSource, originalAmount, finalAmount]
+     * Calcula desconto para mensalidades (tuition)
+     * Regra: Se não houver desconto customizado, usa o desconto do plano
+     * Se houver desconto customizado, usa o desconto da enrollment
+     *
+     * Armazena sempre:
+     * - base_amount: valor base do plan (sem desconto)
+     * - final_amount: valor com desconto aplicado
+     * - discount_value: percentual ou valor do desconto
+     * - discount_type: 'percentage' ou 'fixed'
+     * - discount_source: 'plan' ou 'enrollment_custom'
      */
-    private function calculateDiscount(Enrollment $enrollment, float $baseAmount): array
+    private function calculateTuitionDiscount(Enrollment $enrollment, float $baseAmount): array
     {
         // Verifica se há desconto personalizado na enrollment
         if ($enrollment->use_custom_discount && $enrollment->discount_value > 0) {
+            // Desconto customizado da enrollment
             $discountValue = $enrollment->discount_value;
-            $discountType = $enrollment->discount_type;
+            $discountType = $enrollment->discount_type; // 'percentage' ou 'fixed'
             $discountSource = 'enrollment_custom';
+        } elseif ($enrollment->plan && $enrollment->plan->has_discount && $enrollment->plan->discount_type !== 'none' && $enrollment->plan->discount_value > 0) {
+            // Desconto do plano
+            $discountValue = $enrollment->plan->discount_value;
+            $discountType = $enrollment->plan->discount_type; // 'percentage' ou 'fixed'
+            $discountSource = 'plan';
         } else {
-            // Sem desconto (Plan não tem campos de desconto neste projeto)
+            // Sem desconto
             return [
+                'base_amount' => $baseAmount,
+                'final_amount' => $baseAmount,
                 'discount_value' => 0,
                 'discount_type' => null,
-                'discount_source' => 'plan',
+                'discount_source' => null,
                 'original_amount' => $baseAmount,
-                'final_amount' => $baseAmount,
             ];
         }
 
-        // Calcula o valor final com desconto
+        // Calcula o valor final com desconto aplicado
         $finalAmount = $baseAmount;
         if ($discountType === 'percentage') {
+            // Desconto em percentual
             $finalAmount = $baseAmount * (1 - ($discountValue / 100));
-        } else {
+        } elseif ($discountType === 'fixed') {
+            // Desconto em valor fixo
             $finalAmount = $baseAmount - $discountValue;
         }
 
         $finalAmount = max(0, $finalAmount); // Não pode ser negativo
 
         return [
-            'discount_value' => $discountValue,
-            'discount_type' => $discountType,
-            'discount_source' => $discountSource,
+            'base_amount' => $baseAmount,           // Valor base do plan (sem desconto)
+            'final_amount' => $finalAmount,         // Valor com desconto aplicado
+            'discount_value' => $discountValue,     // Percentual ou valor do desconto
+            'discount_type' => $discountType,       // 'percentage' ou 'fixed'
+            'discount_source' => $discountSource,   // 'plan' ou 'enrollment_custom'
             'original_amount' => $baseAmount,
-            'final_amount' => $finalAmount,
         ];
     }
 
@@ -286,6 +318,7 @@ class InvoiceService
 
         $invoice = Invoice::create([
             'customer_id' => $dto->customer_id,
+            'enrollment_id' => $dto->enrollment_id,
             'company_id' => $dto->company_id,
             'account_id' => $dto->account_id,
             'amount' => $dto->amount,
@@ -316,7 +349,7 @@ class InvoiceService
     {
         $prefix = match ($type) {
             InvoiceType::ENROLLMENT => 'MAT',
-            InvoiceType::TUITION => 'TUI',
+            InvoiceType::TUITION => 'MENS',
             InvoiceType::SERVICE => 'SRV',
             InvoiceType::MATERIAL => 'MATERIAL',
             InvoiceType::OTHER => 'OTH',
@@ -368,5 +401,30 @@ class InvoiceService
         ]);
 
         return $invoice;
+    }
+
+    /**
+     * Construir descrição dinâmica da fatura
+     * Formato: "Cobrança referente a mensalidade do mês de {mês} do aluno(a) {nome}, da turma {turma}"
+     *
+     * @param Enrollment $enrollment
+     * @param Carbon $billingPeriodStart
+     * @return string
+     */
+    private function buildInvoiceDescription(Enrollment $enrollment, Carbon $billingPeriodStart): string
+    {
+        try {
+            $monthName = $billingPeriodStart->locale('pt_BR')->translatedFormat('F');
+
+            return sprintf(
+                'Cobrança referente a mensalidade do mês de %s do aluno(a) %s, da turma %s',
+                ucfirst($monthName),
+                $enrollment->student->name,
+                $enrollment->classroom->name
+            );
+        } catch (\Exception $e) {
+            // Fallback se algo der errado
+            return "Mensalidade - {$billingPeriodStart->format('m/Y')}";
+        }
     }
 }

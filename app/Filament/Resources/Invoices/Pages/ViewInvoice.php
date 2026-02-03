@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Invoices\Pages;
 
+use App\Filament\Resources\Invoices\Actions\GenerateAsaasChargeAction;
+use App\Filament\Resources\Invoices\Actions\SyncAsaasPaymentAction;
+use App\Filament\Resources\Invoices\Actions\ViewAsaasLinksAction;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
@@ -14,6 +17,9 @@ class ViewInvoice extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            GenerateAsaasChargeAction::make(),
+            SyncAsaasPaymentAction::make(),
+            ViewAsaasLinksAction::make(),
             Action::make('back')
                 ->label('Voltar')
                 ->icon('heroicon-o-arrow-left')

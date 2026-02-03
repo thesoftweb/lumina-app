@@ -155,7 +155,7 @@ class ViewEnrollment extends ViewRecord
                         return;
                     }
 
-                    $planValue = (float) $plan->final_value;
+                    $planValue = (float) $plan->base_amount;
                     $createdCount = 0;
 
                     // Create invoices for each month
@@ -171,8 +171,7 @@ class ViewEnrollment extends ViewRecord
                             amount: $planValue,
                             billingPeriodStart: $billingStart,
                             billingPeriodEnd: $billingEnd,
-                            companyId: $companyId,
-                            notes: "Mensalidade gerada automaticamente"
+                            companyId: $companyId
                         );
 
                         $createdCount++;

@@ -48,7 +48,9 @@ class PaymentService
             throw new \Exception('Valor de pagamento deve ser maior que zero');
         }
 
-        if ($amount > $invoice->balance) {
+        $balancePending = $invoice->balance ?? $invoice->amount;
+
+        if ($amount > $balancePending) {
             throw new \Exception('Valor do pagamento não pode ser maior que o saldo pendente');
         }
 
@@ -60,7 +62,7 @@ class PaymentService
             notes: $notes ?? "Pagamento parcial"
         );
 
-        $newBalance = $invoice->balance - $amount;
+        $newBalance = $balancePending - $amount;
 
         $status = $newBalance == 0 ? InvoiceStatus::Paid : InvoiceStatus::Partial;
 

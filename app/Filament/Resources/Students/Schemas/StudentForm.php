@@ -42,7 +42,7 @@ class StudentForm
                                     ->preload()
                                     ->live()
                                     ->options(
-                                        State::all()->pluck('name', 'code')
+                                        State::query()->orderBy('name')->pluck('name', 'code')
                                     )->required()
                                     ->afterStateUpdated(function (callable $set) {
                                         $set('city_of_birth', null);

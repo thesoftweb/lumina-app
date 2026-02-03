@@ -24,10 +24,10 @@ class PortalController extends Controller
         ]);
 
         // Remove formatting from document
-        $document = preg_replace('/\D/', '', $request->document);
+        // $document = preg_replace('/\D/', '', $request->document);
 
         // Search customer by document
-        $customer = Customer::where('document', $document)->first();
+        $customer = Customer::where('document', $request->document)->first();
 
         if (!$customer) {
             return back()->withErrors(['document' => 'Nenhum cadastro foi localizado com o Documento informado.'])->withInput();
@@ -43,7 +43,7 @@ class PortalController extends Controller
         }
 
         // Store document in session
-        session(['customer_document' => $document]);
+        session(['customer_document' => $request->document]);
 
         return redirect()->route('portal.show');
     }

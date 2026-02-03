@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\AcademicYear;
 use App\Models\ClassroomPlan;
 use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -103,6 +104,25 @@ class EnrollmentForm
                                     ->label('Motivo do Desconto')
                                     ->rows(3)
                                     ->visible(fn(callable $get) => $get('use_custom_discount')),
+                            ]),
+                    ]),
+                Section::make()
+                    ->heading('Documentação Entregue')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                Checkbox::make('doc_historical_delivered')
+                                    ->label('Histórico Escolar'),
+                                Checkbox::make('doc_photo_3x4_delivered')
+                                    ->label('Foto 3x4'),
+                                Checkbox::make('doc_declaration_delivered')
+                                    ->label('Declaração'),
+                                Checkbox::make('doc_residence_proof_delivered')
+                                    ->label('Comprovante de Residência'),
+                                Checkbox::make('doc_student_document_delivered')
+                                    ->label('Documento Aluno'),
+                                Checkbox::make('doc_responsible_document_delivered')
+                                    ->label('Documento Responsável'),
                             ]),
                     ]),
             ]);

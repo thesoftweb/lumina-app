@@ -45,7 +45,7 @@ class TeacherUserSeeder extends Seeder
 
         // Create an admin user for testing
         $adminUser = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@admin.com'],
             [
                 'name' => 'Admin',
                 'password' => bcrypt('password123'),
