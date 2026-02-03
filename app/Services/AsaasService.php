@@ -241,6 +241,62 @@ class AsaasService
     }
 
     /**
+     * Obter QR Code PIX do Asaas
+     *
+     * @param Invoice $invoice
+     * @return array|null
+     */
+    public function getPixQrCode(Invoice $invoice): ?array
+    {
+        try {
+            if (!$invoice->asaas_invoice_id) {
+                Log::warning("Invoice {$invoice->id} doesn't have asaas_invoice_id");
+                return null;
+            }
+
+            // $paymentId = preg_replace('/^pay_/', '', $invoice->asaas_invoice_id);
+
+            Log::info("Consultando QR Code PIX no Asaas", [
+                'invoice_id' => $invoice->id,
+                'payment_id' => $invoice->asaas_invoice_id,
+            ]);
+
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(config('asaas.timeout', 30))
+                ->connectTimeout(config('asaas.connect_timeout', 10))
+                ->get("{$this->baseUrl}/payments/{$invoice->asaas_invoice_id}/pixQrCode");
+
+            if ($response->failed()) {
+                $error = $response->json('message') ?? 'Unknown error';
+                Log::error("Asaas error getting PIX QR Code for invoice {$invoice->id}: {$error}", $response->json() ?? []);
+                return null;
+            }
+
+            $data = $response->json();
+
+            Log::info("QR Code PIX obtido com sucesso", [
+                'invoice_id' => $invoice->id,
+                'has_encoded_image' => !empty($data['encodedImage'] ?? null),
+                'has_payload' => !empty($data['payload'] ?? null),
+                'expiration_date' => $data['expirationDate'] ?? null,
+            ]);
+
+            return [
+                'encodedImage' => $data['encodedImage'] ?? null,
+                'payload' => $data['payload'] ?? null,
+                'expirationDate' => $data['expirationDate'] ?? null,
+                'description' => $data['description'] ?? $invoice->description ?? 'Pagamento',
+            ];
+        } catch (\Exception $e) {
+            Log::error("Asaas error getting PIX QR Code for invoice {$invoice->id}: " . $e->getMessage(), [
+                'code' => $e->getCode(),
+                'exception' => get_class($e),
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Obter detalhes do pagamento no Asaas
      *
      * @param Invoice $invoice

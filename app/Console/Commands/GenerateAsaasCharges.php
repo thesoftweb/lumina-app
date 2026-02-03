@@ -50,6 +50,15 @@ class GenerateAsaasCharges extends Command
 
         $query = Invoice::query();
 
+        // Filtrar apenas invoices do mês corrente (vencimento)
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        $query->whereMonth('due_date', $currentMonth)
+              ->whereYear('due_date', $currentYear);
+
+        $this->info("📅 Filtrando apenas invoices do mês corrente: " . now()->format('m/Y'));
+
         // Filtrar por status (aberto ou parcial)
         $query->whereIn('status', [
             InvoiceStatus::Open->value,

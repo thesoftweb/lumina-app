@@ -4,6 +4,7 @@ use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\SchoolContractController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\PortalPixQrCodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
@@ -20,6 +21,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('login', [PortalController::class, 'login'])->name('login');
     Route::post('access', [PortalController::class, 'accessPortal'])->name('access');
     Route::get('student', [PortalController::class, 'showStudent'])->name('show');
+
+    // PIX QR Code Routes
+    Route::get('invoices/{invoice}/pix-qrcode', [PortalPixQrCodeController::class, 'show'])->name('invoices.pix-qrcode');
 });
 
 // Document Routes

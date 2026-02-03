@@ -24,6 +24,7 @@ class Kernel extends ConsoleKernel
             });
 
         // Gerar cobranças mensais - 1º dia do mês às 08:00
+        // Gera automaticamente cobranças para todas as invoices do mês corrente
         $schedule->command('asaas:generate-charges --limit=1000')
             ->monthlyOn(1, '08:00')
             ->withoutOverlapping(30)

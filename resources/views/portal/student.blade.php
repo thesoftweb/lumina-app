@@ -50,15 +50,19 @@
 <body class="bg-gray-50">
     <!-- HEADER -->
     <header class="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-20">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between h-24">
             <a href="/" class="flex items-center">
+                <!-- Logo para Desktop -->
                 <img src="{{ asset('assets/images/positive.png') }}" alt="Centro Educacional Criança Inteligente"
-                    class="h-20" />
+                    class="hidden md:block h-20" />
+                <!-- Logo para Mobile -->
+                <img src="{{ asset('assets/images/logo_mobile.png') }}" alt="Centro Educacional Criança Inteligente"
+                    class="md:hidden h-16" />
             </a>
 
             <div class="flex items-center gap-4">
-                <span class="text-gray-700 font-medium">Portal do Aluno</span>
-                <a href="{{ route('portal.login') }}" class="text-azul-principal hover:text-azul-hover font-bold transition">
+                <span class="text-gray-700 font-medium text-sm md:text-base">Portal do Aluno</span>
+                <a href="{{ route('portal.login') }}" class="text-azul-principal hover:text-azul-hover font-bold transition text-sm md:text-base">
                     Sair
                 </a>
             </div>
@@ -303,7 +307,7 @@
                     '{{ $invoice->id }}': {
                         reference: '{{ $invoice->reference }}',
                         invoiceLink: '{{ $invoice->invoice_link ?? '' }}',
-                        qrCode: '{{ $invoice->invoice_qrcode ?? '' }}',
+                        pixQrCodeUrl: '{{ route("portal.invoices.pix-qrcode", $invoice->id) }}',
                     },
                 @endif
             @endforeach
@@ -331,13 +335,11 @@
             }
 
             // Adicionar botão de QR Code PIX
-            if (data.qrCode) {
-                content += `
-                    <a href="#" onclick="showQRCode('${invoiceId}')" class="block w-full px-4 py-3 bg-verde-principal text-white rounded-lg font-bold text-center hover:bg-verde-hover transition">
-                        📱 Ver QR Code PIX
-                    </a>
-                `;
-            }
+            content += `
+                <a href="javascript:void(0)" onclick="loadPixQrCode('${invoiceId}')" class="block w-full px-4 py-3 bg-verde-principal text-white rounded-lg font-bold text-center hover:bg-verde-hover transition">
+                    📱 Pagar com PIX
+                </a>
+            `;
 
             content += `
                 </div>
@@ -347,24 +349,90 @@
             document.getElementById('asaasModal').classList.remove('hidden');
         }
 
-        function showQRCode(invoiceId) {
+        async function loadPixQrCode(invoiceId) {
             const data = invoiceAsaasLinks[invoiceId];
-            if (!data || !data.qrCode) {
+            if (!data) {
                 alert('QR Code não disponível');
                 return;
             }
 
+            // Mostrar carregamento
+            document.getElementById('asaasContent').innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-gray-600 mb-4">Carregando QR Code PIX...</p>
+                    <div class="inline-block animate-spin">
+                        <div class="border-4 border-gray-300 border-t-azul-principal rounded-full w-12 h-12"></div>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(data.pixQrCodeUrl);
+                const result = await response.json();
+
+                if (!result.success) {
+                    alert(result.message || 'Erro ao carregar QR Code');
+                    closeAsaasModal();
+                    return;
+                }
+
+                showQRCode(result.data);
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao carregar QR Code. Tente novamente.');
+                closeAsaasModal();
+            }
+        }
+
+        function showQRCode(data) {
             let qrContent = `
                 <div class="text-center">
-                    <p class="text-gray-600 mb-4"><strong>Referência:</strong> ${data.reference}</p>
-                    <p class="text-sm text-gray-600 mb-3">Escaneie o código QR com seu app bancário ou celular:</p>
-                    <img src="data:image/svg+xml;base64,${data.qrCode}" alt="QR Code PIX" class="w-64 h-64 mx-auto mb-4" />
-                    <p class="text-xs text-gray-500">QR Code válido até o vencimento da fatura</p>
+                    <h4 class="text-lg font-bold text-azul-principal mb-2">${data.reference}</h4>
+                    <p class="text-gray-600 mb-1"><strong>${data.description}</strong></p>
+                    <p class="text-sm text-gray-500 mb-2">Valor: R$ ${data.amount}</p>
+                    <p class="text-xs text-gray-500 mb-4">Vencimento: ${data.dueDate}</p>
+
+                    <p class="text-sm text-gray-600 mb-4">Escaneie o código QR com seu app bancário:</p>
+                    <img src="data:image/png;base64,${data.encodedImage}" alt="QR Code PIX" class="w-64 h-64 mx-auto mb-4" />
+
+                    <div class="bg-gray-100 p-4 rounded-lg mb-4 text-left">
+                        <p class="text-xs text-gray-600 mb-2"><strong>Ou copie o código PIX:</strong></p>
+                        <div class="flex items-center gap-2">
+                            <input type="text" value="${data.payload}" id="pixPayloadInput" readonly class="flex-1 px-3 py-2 text-xs border rounded bg-white" />
+                            <button onclick="copyPixPayload()" class="px-3 py-2 bg-azul-principal text-white rounded font-bold text-xs hover:bg-azul-hover transition">
+                                📋 Copiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-500">QR Code válido até: ${data.expirationDate}</p>
                 </div>
             `;
 
             document.getElementById('asaasContent').innerHTML = qrContent;
-            document.getElementById('asaasModal').classList.remove('hidden');
+        }
+
+        function copyPixPayload() {
+            const input = document.getElementById('pixPayloadInput');
+            if (!input) {
+                alert('Erro ao copiar código');
+                return;
+            }
+
+            input.select();
+            input.setSelectionRange(0, 99999);
+
+            try {
+                document.execCommand('copy');
+                alert('Código PIX copiado com sucesso!');
+            } catch (err) {
+                // Fallback para Clipboard API
+                navigator.clipboard.writeText(input.value).then(() => {
+                    alert('Código PIX copiado com sucesso!');
+                }).catch(() => {
+                    alert('Erro ao copiar código');
+                });
+            }
         }
 
         function closeAsaasModal() {
