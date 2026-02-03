@@ -168,32 +168,73 @@ class AsaasService
 
             $payload = $this->buildChargePayload($invoice);
 
+            Log::info("Criando cobrança no Asaas para fatura {$invoice->id}", [
+                'invoice_id' => $invoice->id,
+                'customer_id' => $invoice->customer_id,
+                'amount' => $invoice->amount,
+                'reference' => $invoice->reference,
+            ]);
+
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(config('asaas.timeout', 30))
                 ->connectTimeout(config('asaas.connect_timeout', 10))
                 ->post("{$this->baseUrl}/payments", $payload);
 
             if ($response->failed()) {
-                Log::error("Asaas error creating charge for invoice {$invoice->id}: " . $response->json('message'), $response->json() ?? []);
+                $error = $response->json('message') ?? 'Unknown error';
+                Log::error("Asaas error creating charge for invoice {$invoice->id}: {$error}", $response->json() ?? []);
                 return null;
             }
 
             $data = $response->json();
 
+            Log::info("Resposta completa do Asaas ao criar cobrança", [
+                'invoice_id' => $invoice->id,
+                'asaas_response' => $data,
+            ]);
+
             if (isset($data['id'])) {
+                // Extrair link e QR code da resposta
+                $invoiceLink = $data['invoiceUrl'] ?? null;
+                $pixQrCode = $data['pixQrCode']['qrCode'] ?? null;
+                $pixUrl = $data['pixQrCode']['url'] ?? null;
+
+                Log::info("Links extraídos do Asaas", [
+                    'invoice_id' => $invoice->id,
+                    'asaas_id' => $data['id'],
+                    'invoice_link' => $invoiceLink,
+                    'pix_qr_code_exists' => !empty($pixQrCode),
+                    'pix_url' => $pixUrl,
+                ]);
+
                 $invoice->update([
                     'asaas_invoice_id' => $data['id'],
                     'asaas_sync_status' => 'pending',
+                    'invoice_link' => $invoiceLink,
+                    'invoice_qrcode' => $pixQrCode, // Salvar QR code PIX
                 ]);
 
-                Log::info("Asaas charge created for invoice {$invoice->id}: {$data['id']}");
+                Log::info("Cobrança criada com sucesso no Asaas", [
+                    'invoice_id' => $invoice->id,
+                    'asaas_invoice_id' => $data['id'],
+                    'invoice_link_saved' => !empty($invoiceLink),
+                    'qrcode_saved' => !empty($pixQrCode),
+                ]);
+
                 return $data;
             }
+
+            Log::warning("Resposta do Asaas sem ID de cobrança", [
+                'invoice_id' => $invoice->id,
+                'response' => $data,
+            ]);
 
             return null;
         } catch (\Exception $e) {
             Log::error("Asaas error creating charge for invoice {$invoice->id}: " . $e->getMessage(), [
                 'code' => $e->getCode(),
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
             ]);
             return null;
         }
@@ -465,12 +506,15 @@ class AsaasService
         // Usar o valor original se existir desconto, caso contrário usar o valor atual
         $chargeValue = $invoice->original_amount ?? $invoice->balance ?? $invoice->amount;
 
+        // Definir tipo de cobrança - usar PIX para gerar QR code dinâmico
+        $billingType = config('asaas.invoice.billing_type', 'PIX');
+
         $payload = [
             'customer' => $invoice->customer->asaas_customer_id,
             'description' => $invoice->notes ?? 'Mensalidade',
             'value' => $chargeValue,
             'dueDate' => $invoice->due_date->format('Y-m-d'),
-            'billingType' => 'UNDEFINED',
+            'billingType' => $billingType,
             'externalReference' => (string) $invoice->id,
         ];
 

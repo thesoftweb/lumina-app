@@ -45,6 +45,9 @@ return [
         // Gerar PIX dinâmico automaticamente para cada cobrança
         'generate_pix' => env('ASAAS_GENERATE_PIX', true),
 
+        // Tipo de cobrança: PIX, BOLETO, ou CREDIT_CARD
+        'billing_type' => env('ASAAS_BILLING_TYPE', 'PIX'),
+
         // Enviar email de notificação automaticamente
         'notify_customer' => env('ASAAS_NOTIFY_CUSTOMER', true),
 
