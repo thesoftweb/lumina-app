@@ -367,7 +367,7 @@ class AsaasService
 
                 $paymentService->payFullInvoice(
                     $invoice,
-                    'asaas',
+                    'online_payment',
                     $paymentReference,
                     "Pagamento sincronizado do Asaas em {$paymentDate}"
                 );

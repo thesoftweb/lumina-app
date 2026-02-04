@@ -14,7 +14,8 @@ Route::get('/', function () {
 });
 
 // Webhook Routes (público, sem CSRF)
-Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])->name('webhook.asaas')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])
+    ->name('webhook.asaas');
 
 // Portal Routes
 Route::prefix('portal')->name('portal.')->group(function () {
