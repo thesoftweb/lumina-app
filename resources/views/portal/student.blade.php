@@ -156,7 +156,9 @@
                                 <th class="px-6 py-4 text-left font-bold">Aluno</th>
                                 <th class="px-6 py-4 text-left font-bold">Descrição</th>
                                 <th class="px-6 py-4 text-left font-bold">Vencimento</th>
-                                <th class="px-6 py-4 text-left font-bold">Valor</th>
+                                <th class="px-6 py-4 text-left font-bold">Valor Original</th>
+                                <th class="px-6 py-4 text-left font-bold">Desconto</th>
+                                <th class="px-6 py-4 text-left font-bold">Valor Final</th>
                                 <th class="px-6 py-4 text-left font-bold">Status</th>
                                 <th class="px-6 py-4 text-left font-bold">Pagamento</th>
                             </tr>
@@ -173,8 +175,28 @@
                                 <td class="px-6 py-4 text-gray-700">
                                     {{ $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A' }}
                                 </td>
+                                <td class="px-6 py-4 text-gray-700">
+                                    @if($invoice->original_amount)
+                                        R$ {{ number_format($invoice->original_amount, 2, ',', '.') }}
+                                    @else
+                                        R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 text-gray-700">
+                                    @if($invoice->discount_value && $invoice->discount_value > 0)
+                                        <span class="text-verde-principal font-bold">
+                                            @if($invoice->discount_type === 'percentage')
+                                                -{{ number_format($invoice->discount_value, 2, ',', '.') }}%
+                                            @else
+                                                -R$ {{ number_format($invoice->discount_value, 2, ',', '.') }}
+                                            @endif
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 font-bold text-azul-principal">
-                                    R$ {{ number_format($invoice->amount ?? 0, 2, ',', '.') }}
+                                    R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}
                                 </td>
                                 <td class="px-6 py-4">
                                     @php
@@ -228,16 +250,43 @@
                             </p>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                        <div class="grid grid-cols-3 gap-2 mb-4 text-xs">
                             <div>
                                 <p class="text-gray-600">Vencimento:</p>
                                 <p class="font-bold">{{ $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A' }}</p>
                             </div>
                             <div>
-                                <p class="text-gray-600">Valor:</p>
-                                <p class="font-bold text-azul-principal">R$ {{ number_format($invoice->amount ?? 0, 2, ',', '.') }}</p>
+                                <p class="text-gray-600">Valor Original:</p>
+                                <p class="font-bold text-gray-700">
+                                    @if($invoice->original_amount)
+                                        R$ {{ number_format($invoice->original_amount, 2, ',', '.') }}
+                                    @else
+                                        R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}
+                                    @endif
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Valor Final:</p>
+                                <p class="font-bold text-azul-principal">R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}</p>
                             </div>
                         </div>
+
+                        @if($invoice->discount_value && $invoice->discount_value > 0)
+                        <div class="bg-verde-claro p-3 rounded-lg mb-4">
+                            <p class="text-xs text-verde-principal font-bold">
+                                Desconto:
+                                @if($invoice->discount_type === 'percentage')
+                                    -{{ number_format($invoice->discount_value, 2, ',', '.') }}% 
+                                    @php
+                                        $discountAmount = ($invoice->original_amount ?? 0) * ($invoice->discount_value / 100);
+                                    @endphp
+                                    (R$ {{ number_format($discountAmount, 2, ',', '.') }})
+                                @else
+                                    -R$ {{ number_format($invoice->discount_value, 2, ',', '.') }}
+                                @endif
+                            </p>
+                        </div>
+                        @endif
 
                         <div class="mb-4">
                             @php
