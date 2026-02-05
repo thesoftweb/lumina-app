@@ -19,6 +19,13 @@ class Customer extends Model
         'city_id',
         'postal_code',
         'asaas_customer_id',
+        'asaas_sync_status',
+        'asaas_sync_error',
+        'asaas_synced_at',
+    ];
+
+    protected $casts = [
+        'asaas_synced_at' => 'datetime',
     ];
 
     public function city()

@@ -43,7 +43,11 @@ class AsaasService
             if ($customer->document) {
                 $existingCustomer = $this->findCustomerByCpf($customer->document);
                 if ($existingCustomer) {
-                    $customer->update(['asaas_customer_id' => $existingCustomer['id']]);
+                    $customer->update([
+                        'asaas_customer_id' => $existingCustomer['id'],
+                        'asaas_sync_status' => 'synced',
+                        'asaas_synced_at' => now(),
+                    ]);
                     Log::info("Asaas customer found for customer {$customer->id}: {$existingCustomer['id']} (CPF match)");
                     return $existingCustomer;
                 }
@@ -60,23 +64,49 @@ class AsaasService
             if ($response->failed()) {
                 $error = $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
                 Log::error("Asaas API error creating customer {$customer->id}: {$error}", $response->json() ?? []);
+
+                $customer->update([
+                    'asaas_sync_status' => 'failed',
+                    'asaas_sync_error' => $error,
+                    'asaas_synced_at' => now(),
+                ]);
+
                 return null;
             }
 
             $data = $response->json();
 
             if (isset($data['id'])) {
-                $customer->update(['asaas_customer_id' => $data['id']]);
+                $customer->update([
+                    'asaas_customer_id' => $data['id'],
+                    'asaas_sync_status' => 'synced',
+                    'asaas_sync_error' => null,
+                    'asaas_synced_at' => now(),
+                ]);
                 Log::info("Asaas customer created for customer {$customer->id}: {$data['id']}");
                 return $data;
             }
 
             Log::warning("Asaas response without ID for customer {$customer->id}", $data ?? []);
+
+            $customer->update([
+                'asaas_sync_status' => 'failed',
+                'asaas_sync_error' => 'Resposta da API sem ID',
+                'asaas_synced_at' => now(),
+            ]);
+
             return null;
         } catch (\Exception $e) {
             Log::error("Asaas error creating customer {$customer->id}: " . $e->getMessage(), [
                 'code' => $e->getCode(),
             ]);
+
+            $customer->update([
+                'asaas_sync_status' => 'failed',
+                'asaas_sync_error' => $e->getMessage(),
+                'asaas_synced_at' => now(),
+            ]);
+
             return null;
         }
     }
