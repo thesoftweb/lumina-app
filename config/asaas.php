@@ -17,7 +17,7 @@ return [
 
     'endpoints' => [
         'sandbox' => 'https://sandbox.asaas.com/api/v3',
-        'production' => 'https://api.asaas.com/api/v3',
+        'production' => 'https://api.asaas.com/v3',
     ],
 
     'timeout' => env('ASAAS_TIMEOUT', 30),
