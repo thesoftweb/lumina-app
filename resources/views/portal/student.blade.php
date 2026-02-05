@@ -276,7 +276,7 @@
                             <p class="text-xs text-verde-principal font-bold">
                                 Desconto:
                                 @if($invoice->discount_type === 'percentage')
-                                    -{{ number_format($invoice->discount_value, 2, ',', '.') }}% 
+                                    -{{ number_format($invoice->discount_value, 2, ',', '.') }}%
                                     @php
                                         $discountAmount = ($invoice->original_amount ?? 0) * ($invoice->discount_value / 100);
                                     @endphp
