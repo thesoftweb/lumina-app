@@ -181,10 +181,10 @@
                                     $statusClass = 'bg-gray-200 text-gray-800';
                                     $statusText = 'Pendente';
 
-                                    if ($invoice->status === 'paid') {
+                                    if ($invoice->status?->value === 'paid') {
                                     $statusClass = 'bg-verde-claro text-verde-secundaria';
                                     $statusText = 'Pago';
-                                    } elseif ($invoice->status === 'overdue') {
+                                    } elseif ($invoice->status?->value === 'overdue') {
                                     $statusClass = 'bg-red-100 text-red-800';
                                     $statusText = 'Vencido';
                                     }
@@ -194,7 +194,9 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if($invoice->asaas_invoice_id)
+                                    @if($invoice->status?->value === 'paid')
+                                        <span class="text-verde-secundaria font-bold text-xs">✅ Pagamento Confirmado</span>
+                                    @elseif($invoice->asaas_invoice_id)
                                         <div class="flex gap-2">
                                             <a href="{{ $invoice->invoice_link }}" target="_blank" class="inline-block px-3 py-1 bg-gray-600 text-white rounded-md text-xs font-bold hover:bg-gray-700 transition">
                                                 📄 Ver
@@ -242,10 +244,10 @@
                             $statusClass = 'bg-gray-200 text-gray-800';
                             $statusText = 'Pendente';
 
-                            if ($invoice->status === 'paid') {
+                            if ($invoice->status?->value === 'paid') {
                             $statusClass = 'bg-verde-claro text-verde-secundaria';
                             $statusText = 'Pago';
-                            } elseif ($invoice->status === 'overdue') {
+                            } elseif ($invoice->status?->value === 'overdue') {
                             $statusClass = 'bg-red-100 text-red-800';
                             $statusText = 'Vencido';
                             }
@@ -255,7 +257,11 @@
                             </span>
                         </div>
 
-                        @if($invoice->asaas_invoice_id)
+                        @if($invoice->status?->value === 'paid')
+                            <div class="text-center py-2">
+                                <p class="text-verde-secundaria font-bold text-xs">✅ Pagamento Confirmado</p>
+                            </div>
+                        @elseif($invoice->asaas_invoice_id)
                             <div class="flex gap-2">
                                 <a href="{{ $invoice->invoice_link }}" target="_blank" class="flex-1 px-3 py-2 bg-gray-600 text-white rounded-md text-xs font-bold text-center hover:bg-gray-700 transition">
                                     📄 Ver
