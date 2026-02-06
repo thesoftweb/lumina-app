@@ -76,7 +76,7 @@ class SyncAsaasPayments extends Command
 
                 if ($result) {
                     $synced++;
-                    $this->line("  ✅ Sincronizado: {$invoice->reference} → {$invoice->status}");
+                    $this->line("  ✅ Sincronizado: {$invoice->reference} → {$invoice->status->value}");
                 } else {
                     $failed++;
                     $this->warn("  ⚠️  Falha ao sincronizar: {$invoice->reference}");
