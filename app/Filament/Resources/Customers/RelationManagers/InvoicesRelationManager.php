@@ -15,6 +15,7 @@ use Filament\Actions\DissociateBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -65,6 +66,7 @@ class InvoicesRelationManager extends RelationManager
             ])
             ->recordActions([
                 $this->paymentAction(),
+                $this->updateInvoiceAction(),
                 EditAction::make(),
                 DissociateAction::make(),
                 DeleteAction::make(),
@@ -75,6 +77,91 @@ class InvoicesRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Ação para atualizar informações da fatura
+     */
+    private function updateInvoiceAction(): Action
+    {
+        return Action::make('update')
+            ->label('Atualizar')
+            ->icon('heroicon-o-pencil')
+            ->color('info')
+            ->slideOver()
+            ->schema([
+                Section::make('Informações da Fatura')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('number')
+                            ->label('Número da Fatura')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->default(fn(Invoice $record) => $record->number),
+
+                        TextInput::make('amount')
+                            ->label('Valor Total')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->default(fn(Invoice $record) => $record->amount)
+                            ->formatStateUsing(fn($value) => $value ? 'R$ ' . number_format($value, 2, ',', '.') : ''),
+
+                        Select::make('status')
+                            ->label('Status')
+                            ->options(InvoiceStatus::class)
+                            ->default(fn(Invoice $record) => $record->status),
+
+                        TextInput::make('balance')
+                            ->label('Saldo')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->default(fn(Invoice $record) => $record->balance)
+                            ->formatStateUsing(fn($value) => $value ? 'R$ ' . number_format($value, 2, ',', '.') : ''),
+
+                        DatePicker::make('due_date')
+                            ->label('Data de Vencimento')
+                            ->required()
+                            ->default(fn(Invoice $record) => $record->due_date),
+
+                        TextInput::make('discount_value')
+                            ->label('Desconto')
+                            ->numeric()
+                            ->step('0.01')
+                            ->minValue(0)
+                            ->default(fn(Invoice $record) => $record->discount_value),
+
+                        Textarea::make('notes')
+                            ->label('Observações')
+                            ->rows(3)
+                            ->columnSpanFull()
+                            ->default(fn(Invoice $record) => $record->notes),
+                    ]),
+            ])
+            ->action(function (Invoice $record, array $data) {
+                try {
+                    $record->update([
+                        'due_date' => $data['due_date'],
+                        'status' => $data['status'] ?? $record->status,
+                        'discount_value' => $data['discount_value'] ?? 0,
+                        'notes' => $data['notes'] ?? $record->notes,
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Fatura Atualizada')
+                        ->body("Fatura #{$record->number} foi atualizada com sucesso")
+                        ->send();
+
+                    // Recarrega o registro
+                    $record->refresh();
+                } catch (\Exception $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title('Erro!')
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            });
     }
 
     /**
