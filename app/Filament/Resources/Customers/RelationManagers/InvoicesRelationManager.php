@@ -15,11 +15,11 @@ use Filament\Actions\DissociateBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -73,10 +73,91 @@ class InvoicesRelationManager extends RelationManager
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    $this->bulkUpdateInvoicesAction(),
                     DissociateBulkAction::make(),
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Ação em lote para atualizar vencimento e status das faturas
+     */
+    private function bulkUpdateInvoicesAction(): \Filament\Actions\BulkAction
+    {
+        return \Filament\Actions\BulkAction::make('bulkUpdate')
+            ->label('Atualizar em Lote')
+            ->icon('heroicon-o-pencil-square')
+            ->color('info')
+            ->form([
+                Section::make('Atualizar Faturas')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('due_day')
+                            ->label('Dia do Vencimento')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(31)
+                            ->helperText('Deixe em branco para não alterar (ex: 15)'),
+
+                        Select::make('status')
+                            ->label('Status')
+                            ->options(InvoiceStatus::class)
+                            ->helperText('Deixe em branco para não alterar'),
+                    ]),
+            ])
+            ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                try {
+                    $updateData = [];
+
+                    if (!empty($updateData) || ($data['due_day'] ?? null) || ($data['status'] ?? null)) {
+                        $records->each(function (Invoice $record) use ($data, &$updateData) {
+                            $recordUpdateData = [];
+
+                            // Se o usuário forneceu um novo dia
+                            if ($data['due_day'] ?? null) {
+                                $day = (int) $data['due_day'];
+                                $month = $record->due_date->month;
+                                $year = $record->due_date->year;
+                                
+                                // Valida se o dia é válido para o mês
+                                try {
+                                    $newDate = \Carbon\Carbon::createFromDate($year, $month, $day);
+                                    $recordUpdateData['due_date'] = $newDate;
+                                } catch (\Exception $e) {
+                                    throw new \Exception("Dia {$day} inválido para {$month}/{$year}");
+                                }
+                            }
+
+                            if ($data['status'] ?? null) {
+                                $recordUpdateData['status'] = $data['status'];
+                            }
+
+                            if (!empty($recordUpdateData)) {
+                                $record->update($recordUpdateData);
+                            }
+                        });
+
+                        Notification::make()
+                            ->success()
+                            ->title('Faturas Atualizadas')
+                            ->body("Foram atualizadas {$records->count()} fatura(s) com sucesso")
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->warning()
+                            ->title('Nenhuma Alteração')
+                            ->body('Selecione pelo menos um campo para atualizar')
+                            ->send();
+                    }
+                } catch (\Exception $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title('Erro!')
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            });
     }
 
     /**
@@ -118,9 +199,14 @@ class InvoicesRelationManager extends RelationManager
                             ->default(fn(Invoice $record) => $record->balance)
                             ->formatStateUsing(fn($value) => $value ? 'R$ ' . number_format($value, 2, ',', '.') : ''),
 
-                        DatePicker::make('due_date')
+                        TextInput::make('due_day')
                             ->label('Data de Vencimento')
-                            ->required()
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->default(fn(Invoice $record) => $record->due_date->format('d/m/Y')),
+
+                        DatePicker::make('due_date')
+                            ->label('Nova Data de Vencimento')
                             ->default(fn(Invoice $record) => $record->due_date),
 
                         TextInput::make('discount_value')
@@ -139,12 +225,26 @@ class InvoicesRelationManager extends RelationManager
             ])
             ->action(function (Invoice $record, array $data) {
                 try {
-                    $record->update([
-                        'due_date' => $data['due_date'],
-                        'status' => $data['status'] ?? $record->status,
-                        'discount_value' => $data['discount_value'] ?? 0,
-                        'notes' => $data['notes'] ?? $record->notes,
-                    ]);
+                    $updateData = [];
+
+                    // Se o usuário forneceu uma nova data completa
+                    if ($data['due_date'] ?? null) {
+                        $updateData['due_date'] = $data['due_date'];
+                    }
+
+                    if ($data['status'] ?? null) {
+                        $updateData['status'] = $data['status'];
+                    }
+
+                    if ($data['discount_value'] ?? null) {
+                        $updateData['discount_value'] = $data['discount_value'];
+                    }
+
+                    if ($data['notes'] ?? null) {
+                        $updateData['notes'] = $data['notes'];
+                    }
+
+                    $record->update($updateData);
 
                     Notification::make()
                         ->success()
