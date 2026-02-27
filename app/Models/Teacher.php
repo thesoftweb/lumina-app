@@ -13,6 +13,14 @@ class Teacher extends Model
         'phone',
         'document_number',
         'user_id',
+        'account_type',
+        'bank_name',
+        'bank_code',
+        'agency_number',
+        'account_number',
+        'account_holder_name',
+        'pix_key_type',
+        'pix_key',
     ];
 
     public function user()
