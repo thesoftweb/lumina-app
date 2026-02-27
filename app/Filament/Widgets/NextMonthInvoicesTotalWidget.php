@@ -19,7 +19,7 @@ class NextMonthInvoicesTotalWidget extends BaseWidget
             ->where('status', '!=', 'canceled')
             ->get();
 
-        $totalAmount = $invoices->sum('balance') ?? $invoices->sum('amount');
+        $totalAmount = $invoices->sum('final_amount') ?? $invoices->sum('amount');
         $openInvoices = $invoices->where('status', '!=', 'paid')->count();
 
         return [
