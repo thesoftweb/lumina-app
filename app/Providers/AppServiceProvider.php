@@ -5,12 +5,14 @@ namespace App\Providers;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\ClassDiary;
+use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\LessonPlan;
 use App\Models\Teacher;
 use App\Policies\AttendancePolicy;
 use App\Policies\ClassDiaryPolicy;
 use App\Policies\ClassroomPolicy;
+use App\Policies\EnrollmentPolicy;
 use App\Policies\GradePolicy;
 use App\Policies\LessonPlanPolicy;
 use App\Policies\TeacherPolicy;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Attendance::class => AttendancePolicy::class,
         ClassDiary::class => ClassDiaryPolicy::class,
         LessonPlan::class => LessonPlanPolicy::class,
+        Enrollment::class => EnrollmentPolicy::class,
     ];
 
     /**

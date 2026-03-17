@@ -68,7 +68,7 @@ class ClassroomResource extends Resource
         $query = parent::getEloquentQuery();
 
         if (Auth::user()->hasRole('teacher')) {
-            // Filter classrooms to only those of the current teacher
+            // Filter classrooms to only those assigned to the current teacher
             $teacher = Auth::user()->teacher;
             if ($teacher) {
                 $query->whereHas('teachers', function ($q) use ($teacher) {
