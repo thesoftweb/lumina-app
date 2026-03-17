@@ -5,6 +5,7 @@ use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\SchoolContractController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalPixQrCodeController;
+use App\Http\Controllers\PortalEventController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
@@ -25,6 +26,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
     // PIX QR Code Routes
     Route::get('invoices/{invoice}/pix-qrcode', [PortalPixQrCodeController::class, 'show'])->name('invoices.pix-qrcode');
+
+    // Event Routes
+    Route::get('events', [PortalEventController::class, 'index'])->name('events.index');
+    Route::post('events/{event}/pay', [PortalEventController::class, 'store'])->name('events.store');
+    Route::get('events/{event}/payment-link', [PortalEventController::class, 'paymentLink'])->name('events.payment-link');
 });
 
 // Document Routes

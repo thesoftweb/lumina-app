@@ -43,4 +43,9 @@ class Classroom extends Model
     {
         return $this->belongsToMany(Plan::class)->using(ClassroomPlan::class);
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }
