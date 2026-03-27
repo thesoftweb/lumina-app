@@ -6,6 +6,7 @@ use App\Http\Controllers\SchoolContractController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalPixQrCodeController;
 use App\Http\Controllers\PortalEventController;
+use App\Http\Controllers\PortalAgendaController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
@@ -31,6 +32,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('events', [PortalEventController::class, 'index'])->name('events.index');
     Route::post('events/{event}/pay', [PortalEventController::class, 'store'])->name('events.store');
     Route::get('events/{event}/payment-link', [PortalEventController::class, 'paymentLink'])->name('events.payment-link');
+
+    // Agenda Routes
+    Route::get('agendas', [PortalAgendaController::class, 'index'])->name('agendas.index');
+    Route::get('agendas/upcoming', [PortalAgendaController::class, 'upcoming'])->name('agendas.upcoming');
+    Route::get('agendas/{id}', [PortalAgendaController::class, 'show'])->name('agendas.show');
 });
 
 // Document Routes

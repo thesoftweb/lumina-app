@@ -48,4 +48,9 @@ class Classroom extends Model
     {
         return $this->hasMany(Event::class);
     }
+
+    public function agendas()
+    {
+        return $this->hasMany(Agenda::class);
+    }
 }
