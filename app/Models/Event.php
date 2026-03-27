@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class Event extends Model
 {
     protected $fillable = [
-        'classroom_id',
         'company_id',
         'name',
         'description',
@@ -22,14 +21,17 @@ class Event extends Model
         'due_date' => 'datetime',
     ];
 
-    public function classroom()
-    {
-        return $this->belongsTo(Classroom::class);
-    }
-
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Relação many-to-many com as turmas que podem participar
+     */
+    public function classrooms()
+    {
+        return $this->belongsToMany(Classroom::class, 'event_classroom');
     }
 
     public function participants()
@@ -55,5 +57,19 @@ class Event extends Model
     public function isActive()
     {
         return $this->status === 'active' && now()->lessThanOrEqualTo($this->due_date);
+    }
+
+    /**
+     * Get all enrollments for a customer across all applicable classrooms
+     */
+    public function getCustomerEnrollments($customerId)
+    {
+        $classroomIds = $this->classrooms()->pluck('classrooms.id')->toArray();
+
+        return Enrollment::whereIn('classroom_id', $classroomIds)
+            ->where('customer_id', $customerId)
+            ->where('status', 'active')
+            ->with('student')
+            ->get();
     }
 }

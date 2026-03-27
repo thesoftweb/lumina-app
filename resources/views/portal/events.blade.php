@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Eventos e Contribuições - Portal do Aluno')
+
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
@@ -98,7 +100,9 @@
         </div>
     </div>
 </div>
+@endsection
 
+@section('extra_js')
 <script>
 let currentEventId;
 
@@ -108,7 +112,7 @@ function initiatePayment(eventId, eventName, amount) {
     document.getElementById('paymentModal').classList.remove('hidden');
 
     // Make request to initialize payment
-    fetch(`{{ route('portal.events.store', '') }}/${eventId}`, {
+    fetch(`/portal/events/${eventId}/pay`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -132,11 +136,25 @@ function initiatePayment(eventId, eventName, amount) {
 function displayPaymentOptions(data) {
     const invoiceId = data.invoice.id;
     const asaasId = data.invoice.asaas_invoice_id;
+    const participantCount = data.participant_count || 1;
+    const isExistingPayment = data.is_existing_payment || false;
 
     let content = `
         <div class="space-y-4">
+            ${isExistingPayment ? `
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <p class="text-sm text-blue-800"><strong>ℹ️ Continuando pagamento anterior</strong></p>
+                    <p class="text-xs text-blue-700 mt-1">Você pode continuar o pagamento desta cobrança</p>
+                </div>
+            ` : ''}
+            ${participantCount > 1 ? `
+                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                    <p class="text-sm text-yellow-800"><strong>Atenção:</strong> ${participantCount} aluno(s) participando</p>
+                    <p class="text-xs text-yellow-700 mt-1">Valor por aluno: R$ ${(parseFloat(data.invoice.amount) / participantCount).toFixed(2).replace('.', ',')}</p>
+                </div>
+            ` : ''}
             <div class="bg-blue-50 p-4 rounded-lg">
-                <p class="text-sm text-gray-600">Valor a pagar:</p>
+                <p class="text-sm text-gray-600">Valor total a pagar:</p>
                 <p class="text-3xl font-bold text-blue-600">R$ ${parseFloat(data.invoice.amount).toFixed(2).replace('.', ',')}</p>
             </div>
     `;
@@ -172,16 +190,22 @@ function loadPixQrCode(invoiceId) {
     fetch(`/portal/invoices/${invoiceId}/pix-qrcode`)
         .then(response => response.json())
         .then(data => {
-            if (data.qrcode) {
+            // Handle both response formats
+            const pixData = data.data || data;
+
+            if (pixData.encodedImage || pixData.qrcode) {
+                const qrCodeImage = pixData.encodedImage || pixData.qrcode;
+                const payloadText = pixData.payload;
+
                 let pixContent = `
                     <div class="text-center">
                         <h4 class="font-bold mb-4">Escaneie o QR Code</h4>
-                        <img src="data:image/png;base64,${data.qrcode}" alt="QR Code PIX" class="w-64 h-64 mx-auto mb-4">
+                        <img src="data:image/png;base64,${qrCodeImage}" alt="QR Code PIX" class="w-64 h-64 mx-auto mb-4">
                         <div class="bg-gray-100 p-4 rounded-lg mb-4">
                             <p class="text-xs text-gray-600 mb-2">Chave PIX (copia e cola):</p>
-                            <p class="font-mono text-xs break-all">${data.payload}</p>
+                            <p class="font-mono text-xs break-all">${payloadText}</p>
                             <button
-                                onclick="copyToClipboard('${data.payload}')"
+                                onclick="copyToClipboard('${payloadText}')"
                                 class="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                             >
                                 Copiar
@@ -196,9 +220,14 @@ function loadPixQrCode(invoiceId) {
                     </div>
                 `;
                 document.getElementById('paymentContent').innerHTML = pixContent;
+            } else {
+                showError('Erro ao gerar QR Code PIX');
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Erro ao carregar QR Code');
+        });
 }
 
 function copyToClipboard(text) {

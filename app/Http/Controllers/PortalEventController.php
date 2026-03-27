@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Customer;
+use App\Models\Enrollment;
 use App\Services\EventService;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class PortalEventController extends Controller
 {
@@ -16,27 +18,45 @@ class PortalEventController extends Controller
     }
 
     /**
-     * Display list of active events for student's classrooms
+     * Get customer from session
+     */
+    private function getCustomerFromSession()
+    {
+        $document = session('customer_document');
+
+        if (!$document) {
+            return null;
+        }
+
+        return Customer::where('document', $document)->first();
+    }
+
+    /**
+     * Display list of active events available for student's enrolled classrooms
      */
     public function index()
     {
-        $user = Auth::user();
+        $customer = $this->getCustomerFromSession();
 
-        if (!$user->student) {
+        if (!$customer) {
             return view('portal.events', ['events' => collect()]);
         }
 
-        // Get classrooms where student is enrolled
-        $classroomIds = $user->student->enrollments()
-            ->where('status', 'active')
-            ->pluck('classroom_id')
-            ->unique();
+        // Get classrooms where student (of this customer) is enrolled
+        $classroomIds = Enrollment::whereHas('student', function ($query) use ($customer) {
+            $query->where('customer_id', $customer->id);
+        })
+        ->where('status', 'active')
+        ->pluck('classroom_id')
+        ->unique();
 
-        // Get active events for those classrooms
-        $events = Event::whereIn('classroom_id', $classroomIds)
+        // Get active events available to any of the customer's classrooms
+        $events = Event::whereHas('classrooms', function ($query) use ($classroomIds) {
+            $query->whereIn('classrooms.id', $classroomIds);
+        })
             ->where('status', 'active')
             ->where('due_date', '>=', now())
-            ->with(['classroom', 'participants'])
+            ->with(['classrooms', 'participants'])
             ->orderBy('due_date')
             ->get();
 
@@ -48,24 +68,19 @@ class PortalEventController extends Controller
      */
     public function store(Event $event)
     {
-        $user = Auth::user();
+        $customer = $this->getCustomerFromSession();
 
-        if (!$user->student) {
+        if (!$customer) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $customer = $user->student->customer;
-
-        if (!$customer) {
-            return response()->json(['error' => 'Customer not found'], 404);
-        }
-
         try {
-            $paymentData = $this->eventService->initializePayment($event, $customer->id);
+            $paymentData = $this->eventService->initializePaymentMultipleStudents($event, $customer->id);
 
             return response()->json([
                 'success' => true,
-                'participant' => $paymentData['participant'],
+                'participants' => $paymentData['participants'],
+                'participant_count' => $paymentData['participant_count'],
                 'invoice' => $paymentData['invoice'],
                 'payment_url' => $paymentData['payment_url'],
             ]);
@@ -81,14 +96,14 @@ class PortalEventController extends Controller
      */
     public function paymentLink(Event $event)
     {
-        $user = Auth::user();
+        $customer = $this->getCustomerFromSession();
 
-        if (!$user->student || !$user->student->customer) {
+        if (!$customer) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         $participant = $event->participants()
-            ->where('customer_id', $user->student->customer->id)
+            ->where('customer_id', $customer->id)
             ->first();
 
         if (!$participant || !$participant->invoice) {

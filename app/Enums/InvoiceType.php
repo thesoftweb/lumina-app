@@ -11,6 +11,7 @@ enum InvoiceType: string implements HasColor, HasLabel
     case TUITION = 'tuition';            // Mensalidade
     case SERVICE = 'service';            // Serviço adicional
     case MATERIAL = 'material';          // Material didático
+    case EVENT = 'event';                // Eventos/Contribuições
     case OTHER = 'other';                // Outras entradas
 
     public function getLabel(): string
@@ -20,6 +21,7 @@ enum InvoiceType: string implements HasColor, HasLabel
             self::TUITION => 'Mensalidade',
             self::SERVICE => 'Serviço Adicional',
             self::MATERIAL => 'Material Didático',
+            self::EVENT => 'Eventos/Contribuições',
             self::OTHER => 'Outro',
         };
     }
@@ -31,6 +33,7 @@ enum InvoiceType: string implements HasColor, HasLabel
             self::TUITION => 'success',
             self::SERVICE => 'warning',
             self::MATERIAL => 'info',
+            self::EVENT => 'purple',
             self::OTHER => 'secondary',
         };
     }

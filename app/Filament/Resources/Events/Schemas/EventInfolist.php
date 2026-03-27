@@ -79,12 +79,11 @@ class EventInfolist
                                 Section::make()
                                     ->heading('Lista de Participantes que Pagaram')
                                     ->schema([
-                                        RepeatableEntry::make('participants')
-                                            ->hidden(fn($record) => $record->participants()->where('status', 'paid')->count() === 0)
-                                            ->formatStateUsing(fn($state) => $state)
+                                        RepeatableEntry::make('paidParticipants')
+                                            ->label('Participantes que Pagaram')
+                                            ->visible(fn($record) => $record->paidParticipants()->count() > 0)
                                             ->columnSpanFull()
                                             ->columns(4)
-                                            ->query(fn($query) => $query->where('status', 'paid'))
                                             ->schema([
                                                 TextEntry::make('customer.name')
                                                     ->label('Responsável')
@@ -103,7 +102,7 @@ class EventInfolist
                                                     ->columnSpanFull(),
                                             ]),
                                         TextEntry::make('participants_empty')
-                                            ->visible(fn($record) => $record->participants()->where('status', 'paid')->count() === 0)
+                                            ->visible(fn($record) => $record->paidParticipants()->count() === 0)
                                             ->formatStateUsing(fn() => 'Nenhum participante pagou ainda')
                                             ->columnSpanFull()
                                             ->state(''),

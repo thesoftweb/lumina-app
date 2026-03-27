@@ -6,8 +6,10 @@ use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Models\Enrollment;
 use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Log;
 
 class EventService
 {
@@ -29,6 +31,151 @@ class EventService
     }
 
     /**
+     * Initialize payment for multiple students of same customer
+     * Creates a single invoice with total amount and participant for each student
+     * Now supports events with multiple classroom options
+     */
+    public function initializePaymentMultipleStudents(Event $event, $customerId): array
+    {
+        // Get all active enrollments for this customer across all applicable classrooms
+        $enrollments = $event->getCustomerEnrollments($customerId);
+
+        Log::info("EventService: Buscando matrículas para o evento", [
+            'event_id' => $event->id,
+            'applicable_classrooms' => $event->classrooms()->count(),
+            'customer_id' => $customerId,
+            'enrollments_found' => $enrollments->count(),
+        ]);
+
+        if ($enrollments->isEmpty()) {
+            throw new \Exception('Customer is not enrolled in any applicable classrooms for this event');
+        }
+
+        // Check if already has pending EventParticipant for any student
+        $existingParticipant = EventParticipant::where('event_id', $event->id)
+            ->where('customer_id', $customerId)
+            ->where('status', 'pending')
+            ->first();
+
+        // If payment already initiated, return existing invoice data
+        if ($existingParticipant && $existingParticipant->invoice) {
+            $invoice = $existingParticipant->invoice;
+
+            // Get Asaas response if available
+            $asaasResponse = null;
+            if ($invoice->asaas_invoice_id) {
+                $asaasResponse = [
+                    'id' => $invoice->asaas_invoice_id,
+                    'invoiceUrl' => $invoice->invoice_link,
+                ];
+            }
+
+            Log::info('EventService: Retornando pagamento pendente existente', [
+                'event_id' => $event->id,
+                'customer_id' => $customerId,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            // Get student count from enrollments to calculate correct participant_count
+            $studentCount = $enrollments->count();
+
+            return [
+                'participants' => [$existingParticipant],
+                'participant_count' => $studentCount,
+                'invoice' => $invoice,
+                'asaas_charge_id' => isset($asaasResponse) ? ($asaasResponse['id'] ?? null) : null,
+                'payment_url' => isset($asaasResponse) ? ($asaasResponse['invoiceUrl'] ?? null) : null,
+                'is_existing_payment' => true,
+            ];
+        }
+
+        $customer = $enrollments->first()->customer;
+        $studentCount = $enrollments->count();
+        $totalAmount = $event->amount * $studentCount;
+
+        Log::info("EventService: Calculando valor total", [
+            'event_id' => $event->id,
+            'event_amount' => $event->amount,
+            'student_count' => $studentCount,
+            'total_amount' => $totalAmount,
+            'applicable_classrooms' => $event->classrooms()->count(),
+        ]);
+
+        // Sync customer to Asaas if needed
+        $this->asaasService->createOrUpdateCustomer($customer);
+
+        // Create Invoice with total amount
+        $invoice = Invoice::create([
+            'company_id' => $event->company_id,
+            'customer_id' => $customerId,
+            'number' => $this->generateInvoiceNumber('EVENT', $event->id),
+            'reference' => "EVENT-{$event->id}-{$customerId}",
+            'issue_date' => now(),
+            'due_date' => $event->due_date,
+            'amount' => $totalAmount,
+            'balance' => $totalAmount,
+            'status' => InvoiceStatus::Open->value,
+            'billing_type' => 'event',
+            'notes' => "Evento: {$event->name} ({$studentCount} aluno(s))",
+        ]);
+
+        // Create Asaas Charge
+        $asaasResponse = null;
+        try {
+            $asaasResponse = $this->asaasService->createCharge($invoice);
+
+            // Update invoice with Asaas data
+            if ($asaasResponse && isset($asaasResponse['id'])) {
+                $invoice->update([
+                    'asaas_invoice_id' => $asaasResponse['id'],
+                    'asaas_sync_status' => 'synced',
+                    'asaas_synced_at' => now(),
+                    'invoice_link' => $asaasResponse['invoiceUrl'] ?? null,
+                ]);
+
+                // Try to get PIX QR code if available
+                if (isset($asaasResponse['dict'])) {
+                    try {
+                        $pixResponse = $this->asaasService->getPixQrCode($asaasResponse['id']);
+                        if ($pixResponse) {
+                            $invoice->update([
+                                'invoice_qrcode' => $pixResponse['qrCode'] ?? null,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        // PIX QR code generation optional
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $invoice->update([
+                'asaas_sync_status' => 'failed',
+            ]);
+            throw $e;
+        }
+
+        // Create EventParticipant for each student
+        $participants = [];
+        foreach ($enrollments as $enrollment) {
+            $participant = EventParticipant::create([
+                'event_id' => $event->id,
+                'customer_id' => $customerId,
+                'invoice_id' => $invoice->id,
+                'status' => 'pending',
+            ]);
+            $participants[] = $participant;
+        }
+
+        return [
+            'participants' => $participants,
+            'participant_count' => $studentCount,
+            'invoice' => $invoice,
+            'asaas_charge_id' => $asaasResponse['id'] ?? null,
+            'payment_url' => $asaasResponse['invoiceUrl'] ?? null,
+        ];
+    }
+
+    /**
      * Initialize payment on-demand: Create EventParticipant + Invoice + Asaas charge
      */
     public function initializePayment(Event $event, $customerId): array
@@ -46,10 +193,36 @@ class EventService
         // Check if already has pending EventParticipant
         $existingParticipant = EventParticipant::where('event_id', $event->id)
             ->where('customer_id', $customerId)
+            ->where('status', 'pending')
             ->first();
 
-        if ($existingParticipant && $existingParticipant->status === 'pending') {
-            throw new \Exception('Payment already initiated for this customer');
+        // If payment already initiated, return existing invoice data
+        if ($existingParticipant && $existingParticipant->invoice) {
+            $invoice = $existingParticipant->invoice;
+
+            // Get Asaas response if available
+            $asaasResponse = null;
+            if ($invoice->asaas_invoice_id) {
+                $asaasResponse = [
+                    'id' => $invoice->asaas_invoice_id,
+                    'invoiceUrl' => $invoice->invoice_link,
+                ];
+            }
+
+            Log::info('EventService: Retornando pagamento pendente existente (método simples)', [
+                'event_id' => $event->id,
+                'customer_id' => $customerId,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            return [
+                'participants' => [$existingParticipant],
+                'participant_count' => 1,
+                'invoice' => $invoice,
+                'asaas_charge_id' => isset($asaasResponse) ? ($asaasResponse['id'] ?? null) : null,
+                'payment_url' => isset($asaasResponse) ? ($asaasResponse['invoiceUrl'] ?? null) : null,
+                'is_existing_payment' => true,
+            ];
         }
 
         $customer = $enrollment->customer;
@@ -73,36 +246,31 @@ class EventService
         ]);
 
         // Create Asaas Charge
+        $asaasResponse = null;
         try {
-            $asaasResponse = $this->asaasService->createCharge([
-                'customer' => $customer->asaas_customer_id,
-                'billingType' => 'UNDEFINED',
-                'dueDate' => $event->due_date->format('Y-m-d'),
-                'value' => (float) $event->amount,
-                'description' => $event->name,
-                'externalReference' => "EVENT-{$event->id}-{$customerId}",
-                'pixKey' => null,
-            ]);
+            $asaasResponse = $this->asaasService->createCharge($invoice);
 
             // Update invoice with Asaas data
-            $invoice->update([
-                'asaas_invoice_id' => $asaasResponse['id'],
-                'asaas_sync_status' => 'synced',
-                'asaas_synced_at' => now(),
-                'invoice_link' => $asaasResponse['invoiceUrl'] ?? null,
-            ]);
+            if ($asaasResponse && isset($asaasResponse['id'])) {
+                $invoice->update([
+                    'asaas_invoice_id' => $asaasResponse['id'],
+                    'asaas_sync_status' => 'synced',
+                    'asaas_synced_at' => now(),
+                    'invoice_link' => $asaasResponse['invoiceUrl'] ?? null,
+                ]);
 
-            // Try to get PIX QR code if available
-            if (isset($asaasResponse['dict'])) {
-                try {
-                    $pixResponse = $this->asaasService->getPixQrCode($asaasResponse['id']);
-                    if ($pixResponse) {
-                        $invoice->update([
-                            'invoice_qrcode' => $pixResponse['qrCode'] ?? null,
-                        ]);
+                // Try to get PIX QR code if available
+                if (isset($asaasResponse['dict'])) {
+                    try {
+                        $pixResponse = $this->asaasService->getPixQrCode($asaasResponse['id']);
+                        if ($pixResponse) {
+                            $invoice->update([
+                                'invoice_qrcode' => $pixResponse['qrCode'] ?? null,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        // PIX QR code generation optional
                     }
-                } catch (\Exception $e) {
-                    // PIX QR code generation optional
                 }
             }
         } catch (\Exception $e) {
@@ -162,11 +330,14 @@ class EventService
     }
 
     /**
-     * Get customers eligible to pay for an event (enrolled in classroom)
+     * Get customers eligible to pay for an event
+     * Considers all applicable classrooms
      */
     public function getEligibleCustomers(Event $event): Collection
     {
-        return $event->classroom->enrollments()
+        $classroomIds = $event->classrooms()->pluck('classrooms.id')->toArray();
+
+        return Enrollment::whereIn('classroom_id', $classroomIds)
             ->where('status', 'active')
             ->with('customer')
             ->get()
@@ -176,19 +347,26 @@ class EventService
 
     /**
      * Get event statistics
+     * Considers all applicable classrooms
      */
     public function getEventStats(Event $event): array
     {
+        $classroomIds = $event->classrooms()->pluck('classrooms.id')->toArray();
+
+        $totalEligible = Enrollment::whereIn('classroom_id', $classroomIds)
+            ->where('status', 'active')
+            ->count();
+
         $paidCount = $event->paidParticipants()->count();
         $totalCollected = $paidCount * $event->amount;
 
         return [
-            'total_eligible' => $event->classroom->enrollments()->where('status', 'active')->count(),
+            'total_eligible' => $totalEligible,
             'paid_count' => $paidCount,
             'pending_count' => $event->participants()->where('status', 'pending')->count(),
             'total_collected' => $totalCollected,
-            'collection_rate' => $event->classroom->enrollments()->where('status', 'active')->count() > 0
-                ? round(($paidCount / $event->classroom->enrollments()->where('status', 'active')->count()) * 100, 2)
+            'collection_rate' => $totalEligible > 0
+                ? round(($paidCount / $totalEligible) * 100, 2)
                 : 0,
         ];
     }

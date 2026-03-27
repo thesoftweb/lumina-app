@@ -3,7 +3,8 @@
 namespace App\Filament\Resources\Events\Schemas;
 
 use App\Models\Classroom;
-use Filament\Forms\Components\DateTimePickerField;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\MultiSelect;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -37,13 +38,13 @@ class EventForm
                             ])
                             ->required()
                             ->native(false),
-                        Select::make('classroom_id')
+                        MultiSelect::make('classrooms')
                             ->prefixIcon('heroicon-o-book-open')
-                            ->label('Turma')
-                            ->options(fn() => Classroom::all()->pluck('name', 'id'))
-                            ->relationship('classroom', 'name')
+                            ->label('Selecionar Turmas que Podem Participar')
+                            ->description('Escolha uma ou mais turmas. O evento estará disponível apenas para alunos dessas turmas.')
+                            ->relationship('classrooms', 'name')
                             ->required()
-                            ->native(false),
+                            ->columnSpanFull(),
                         TextInput::make('amount')
                             ->prefixIcon('heroicon-o-currency-dollar')
                             ->label('Valor (R$)')
@@ -62,7 +63,7 @@ class EventForm
                             ->required()
                             ->native(false)
                             ->default('active'),
-                        DateTimePickerField::make('due_date')
+                        DateTimePicker::make('due_date')
                             ->prefixIcon('heroicon-o-clock')
                             ->label('Data Limite de Pagamento')
                             ->required(),
