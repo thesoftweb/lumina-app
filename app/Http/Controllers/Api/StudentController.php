@@ -18,6 +18,9 @@ class StudentController extends Controller
         try {
             $students = Enrollment::with(['student', 'classroom'])
                 ->get()
+                ->filter(function ($enrollment) {
+                    return $enrollment->student && $enrollment->classroom;
+                })
                 ->map(function ($enrollment) {
                     return [
                         'id' => (string) $enrollment->student->id,
@@ -52,13 +55,17 @@ class StudentController extends Controller
             $students = Enrollment::where('classroom_id', $classroomId)
                 ->with(['student', 'classroom'])
                 ->get()
+                ->filter(function ($enrollment) {
+                    return $enrollment->student && $enrollment->classroom;
+                })
                 ->map(function ($enrollment) {
                     return [
                         'id' => (string) $enrollment->student->id,
                         'nome' => $enrollment->student->name,
                         'serie' => $enrollment->classroom->name,
                     ];
-                });
+                })
+                ->values();
 
             return response()->json([
                 'success' => true,
@@ -83,7 +90,7 @@ class StudentController extends Controller
         try {
             $student = Enrollment::whereHas('student', function ($query) use ($studentId) {
                 $query->where('id', $studentId);
-            })
+            }) || !$student->student || !$student->classroom
             ->with(['student', 'classroom'])
             ->first();
 
