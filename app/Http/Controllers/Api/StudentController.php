@@ -25,7 +25,7 @@ class StudentController extends Controller
                     return [
                         'id' => (string) $enrollment->student->id,
                         'nome' => $enrollment->student->name,
-                        'serie' => $enrollment->classroom->name,
+                        'turma' => $enrollment->classroom->name,
                     ];
                 })
                 ->unique(fn($item) => $item['id'])
@@ -62,7 +62,7 @@ class StudentController extends Controller
                     return [
                         'id' => (string) $enrollment->student->id,
                         'nome' => $enrollment->student->name,
-                        'serie' => $enrollment->classroom->name,
+                        'turma' => $enrollment->classroom->name,
                     ];
                 })
                 ->values();
