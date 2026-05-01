@@ -23,6 +23,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'company_id',
     ];
 
     /**
@@ -51,6 +52,11 @@ class User extends Authenticatable implements FilamentUser
     public function teacher()
     {
         return $this->hasOne(Teacher::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function canAccessPanel(Panel $panel): bool

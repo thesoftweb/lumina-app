@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClassroomController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StudentController;
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 | Separadas por tenant na URL: /api/{tenant}/...
 |
 */
+
+// Rota de autenticação (sem tenant)
+Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 
 Route::prefix('{tenant}')
     ->middleware(ResolveTenant::class)

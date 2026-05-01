@@ -18,12 +18,16 @@ return new class extends Migration
         });
 
         // Populate customer_id from student relationship
-        DB::statement('
-            UPDATE enrollments e
-            JOIN students s ON e.student_id = s.id
-            SET e.customer_id = s.customer_id
-            WHERE e.customer_id IS NULL
-        ');
+        // Use Eloquent to be database agnostic (SQLite, MySQL, etc)
+        \App\Models\Enrollment::where('customer_id', null)
+            ->with('student')
+            ->chunk(100, function ($enrollments) {
+                foreach ($enrollments as $enrollment) {
+                    if ($enrollment->student && $enrollment->student->customer_id) {
+                        $enrollment->update(['customer_id' => $enrollment->student->customer_id]);
+                    }
+                }
+            });
     }
 
     /**
