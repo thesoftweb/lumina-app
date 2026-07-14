@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\ClassDiary;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class ClassDiaryPolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */

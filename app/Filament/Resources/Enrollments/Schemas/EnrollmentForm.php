@@ -3,16 +3,15 @@
 namespace App\Filament\Resources\Enrollments\Schemas;
 
 use App\Enums\EnrollmentStatus;
-use App\Models\Classroom;
-use App\Models\Student;
 use App\Models\AcademicYear;
+use App\Models\Classroom;
 use App\Models\ClassroomPlan;
+use App\Models\Student;
 use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -23,7 +22,7 @@ class EnrollmentForm
     {
         return $schema
             ->components([
-                Select::make('academic_year')
+                Select::make('academic_year_id')
                     ->options(AcademicYear::query()->where('is_default', true)->pluck('description', 'id'))
                     ->label('Ano Escolar')
                     ->columnSpanFull(),
@@ -57,8 +56,7 @@ class EnrollmentForm
                                     ->label('Plano de Pagamento')
                                     ->live()
                                     ->options(
-                                        fn(callable $get) =>
-                                        ClassroomPlan::where('classroom_id', $get('classroom_id'))
+                                        fn (callable $get) => ClassroomPlan::where('classroom_id', $get('classroom_id'))
                                             ->with('plan')
                                             ->get()
                                             ->pluck('plan.name', 'plan.id')
@@ -93,17 +91,17 @@ class EnrollmentForm
                                         'percentage' => 'Percentual (%)',
                                         'fixed' => 'Valor Fixo (R$)',
                                     ])
-                                    ->visible(fn(callable $get) => $get('use_custom_discount'))
-                                    ->required(fn(callable $get) => $get('use_custom_discount')),
+                                    ->visible(fn (callable $get) => $get('use_custom_discount'))
+                                    ->required(fn (callable $get) => $get('use_custom_discount')),
                                 TextInput::make('discount_value')
                                     ->label('Valor do Desconto')
                                     ->numeric()
-                                    ->visible(fn(callable $get) => $get('use_custom_discount'))
-                                    ->required(fn(callable $get) => $get('use_custom_discount')),
+                                    ->visible(fn (callable $get) => $get('use_custom_discount'))
+                                    ->required(fn (callable $get) => $get('use_custom_discount')),
                                 Textarea::make('discount_reason')
                                     ->label('Motivo do Desconto')
                                     ->rows(3)
-                                    ->visible(fn(callable $get) => $get('use_custom_discount')),
+                                    ->visible(fn (callable $get) => $get('use_custom_discount')),
                             ]),
                     ]),
                 Section::make()

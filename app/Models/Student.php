@@ -19,7 +19,13 @@ class Student extends Model
         'doc_number',
         'customer_id',
         'degree_of_kinship',
-        'gender'
+        'gender',
+        'neurodiversy',
+        'observations',
+    ];
+
+    protected $casts = [
+        'date_of_birth' => 'date',
     ];
 
     public function customer()

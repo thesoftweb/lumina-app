@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\State;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -28,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call(StudentProfileTableSeeder::class);
         $this->call(StateTableSeeder::class);
         $this->call(CitiesTableSeeder::class);
-        $this->call(TeacherUserSeeder::class);
+        // Contas demonstrativas devem ser criadas explicitamente com TeacherUserSeeder.
         $this->call(ClassroomSeeder::class);
         $this->call(LevelTeacherSeeder::class);
         $this->call(CustomerSeeder::class);

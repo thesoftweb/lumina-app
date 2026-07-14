@@ -35,7 +35,7 @@ class TeacherForm
                                     ->label('Email')
                                     ->email()
                                     ->nullable()
-                                    ->unique(table: 'teachers', column: 'email', ignorable: fn($record) => $record)
+                                    ->unique(table: 'teachers', column: 'email', ignorable: fn ($record) => $record)
                                     ->maxLength(255),
                                 TextInput::make('phone')
                                     ->prefixIcon('heroicon-o-phone')
@@ -48,7 +48,7 @@ class TeacherForm
                                     ->label('CPF / Documento')
                                     ->nullable()
                                     ->mask('999.999.999-99')
-                                    ->unique(table: 'teachers', column: 'document_number', ignorable: fn($record) => $record)
+                                    ->unique(table: 'teachers', column: 'document_number', ignorable: fn ($record) => $record)
                                     ->maxLength(100),
                             ]),
                     ]),
@@ -116,6 +116,20 @@ class TeacherForm
                                     ->nullable()
                                     ->maxLength(255),
                             ]),
+                    ]),
+                Section::make('Disciplinas atribuídas')
+                    ->description('Selecione as disciplinas que o professor leciona em cada turma.')
+                    ->columnSpanFull()
+                    ->schema([
+                        Select::make('classroomSubjects')
+                            ->label('Turma / disciplina')
+                            ->relationship('classroomSubjects', 'id')
+                            ->getOptionLabelFromRecordUsing(
+                                fn ($record): string => ($record->classroom?->name ?? 'Turma').' - '.($record->subject?->name ?? 'Disciplina')
+                            )
+                            ->multiple()
+                            ->searchable()
+                            ->preload(),
                     ]),
             ]);
     }

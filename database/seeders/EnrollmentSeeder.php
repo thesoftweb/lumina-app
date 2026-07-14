@@ -7,8 +7,6 @@ use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\Plan;
 use App\Models\Student;
-use App\Enums\EnrollmentStatus;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class EnrollmentSeeder extends Seeder
@@ -20,7 +18,7 @@ class EnrollmentSeeder extends Seeder
     {
         // Get academic year (should exist from seeding)
         $academicYear = AcademicYear::first();
-        if (!$academicYear) {
+        if (! $academicYear) {
             $academicYear = AcademicYear::create([
                 'year' => 2025,
                 'description' => '2025',
@@ -31,7 +29,7 @@ class EnrollmentSeeder extends Seeder
 
         // Get plan (should exist from seeding)
         $plan = Plan::first();
-        if (!$plan) {
+        if (! $plan) {
             $plan = Plan::create([
                 'name' => 'Plano Padrão',
                 'base_amount' => 1000.00,
@@ -63,7 +61,7 @@ class EnrollmentSeeder extends Seeder
                     'classroom_id' => $classroom->id,
                     'enrollment_date' => now()->subMonths(1)->format('Y-m-d'),
                     'status' => 'active',
-                    'academic_year' => $academicYear->id,
+                    'academic_year_id' => $academicYear->id,
                     'plan_id' => $plan->id,
                 ]);
             }

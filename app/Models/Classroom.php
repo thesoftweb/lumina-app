@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Bootstrap\BootProviders;
 
 class Classroom extends Model
 {
@@ -37,6 +36,11 @@ class Classroom extends Model
     public function subjects()
     {
         return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
+    }
+
+    public function classroomSubjects()
+    {
+        return $this->hasMany(ClassroomSubject::class);
     }
 
     public function plans()

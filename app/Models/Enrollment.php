@@ -36,12 +36,17 @@ class Enrollment extends Model
 
     public function academicYear()
     {
-        return $this->hasOne(AcademicYear::class);
+        return $this->belongsTo(AcademicYear::class);
     }
 
     public function grade()
     {
         return $this->hasMany(Grade::class);
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
     }
 
     public function plan()
