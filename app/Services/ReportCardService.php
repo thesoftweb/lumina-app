@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AssessmentMode;
 use App\Models\Attendance;
 use App\Models\Enrollment;
 use App\Models\Term;
@@ -10,7 +11,7 @@ class ReportCardService
 {
     public function forEnrollment(Enrollment $enrollment): array
     {
-        $enrollment->load(['student', 'classroom.classroomSubjects.subject', 'academicYear']);
+        $enrollment->load(['student', 'classroom.classroomSubjects.subject', 'classroom.level', 'academicYear']);
         $academicYear = $enrollment->academicYear;
         $terms = Term::query()
             ->when($academicYear?->year, fn ($query, $year) => $query->where('year', $year))
@@ -18,17 +19,31 @@ class ReportCardService
             ->get();
 
         $grades = $enrollment->grade()
-            ->with(['classroomSubject.subject', 'term'])
+            ->with(['classroomSubject.subject', 'term', 'conceptScale'])
             ->get()
             ->keyBy(fn ($grade) => $grade->classroom_subject_id.':'.$grade->term_id);
+        $mode = $enrollment->classroom->assessment_mode ?? AssessmentMode::Numeric;
 
         $subjects = $enrollment->classroom->classroomSubjects
-            ->map(fn ($assignment) => [
-                'name' => $assignment->subject->name,
-                'grades' => $terms->mapWithKeys(fn ($term) => [
-                    $term->id => $grades->get($assignment->id.':'.$term->id)?->grade,
-                ])->all(),
-            ])
+            ->map(function ($assignment) use ($grades, $mode, $terms): array {
+                $termGrades = $terms->mapWithKeys(function ($term) use ($assignment, $grades): array {
+                    $grade = $grades->get($assignment->id.':'.$term->id);
+
+                    return [$term->id => $grade?->grade ?? $grade?->conceptScale?->code];
+                })->all();
+                $numericGrades = collect($termGrades)->filter(fn ($grade) => is_numeric($grade));
+                $annualAverage = $mode === AssessmentMode::Numeric
+                    && $terms->isNotEmpty()
+                    && $numericGrades->count() === $terms->count()
+                        ? round($numericGrades->average(), 2)
+                        : null;
+
+                return [
+                    'name' => $assignment->subject->name,
+                    'grades' => $termGrades,
+                    'annual_average' => $annualAverage,
+                ];
+            })
             ->sortBy('name')
             ->values();
 
@@ -45,6 +60,7 @@ class ReportCardService
             'student' => $enrollment->student,
             'classroom' => $enrollment->classroom,
             'academicYear' => $academicYear,
+            'assessmentMode' => $mode,
             'terms' => $terms,
             'subjects' => $subjects,
             'attendance' => [

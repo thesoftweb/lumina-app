@@ -3,11 +3,15 @@
 namespace App\Filament\Pages;
 
 use BackedEnum;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class MyProfile extends Page
 {
@@ -19,15 +23,8 @@ class MyProfile extends Page
 
     protected string $view = 'filament.pages.my-profile';
 
-    public string $name = '';
-
-    public ?string $dateOfBirth = null;
-
-    public ?string $email = null;
-
-    public ?string $phone = null;
-
-    public ?string $documentNumber = null;
+    /** @var array<string, mixed> */
+    public array $data = [];
 
     public static function canAccess(): bool
     {
@@ -37,32 +34,68 @@ class MyProfile extends Page
     public function mount(): void
     {
         $teacher = Auth::user()->teacher;
-        $this->name = $teacher->name;
-        $this->dateOfBirth = $teacher->date_of_birth;
-        $this->email = $teacher->email;
-        $this->phone = $teacher->phone;
-        $this->documentNumber = $teacher->document_number;
+
+        $this->form->fill($teacher->only([
+            'name',
+            'date_of_birth',
+            'email',
+            'phone',
+            'document_number',
+        ]));
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Dados pessoais')
+                    ->description('Mantenha seus dados cadastrais atualizados.')
+                    ->icon(Heroicon::OutlinedUserCircle)
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label('Nome completo')
+                                    ->prefixIcon(Heroicon::OutlinedUser)
+                                    ->required()
+                                    ->maxLength(255),
+                                DatePicker::make('date_of_birth')
+                                    ->label('Data de nascimento')
+                                    ->prefixIcon(Heroicon::OutlinedCake)
+                                    ->native(false),
+                                TextInput::make('email')
+                                    ->label('E-mail')
+                                    ->prefixIcon(Heroicon::OutlinedEnvelope)
+                                    ->email()
+                                    ->maxLength(255)
+                                    ->unique('teachers', 'email', ignorable: Auth::user()->teacher),
+                                TextInput::make('phone')
+                                    ->label('Telefone')
+                                    ->prefixIcon(Heroicon::OutlinedPhone)
+                                    ->tel()
+                                    ->mask('(99) 99999-9999')
+                                    ->maxLength(20),
+                                TextInput::make('document_number')
+                                    ->label('CPF / documento')
+                                    ->prefixIcon(Heroicon::OutlinedIdentification)
+                                    ->mask('999.999.999-99')
+                                    ->maxLength(100)
+                                    ->unique('teachers', 'document_number', ignorable: Auth::user()->teacher),
+                            ]),
+                    ]),
+            ])
+            ->statePath('data');
     }
 
     public function save(): void
     {
         $teacher = Auth::user()->teacher;
-        $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'dateOfBirth' => ['nullable', 'date'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('teachers', 'email')->ignore($teacher->id)],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'documentNumber' => ['nullable', 'string', 'max:100', Rule::unique('teachers', 'document_number')->ignore($teacher->id)],
-        ]);
+        $teacher->update($this->form->getState());
 
-        $teacher->update([
-            'name' => $this->name,
-            'date_of_birth' => $this->dateOfBirth,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'document_number' => $this->documentNumber,
-        ]);
-
-        Notification::make()->title('Perfil atualizado')->success()->send();
+        Notification::make()
+            ->title('Perfil atualizado')
+            ->body('Seus dados foram salvos com sucesso.')
+            ->success()
+            ->send();
     }
 }

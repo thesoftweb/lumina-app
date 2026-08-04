@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Classrooms\Tables;
 
-use Dom\Text;
+use App\Enums\AssessmentMode;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,7 +24,11 @@ class ClassroomsTable
                     ->label('Nivel')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('enrollments_count')
+                TextColumn::make('assessment_mode')
+                    ->label('Avaliação')
+                    ->formatStateUsing(fn (AssessmentMode|string $state): string => $state instanceof AssessmentMode ? $state->label() : (AssessmentMode::tryFrom($state)?->label() ?? $state))
+                    ->badge()
+                    ->color(fn (AssessmentMode|string $state): string => ($state instanceof AssessmentMode ? $state : AssessmentMode::tryFrom($state)) === AssessmentMode::Concept ? 'info' : 'success'),                TextColumn::make('enrollments_count')
                     ->label('Estudantes')
                     ->counts('enrollments')
                     ->badge()

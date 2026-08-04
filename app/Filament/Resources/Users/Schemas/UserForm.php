@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 
 class UserForm
@@ -18,6 +20,8 @@ class UserForm
                     ->description('Preencha os dados do usuário.')
                     ->columnSpanFull()
                     ->schema([
+                        Hidden::make('company_id')
+                            ->default(fn () => Auth::user()?->company_id),
                         TextInput::make('name')
                             ->prefixIcon('heroicon-o-user')
                             ->label('Nome')
@@ -28,22 +32,22 @@ class UserForm
                             ->label('Email')
                             ->email()
                             ->required()
-                            ->unique(table: 'users', column: 'email', ignorable: fn($record) => $record)
+                            ->unique(table: 'users', column: 'email', ignorable: fn ($record) => $record)
                             ->maxLength(255),
                         TextInput::make('password')
                             ->password()
                             ->prefixIcon('heroicon-o-lock-closed')
                             ->label('Senha')
-                            ->required(fn($record) => $record === null)
+                            ->required(fn ($record) => $record === null)
                             ->minLength(8)
                             ->confirmed()
-                            ->dehydrateStateUsing(fn($state) => $state ? bcrypt($state) : null)
-                            ->dehydrated(fn($state) => $state !== null),
+                            ->dehydrateStateUsing(fn ($state) => $state ? bcrypt($state) : null)
+                            ->dehydrated(fn ($state) => $state !== null),
                         TextInput::make('password_confirmation')
                             ->password()
                             ->prefixIcon('heroicon-o-lock-closed')
                             ->label('Confirmar Senha')
-                            ->required(fn($record) => $record === null)
+                            ->required(fn ($record) => $record === null)
                             ->dehydrated(false),
                     ]),
                 Section::make('Permissões')
@@ -53,7 +57,7 @@ class UserForm
                         CheckboxList::make('roles')
                             ->label('Roles')
                             ->relationship('roles', 'name')
-                            ->options(fn() => Role::pluck('name', 'id'))
+                            ->options(fn () => Role::pluck('name', 'id'))
                             ->columns(1),
                     ]),
             ]);

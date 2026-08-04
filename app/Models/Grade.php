@@ -6,14 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class Grade extends Model
 {
-
     public $fillable = [
         'classroom_subject_id',
         'term_id',
         'teacher_id',
         'grade',
+        'grade_1',
+        'grade_2',
+        'recovery_grade',
+        'concept_scale_id',
         'enrollment_id',
-        'comments'
+        'comments',
+    ];
+
+    protected $casts = [
+        'grade' => 'decimal:2',
+        'grade_1' => 'decimal:2',
+        'grade_2' => 'decimal:2',
+        'recovery_grade' => 'decimal:2',
     ];
 
     public function enrollment()
@@ -29,6 +39,11 @@ class Grade extends Model
     public function teacher()
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    public function conceptScale()
+    {
+        return $this->belongsTo(ConceptScale::class);
     }
 
     public function classroomSubject()
