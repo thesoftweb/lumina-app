@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class AttendanceResource extends Resource
@@ -48,6 +49,11 @@ class AttendanceResource extends Resource
         return AttendancesTable::configure($table);
     }
 
+    public static function canCreate(): bool
+    {
+        return ! Auth::user()->hasRole('teacher') && parent::canCreate();
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -71,5 +77,15 @@ class AttendanceResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        return $user->hasRole('teacher')
+            ? $query->where('teacher_id', $user->teacher?->id ?? 0)
+            : $query;
     }
 }

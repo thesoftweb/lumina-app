@@ -32,4 +32,10 @@ class Teacher extends Model
     {
         return $this->belongsToMany(Classroom::class, 'classroom_teacher', 'teacher_id', 'classroom_id');
     }
+
+    public function classroomSubjects()
+    {
+        return $this->belongsToMany(ClassroomSubject::class, 'classroom_subject_teacher', 'teacher_id', 'classroom_subject_id')
+            ->withTimestamps();
+    }
 }

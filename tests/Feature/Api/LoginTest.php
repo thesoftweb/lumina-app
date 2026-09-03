@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -12,11 +13,15 @@ class LoginTest extends TestCase
     use RefreshDatabase;
 
     protected Company $company;
+
     protected User $admin;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
 
         // Criar empresa de teste
         $this->company = Company::create([

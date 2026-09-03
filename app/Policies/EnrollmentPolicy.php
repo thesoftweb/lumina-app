@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\Enrollment;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class EnrollmentPolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */
@@ -64,4 +66,3 @@ class EnrollmentPolicy
         return $user->hasRole('admin');
     }
 }
-

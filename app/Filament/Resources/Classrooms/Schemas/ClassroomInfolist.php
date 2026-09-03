@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\Classrooms\Schemas;
 
-use Filament\Schemas\Components\Tabs;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 
 class ClassroomInfolist
@@ -29,7 +29,9 @@ class ClassroomInfolist
                                                     ->label('Nome da Turma'),
                                                 TextEntry::make('level.name')
                                                     ->label('Nível'),
-                                                TextEntry::make('teachers_count')
+                                                TextEntry::make('assessment_mode')
+                                                    ->label('Modo de avaliação')
+                                                    ->formatStateUsing(fn ($state): string => $state?->label() ?? 'Notas'),                                                TextEntry::make('teachers_count')
                                                     ->label('Quantidade de Professores')
                                                     ->counts('teachers'),
                                                 TextEntry::make('enrollments_count')
@@ -37,7 +39,7 @@ class ClassroomInfolist
                                                     ->counts('enrollments'),
                                                 TextEntry::make('whatsapp_group')
                                                     ->label('Grupo WhatsApp')
-                                                    ->url(fn($state) => $state)
+                                                    ->url(fn ($state) => $state)
                                                     ->openUrlInNewTab(),
                                                 TextEntry::make('created_at')
                                                     ->label('Criada em')

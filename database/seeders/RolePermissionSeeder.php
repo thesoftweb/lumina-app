@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()['cache']->forget('spatie.permission.cache');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Create permissions for teachers
         $teacherPermissions = [
@@ -29,10 +29,16 @@ class RolePermissionSeeder extends Seeder
             'create_class_diary',
             'view_own_lesson_plan',
             'create_lesson_plan',
+            'view_assigned_students',
+            'view_birthdays',
+            'view_report_cards',
+            'edit_own_attendance',
+            'edit_own_class_diary',
+            'edit_own_lesson_plan',
         ];
 
         foreach ($teacherPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create permissions for coordinators
@@ -43,10 +49,14 @@ class RolePermissionSeeder extends Seeder
             'create_teacher',
             'edit_teacher',
             'view_reports',
+            'view_all_students',
+            'manage_attendance',
+            'manage_class_diaries',
+            'manage_lesson_plans',
         ];
 
         foreach ($coordinatorPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create admin permissions
@@ -58,17 +68,19 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($adminPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create roles and assign permissions
-        $teacherRole = Role::create(['name' => 'teacher', 'guard_name' => 'web']);
-        $teacherRole->givePermissionTo($teacherPermissions);
+        $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
+        $teacherRole->syncPermissions($teacherPermissions);
 
-        $coordinatorRole = Role::create(['name' => 'coordinator', 'guard_name' => 'web']);
-        $coordinatorRole->givePermissionTo(array_merge($teacherPermissions, $coordinatorPermissions));
+        $coordinatorRole = Role::firstOrCreate(['name' => 'coordinator', 'guard_name' => 'web']);
+        $coordinatorRole->syncPermissions(array_merge($teacherPermissions, $coordinatorPermissions));
 
-        $adminRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $adminRole->givePermissionTo(Permission::all());
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $adminRole->syncPermissions(Permission::all());
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

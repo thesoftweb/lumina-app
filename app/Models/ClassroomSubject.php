@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class ClassroomSubject extends Pivot
@@ -22,5 +21,11 @@ class ClassroomSubject extends Pivot
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(Teacher::class, 'classroom_subject_teacher', 'classroom_subject_id', 'teacher_id')
+            ->withTimestamps();
     }
 }

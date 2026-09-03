@@ -15,8 +15,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class ClassroomResource extends Resource
@@ -74,6 +74,8 @@ class ClassroomResource extends Resource
                 $query->whereHas('teachers', function ($q) use ($teacher) {
                     $q->where('teacher_id', $teacher->id);
                 });
+            } else {
+                $query->whereRaw('1 = 0');
             }
         }
 

@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
@@ -28,11 +29,11 @@ class StudentResource extends Resource
 
     protected static ?string $modelLabel = 'Alunos';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Secretaria';
+    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
 
     public static function shouldRegisterNavigation(): bool
     {
-        return !Auth::user()->hasRole('teacher');
+        return Auth::user()->hasAnyRole(['teacher', 'coordinator', 'admin']);
     }
 
     public static function form(Schema $schema): Schema
@@ -65,5 +66,21 @@ class StudentResource extends Resource
             'view' => ViewStudent::route('/{record}'),
             'edit' => EditStudent::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()->with(['enrollments.classroom']);
+        $user = Auth::user();
+
+        if ($user->hasRole('teacher')) {
+            $teacherId = $user->teacher?->id;
+
+            return $teacherId
+                ? $query->whereHas('enrollments.classroom.teachers', fn (Builder $query) => $query->whereKey($teacherId))
+                : $query->whereRaw('1 = 0');
+        }
+
+        return $query;
     }
 }

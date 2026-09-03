@@ -2,20 +2,34 @@
 
 namespace App\Models;
 
+use App\Enums\AssessmentMode;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Bootstrap\BootProviders;
+use Illuminate\Validation\ValidationException;
 
 class Classroom extends Model
 {
     protected $fillable = [
         'name',
         'level_id',
+        'assessment_mode',
+    ];
+
+    protected $casts = [
+        'assessment_mode' => AssessmentMode::class,
     ];
 
     protected static function booted()
     {
         static::addGlobalScope('ordered', function ($query) {
             $query->orderBy('name');
+        });
+
+        static::updating(function (Classroom $classroom): void {
+            if ($classroom->isDirty('assessment_mode') && $classroom->enrollments()->whereHas('grade')->exists()) {
+                throw ValidationException::withMessages([
+                    'assessment_mode' => 'O modo de avaliação não pode ser alterado após o lançamento de resultados.',
+                ]);
+            }
         });
     }
 
@@ -37,6 +51,11 @@ class Classroom extends Model
     public function subjects()
     {
         return $this->belongsToMany(Subject::class)->using(ClassroomSubject::class);
+    }
+
+    public function classroomSubjects()
+    {
+        return $this->hasMany(ClassroomSubject::class);
     }
 
     public function plans()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Classrooms\Schemas;
 
+use App\Enums\AssessmentMode;
 use App\Models\Plan;
 use App\Models\Subject;
 use Filament\Forms\Components\CheckboxList;
@@ -28,7 +29,12 @@ class ClassroomForm
                             ->label('Titulo')
                             ->required()
                             ->maxLength(255),
-                        Select::make('level_id')
+                        Select::make('assessment_mode')
+                            ->label('Modo de avaliação')
+                            ->options(collect(AssessmentMode::cases())->mapWithKeys(fn (AssessmentMode $mode): array => [$mode->value => $mode->label()]))
+                            ->default(AssessmentMode::Numeric->value)
+                            ->required()
+                            ->helperText('Não poderá ser alterado depois que houver resultados lançados.'),                        Select::make('level_id')
                             ->prefixIcon('heroicon-o-book-open')
                             ->options(function () {
                                 return \App\Models\Level::all()->pluck('name', 'id');
@@ -83,7 +89,7 @@ class ClassroomForm
                                     ->columns(2)
                                     ->options(Subject::all()->pluck('name', 'id')),
                             ]),
-                    ])
+                    ]),
             ]);
     }
 }
