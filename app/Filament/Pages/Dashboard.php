@@ -4,8 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Filament\Widgets\BirthdaysWidget;
 use App\Filament\Widgets\EnrollmentsCountWidget;
-use App\Filament\Widgets\NextMonthInvoicesTotalWidget;
-use App\Filament\Widgets\PaidInvoicesStatsWidget;
 use App\Filament\Widgets\TeacherClassroomsWidget;
 use App\Filament\Widgets\TeacherStatsWidget;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -25,8 +23,6 @@ class Dashboard extends BaseDashboard
 
         return [
             EnrollmentsCountWidget::class,
-            PaidInvoicesStatsWidget::class,
-            NextMonthInvoicesTotalWidget::class,
         ];
     }
 }
