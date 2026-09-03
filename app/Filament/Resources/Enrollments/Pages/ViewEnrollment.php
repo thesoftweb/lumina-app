@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Enrollments\Pages;
 
+use App\Enums\EnrollmentStatus;
 use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
@@ -77,6 +78,7 @@ class ViewEnrollment extends ViewRecord
             ->modalHeading('Gerar Fatura de Matrícula')
             ->modalDescription('Tem certeza que deseja gerar a fatura de matrícula para este aluno?')
             ->modalSubmitActionLabel('Gerar')
+            ->visible(fn () => $this->record->status !== EnrollmentStatus::Canceled)
             ->action(function (InvoiceService $invoiceService, array $data) {
                 try {
                     $invoice = $invoiceService->createEnrollmentInvoiceFromEnrollment(
@@ -136,6 +138,7 @@ class ViewEnrollment extends ViewRecord
                     ->required()
                     ->default(1),
             ])
+            ->visible(fn () => $this->record->status !== EnrollmentStatus::Canceled)
             ->action(function (InvoiceService $invoiceService, array $data) {
                 try {
                     $quantity = (int) $data['quantity'];

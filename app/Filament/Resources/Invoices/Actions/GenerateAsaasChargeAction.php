@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Invoices\Actions;
 
+use App\Enums\EnrollmentStatus;
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\AsaasService;
 use Filament\Actions\Action;
@@ -21,6 +23,16 @@ class GenerateAsaasChargeAction
             ->modalSubheading('Esta fatura será enviada para o Asaas e gerará boleto e PIX dinâmico.')
             ->modalButton('Gerar')
             ->action(function (Invoice $record) {
+                if ($record->enrollment?->status === EnrollmentStatus::Canceled) {
+                    Notification::make()
+                        ->title('Matrícula cancelada')
+                        ->body('Não é possível gerar uma cobrança para uma matrícula cancelada.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
                 $asaasService = new AsaasService();
 
                 // Sincronizar cliente se necessário
@@ -53,6 +65,8 @@ class GenerateAsaasChargeAction
                         ->send();
                 }
             })
-            ->visible(fn (Invoice $record) => !$record->asaas_invoice_id && $record->status !== 'paid' && $record->status !== 'canceled');
+            ->visible(fn (Invoice $record) => ! $record->asaas_invoice_id
+                && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Canceled], true)
+                && $record->enrollment?->status !== EnrollmentStatus::Canceled);
     }
 }

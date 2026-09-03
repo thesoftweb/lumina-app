@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\CreateInvoiceDTO;
+use App\Enums\EnrollmentStatus;
 use App\Enums\InvoiceType;
 use App\Models\Enrollment;
 use App\Models\Invoice;
@@ -20,6 +21,8 @@ class InvoiceService
         ?int $companyId = null,
         ?string $notes = null
     ): Invoice {
+        $this->ensureEnrollmentCanBeBilled($enrollment);
+
         $issueDate = now();
         $dueDate = Carbon::parse($enrollment->enrollment_date)->copy()->addDays(7);
 
@@ -92,6 +95,8 @@ class InvoiceService
         ?int $accountId = null,
         ?string $notes = null
     ): Invoice {
+        $this->ensureEnrollmentCanBeBilled($enrollment);
+
         $issueDate = now();
 
         // Usa o day_of_payment do enrollment como dia fixo de vencimento
@@ -401,6 +406,13 @@ class InvoiceService
         ]);
 
         return $invoice;
+    }
+
+    private function ensureEnrollmentCanBeBilled(Enrollment $enrollment): void
+    {
+        if ($enrollment->status === EnrollmentStatus::Canceled) {
+            throw new \DomainException('Não é possível gerar faturas para uma matrícula cancelada.');
+        }
     }
 
     /**

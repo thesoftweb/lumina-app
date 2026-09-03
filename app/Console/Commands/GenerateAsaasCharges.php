@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\EnrollmentStatus;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\AsaasService;
@@ -64,6 +65,14 @@ class GenerateAsaasCharges extends Command
             InvoiceStatus::Open->value,
             InvoiceStatus::Partial->value,
         ]);
+
+        // Faturas avulsas continuam elegíveis; faturas de matrículas canceladas não.
+        $query->where(function ($query) {
+            $query->whereNull('enrollment_id')
+                ->orWhereHas('enrollment', function ($query) {
+                    $query->where('status', '!=', EnrollmentStatus::Canceled->value);
+                });
+        });
 
         // Por padrão, apenas invoices sem cobrança no Asaas
         if (!$this->option('force')) {
@@ -143,4 +152,3 @@ class GenerateAsaasCharges extends Command
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 }
-

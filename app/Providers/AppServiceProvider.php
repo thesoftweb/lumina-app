@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\Grade;
 use App\Models\LessonPlan;
 use App\Models\Teacher;
+use App\Observers\EnrollmentObserver;
 use App\Policies\AttendancePolicy;
 use App\Policies\ClassDiaryPolicy;
 use App\Policies\ClassroomPolicy;
@@ -55,6 +56,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Enrollment::observe(EnrollmentObserver::class);
     }
 }
