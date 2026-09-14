@@ -24,7 +24,10 @@ Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])
 Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('login', [PortalController::class, 'login'])->name('login');
     Route::post('access', [PortalController::class, 'accessPortal'])->name('access');
-    Route::get('student', [PortalController::class, 'showStudent'])->name('show');
+    Route::get('aluno', [PortalController::class, 'showStudent'])->name('show');
+    Route::get('matriculas', [PortalController::class, 'showEnrollments'])->name('enrollments.index');
+    Route::get('faturas', [PortalController::class, 'showInvoices'])->name('invoices.index');
+    Route::redirect('student', '/portal/aluno');
 
     // PIX QR Code Routes
     Route::get('invoices/{invoice}/pix-qrcode', [PortalPixQrCodeController::class, 'show'])->name('invoices.pix-qrcode');

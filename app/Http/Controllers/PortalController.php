@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Customer;
 use App\Models\Enrollment;
 use App\Models\Invoice;
-use App\Models\Customer;
+use App\Services\AgendaService;
+use Illuminate\Http\Request;
 
 class PortalController extends Controller
 {
@@ -48,7 +49,22 @@ class PortalController extends Controller
         return redirect()->route('portal.show');
     }
 
-    public function showStudent(Request $request)
+    public function showStudent(AgendaService $agendaService)
+    {
+        return $this->showPortalPage('home', $agendaService);
+    }
+
+    public function showEnrollments(AgendaService $agendaService)
+    {
+        return $this->showPortalPage('enrollments', $agendaService);
+    }
+
+    public function showInvoices(AgendaService $agendaService)
+    {
+        return $this->showPortalPage('invoices', $agendaService);
+    }
+
+    private function showPortalPage(string $portalPage, AgendaService $agendaService)
     {
         $document = session('customer_document');
 
@@ -66,7 +82,15 @@ class PortalController extends Controller
         // Search enrollments for this customer's students
         $enrollments = Enrollment::whereHas('student', function ($query) use ($customer) {
             $query->where('customer_id', $customer->id);
-        })->get();
+        })->with(['student', 'classroom'])->get();
+
+        $activeClassroomIds = $enrollments
+            ->filter(fn (Enrollment $enrollment) => $enrollment->status?->value === 'active')
+            ->pluck('classroom_id')
+            ->filter()
+            ->unique();
+
+        $agendas = $agendaService->getStudentAgendasForClassrooms($activeClassroomIds);
 
         // Search invoices directly by customer_id
         $invoices = Invoice::where('customer_id', $customer->id)
@@ -80,6 +104,8 @@ class PortalController extends Controller
             'document' => $formattedDocument,
             'enrollments' => $enrollments,
             'invoices' => $invoices,
+            'agendas' => $agendas,
+            'portalPage' => $portalPage,
         ]);
     }
 }

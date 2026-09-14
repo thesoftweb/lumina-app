@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Models\AcademicYear;
 use App\Models\AccountPlan;
-use App\Models\Agenda;
+use App\Models\Schedule;
 use App\Models\Attendance;
 use App\Models\ClassDiary;
 use App\Models\Classroom;
@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             AcademicYear::class,
             AccountPlan::class,
-            Agenda::class,
+            Schedule::class,
             Company::class,
             Customer::class,
             Document::class,

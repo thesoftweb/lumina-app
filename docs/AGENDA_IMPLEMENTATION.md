@@ -39,7 +39,7 @@
   - Descrição (rich editor, opcional)
   - Data e hora (obrigatória)
   - Toggle "Agenda Global"
-  - Seletor de turma (obrigatório se não for global)
+  - Seletor de turma (obrigatório se não for global) multi seleção
 - Tabela com:
   - Título (searchable, sortable)
   - Data/hora formatada

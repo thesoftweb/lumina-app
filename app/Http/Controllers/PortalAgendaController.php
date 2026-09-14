@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Enrollment;
 use App\Services\AgendaService;
-use Illuminate\Support\Facades\Session;
 
 class PortalAgendaController extends Controller
 {
@@ -30,6 +29,17 @@ class PortalAgendaController extends Controller
         return Customer::where('document', $document)->first();
     }
 
+    private function activeClassroomIds(Customer $customer)
+    {
+        return Enrollment::whereHas('student', function ($query) use ($customer) {
+            $query->where('customer_id', $customer->id);
+        })
+            ->where('status', 'active')
+            ->pluck('classroom_id')
+            ->filter()
+            ->unique();
+    }
+
     /**
      * List all agendas for the student
      */
@@ -41,26 +51,16 @@ class PortalAgendaController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        // Get first active enrollment
-        $enrollment = Enrollment::whereHas('student', function ($query) use ($customer) {
-            $query->where('customer_id', $customer->id);
-        })
-            ->where('status', 'active')
-            ->first();
+        $classroomIds = $this->activeClassroomIds($customer);
 
-        if (!$enrollment) {
+        if ($classroomIds->isEmpty()) {
             return response()->json(['error' => 'No active enrollment found'], 404);
         }
 
-        $agendas = $this->agendaService->getStudentAgendasPaginated(
-            $enrollment->classroom_id,
-            perPage: 15,
-            upcoming: false
-        );
+        $agendas = $this->agendaService->getStudentAgendasForClassrooms($classroomIds);
 
         return view('portal.agendas.index', [
             'agendas' => $agendas,
-            'enrollment' => $enrollment,
         ]);
     }
 
@@ -75,19 +75,14 @@ class PortalAgendaController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        // Get first active enrollment
-        $enrollment = Enrollment::whereHas('student', function ($query) use ($customer) {
-            $query->where('customer_id', $customer->id);
-        })
-            ->where('status', 'active')
-            ->first();
+        $classroomIds = $this->activeClassroomIds($customer);
 
-        if (!$enrollment) {
+        if ($classroomIds->isEmpty()) {
             return response()->json(['error' => 'No active enrollment found'], 404);
         }
 
-        $agendas = $this->agendaService->getStudentAgendas(
-            $enrollment->classroom_id,
+        $agendas = $this->agendaService->getStudentAgendasForClassrooms(
+            $classroomIds,
             upcoming: true
         );
 
@@ -108,18 +103,13 @@ class PortalAgendaController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        // Get first active enrollment
-        $enrollment = Enrollment::whereHas('student', function ($query) use ($customer) {
-            $query->where('customer_id', $customer->id);
-        })
-            ->where('status', 'active')
-            ->first();
+        $classroomIds = $this->activeClassroomIds($customer);
 
-        if (!$enrollment) {
+        if ($classroomIds->isEmpty()) {
             return response()->json(['error' => 'No active enrollment found'], 404);
         }
 
-        $agenda = $this->agendaService->getStudentAgendas($enrollment->classroom_id)
+        $agenda = $this->agendaService->getStudentAgendasForClassrooms($classroomIds)
             ->where('id', $id)
             ->first();
 
@@ -127,6 +117,8 @@ class PortalAgendaController extends Controller
             return response()->json(['error' => 'Agenda not found'], 404);
         }
 
-        return response()->json($agenda);
+        return view('portal.agendas.show', [
+            'agenda' => $agenda,
+        ]);
     }
 }

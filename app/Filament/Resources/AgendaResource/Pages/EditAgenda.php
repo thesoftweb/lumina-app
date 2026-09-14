@@ -14,8 +14,16 @@ class EditAgenda extends EditRecord
     {
         // Proteger company_id de ser alterado
         $data['company_id'] = $this->record->company_id;
+        $data['classroom_id'] = null;
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        if ($this->record->global) {
+            $this->record->classrooms()->detach();
+        }
     }
 
     protected function getHeaderActions(): array

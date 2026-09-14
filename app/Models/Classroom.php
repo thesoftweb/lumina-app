@@ -68,8 +68,8 @@ class Classroom extends Model
         return $this->hasMany(Event::class);
     }
 
-    public function agendas()
+    public function schedules()
     {
-        return $this->hasMany(Agenda::class);
+        return $this->belongsToMany(Schedule::class, 'classroom_schedule')->withTimestamps();
     }
 }

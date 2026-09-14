@@ -12,7 +12,15 @@ class CreateAgenda extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['company_id'] = auth()->user()->company_id ?? 1;
+        $data['classroom_id'] = null;
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        if ($this->record->global) {
+            $this->record->classrooms()->detach();
+        }
     }
 }

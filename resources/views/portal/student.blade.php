@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Meus Alunos - Portal do Aluno</title>
+    <title>{{ $portalPage === 'invoices' ? 'Faturas' : ($portalPage === 'enrollments' ? 'Matrículas' : 'Início') }} - Portal do Aluno</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,11 +29,15 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
 
     <style>
         body {
             font-family: "Inter", sans-serif;
+        }
+
+        h1, h2, h3 {
+            font-family: "Nunito", "Inter", sans-serif;
         }
 
         .focus-azul:focus {
@@ -41,8 +45,15 @@
             box-shadow: 0 0 0 3px rgba(0, 148, 210, 0.2);
         }
 
-        html {
-            scroll-behavior: smooth;
+        .portal-link:focus-visible {
+            outline: 3px solid rgba(0, 148, 210, 0.3);
+            outline-offset: 3px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
@@ -51,7 +62,7 @@
     <!-- HEADER -->
     <header class="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between h-24">
-            <a href="/" class="flex items-center">
+            <a href="{{ route('portal.show') }}" class="flex items-center" aria-label="Página inicial do Portal do Aluno">
                 <!-- Logo para Desktop -->
                 <img src="{{ asset('assets/images/positive.png') }}" alt="Centro Educacional Criança Inteligente"
                     class="hidden md:block h-20" />
@@ -72,16 +83,72 @@
     <!-- SEÇÃO PRINCIPAL -->
     <section class="py-8 md:py-16">
         <div class="max-w-7xl mx-auto px-4">
+            @if($portalPage === 'home')
             <!-- Bem-vindo -->
-            <div class="mb-8">
-                <h1 class="text-4xl font-bold text-azul-principal mb-2">
+            <div class="mb-6 md:mb-8">
+                <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-verde-secundaria">Área da família</p>
+                <h1 class="text-3xl md:text-4xl font-bold text-azul-principal mb-2">
                     Bem-vindo ao Portal
                 </h1>
                 <p class="text-gray-600">
-                    Consulte as matrículas e faturas vinculadas ao CPF: <strong>{{ $document }}</strong>
+                    Acompanhe a agenda escolar, as matrículas e as faturas vinculadas ao CPF <strong>{{ $document }}</strong>.
                 </p>
             </div>
+            @endif
 
+            @if($portalPage === 'home')
+            <nav aria-label="Áreas do portal" class="mb-10">
+                <div class="grid gap-3 md:grid-cols-3">
+                    <a href="{{ route('portal.agendas.index') }}" class="portal-link group flex min-h-24 items-center gap-4 rounded-xl border border-blue-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-azul-principal hover:shadow-md md:min-h-40 md:flex-col md:items-start md:justify-between md:p-5">
+                        <span class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-azul-claro text-azul-hover">
+                            <svg aria-hidden="true" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" /></svg>
+                        </span>
+                        <span class="min-w-0 flex-1 md:flex-none">
+                            <span class="flex items-center gap-2 text-lg font-extrabold text-gray-900">
+                                Agenda
+                                <span class="rounded-full bg-azul-claro px-2 py-0.5 font-sans text-xs text-azul-hover">{{ $agendas->count() }}</span>
+                            </span>
+                            <span class="mt-1 block text-sm text-gray-600">Avisos, reuniões e datas importantes.</span>
+                        </span>
+                        <svg aria-hidden="true" class="h-5 w-5 flex-none text-gray-400 transition group-hover:translate-x-1 group-hover:text-azul-principal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7" /></svg>
+                    </a>
+
+                    <a href="{{ route('portal.invoices.index') }}" @if($portalPage === 'invoices') aria-current="page" @endif class="portal-link group flex min-h-24 items-center gap-4 rounded-xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-verde-principal hover:shadow-md md:min-h-40 md:flex-col md:items-start md:justify-between md:p-5 {{ $portalPage === 'invoices' ? 'border-verde-principal ring-2 ring-green-100' : 'border-gray-200' }}">
+                        <span class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-verde-claro text-verde-secundaria">
+                            <svg aria-hidden="true" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a4 4 0 0 0-8 0v2m-3 0h14l-1 12H7L6 9Zm5 5h2" /></svg>
+                        </span>
+                        <span class="min-w-0 flex-1 md:flex-none">
+                            <span class="flex items-center gap-2 text-lg font-extrabold text-gray-900">
+                                Faturas
+                                <span class="rounded-full bg-verde-claro px-2 py-0.5 font-sans text-xs text-verde-secundaria">{{ $invoices->count() }}</span>
+                            </span>
+                            <span class="mt-1 block text-sm text-gray-600">Consulte vencimentos e faça pagamentos.</span>
+                        </span>
+                        <svg aria-hidden="true" class="h-5 w-5 flex-none text-gray-400 transition group-hover:translate-x-1 group-hover:text-verde-secundaria" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7" /></svg>
+                    </a>
+
+                    <a href="{{ route('portal.enrollments.index') }}" @if($portalPage === 'enrollments') aria-current="page" @endif class="portal-link group flex min-h-24 items-center gap-4 rounded-xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-verde-principal hover:shadow-md md:min-h-40 md:flex-col md:items-start md:justify-between md:p-5 {{ $portalPage === 'enrollments' ? 'border-verde-principal ring-2 ring-green-100' : 'border-gray-200' }}">
+                        <span class="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-verde-claro text-verde-secundaria">
+                            <svg aria-hidden="true" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14 3 9l9-5 9 5-9 5Zm0 0 6.16-3.42A12 12 0 0 1 18 17.5c-3.5 2-8.5 2-12 0a12 12 0 0 1-.16-6.92L12 14Z" /></svg>
+                        </span>
+                        <span class="min-w-0 flex-1 md:flex-none">
+                            <span class="text-lg font-extrabold text-gray-900">Matrículas</span>
+                            <span class="mt-1 block text-sm text-gray-600">Veja turmas e dados dos alunos.</span>
+                        </span>
+                        <svg aria-hidden="true" class="h-5 w-5 flex-none text-gray-400 transition group-hover:translate-x-1 group-hover:text-verde-secundaria" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7" /></svg>
+                    </a>
+                </div>
+            </nav>
+            @else
+            <div class="mb-8">
+                <a href="{{ route('portal.show') }}" class="portal-link inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:border-azul-principal hover:text-azul-principal">
+                    <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7" /></svg>
+                    Voltar para o início
+                </a>
+            </div>
+            @endif
+
+            @if($portalPage === 'enrollments')
             <!-- SEÇÃO MATRÍCULAS -->
             <div class="mb-12">
                 <h2 class="text-2xl md:text-3xl font-bold text-azul-principal mb-6">
@@ -135,6 +202,9 @@
                 @endif
             </div>
 
+            @endif
+
+            @if($portalPage === 'invoices')
             <!-- SEÇÃO FATURAS -->
             <div>
                 <h2 class="text-2xl md:text-3xl font-bold text-azul-principal mb-6">
@@ -250,7 +320,7 @@
                             </p>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-2 mb-4 text-xs">
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
                             <div>
                                 <p class="text-gray-600">Vencimento:</p>
                                 <p class="font-bold">{{ $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A' }}</p>
@@ -265,9 +335,9 @@
                                     @endif
                                 </p>
                             </div>
-                            <div>
-                                <p class="text-gray-600">Valor Final:</p>
-                                <p class="font-bold text-azul-principal">R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}</p>
+                            <div class="col-span-2 flex items-center justify-between rounded-md bg-azul-claro px-3 py-2">
+                                <p class="font-medium text-azul-hover">Valor final</p>
+                                <p class="text-sm font-bold text-azul-principal">R$ {{ number_format($invoice->final_amount ?? 0, 2, ',', '.') }}</p>
                             </div>
                         </div>
 
@@ -312,10 +382,10 @@
                             </div>
                         @elseif($invoice->asaas_invoice_id)
                             <div class="flex gap-2">
-                                <a href="{{ $invoice->invoice_link }}" target="_blank" class="flex-1 px-3 py-2 bg-gray-600 text-white rounded-md text-xs font-bold text-center hover:bg-gray-700 transition">
+                                <a href="{{ $invoice->invoice_link }}" target="_blank" class="inline-flex min-h-11 flex-1 items-center justify-center px-3 py-2 bg-gray-600 text-white rounded-md text-xs font-bold text-center hover:bg-gray-700 transition">
                                     📄 Ver
                                 </a>
-                                <a href="javascript:void(0)" onclick="showAsaasLinks('{{ $invoice->id }}')" class="flex-1 px-3 py-2 bg-azul-principal text-white rounded-md text-xs font-bold text-center hover:bg-azul-hover transition">
+                                <a href="javascript:void(0)" onclick="showAsaasLinks('{{ $invoice->id }}')" class="inline-flex min-h-11 flex-1 items-center justify-center px-3 py-2 bg-azul-principal text-white rounded-md text-xs font-bold text-center hover:bg-azul-hover transition">
                                     💳 Pagar
                                 </a>
                             </div>
@@ -327,6 +397,7 @@
                 </div>
                 @endif
             </div>
+            @endif
         </div>
     </section>
 
@@ -339,6 +410,7 @@
         </div>
     </footer>
 
+    @if($portalPage === 'invoices')
     <!-- Modal de Links Asaas -->
     <div id="asaasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
@@ -501,6 +573,7 @@
             }
         });
     </script>
+    @endif
 </body>
 
 </html>
