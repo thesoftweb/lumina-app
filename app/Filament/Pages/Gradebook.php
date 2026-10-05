@@ -78,7 +78,7 @@ class Gradebook extends Page implements HasTable
                                 ->afterStateUpdated(fn () => $this->resetTable()),
                             Select::make('term_id')
                                 ->label('Bimestre')
-                                ->options(fn (): array => Term::query()->orderByDesc('year')->orderBy('order')->get()
+                                ->options(fn (): array => $this->availableTerms()->get()
                                     ->mapWithKeys(fn (Term $term): array => [
                                         $term->id => $term->name.($term->year ? " ({$term->year})" : ''),
                                     ])->all())
@@ -109,7 +109,9 @@ class Gradebook extends Page implements HasTable
                     ])
                     ->when(
                         $assignment && $termId,
-                        fn ($query) => $query->where('classroom_id', $assignment->classroom_id)->where('status', 'active'),
+                        fn ($query) => $query->where('classroom_id', $assignment->classroom_id)
+                            ->where('status', 'active')
+                            ->forTerm(Term::findOrFail($termId)),
                         fn ($query) => $query->whereRaw('1 = 0')
                     )
             )
@@ -234,9 +236,12 @@ class Gradebook extends Page implements HasTable
     {
         $assignmentId = $this->selectedAssignmentId();
         $termId = $this->selectedTermId();
-        abort_unless($assignmentId && $termId && Term::whereKey($termId)->exists(), 422);
+        $term = $termId ? Term::find($termId) : null;
+        abort_unless($assignmentId && $term, 422);
         $assignment = TeacherPanel::ensureClassroomSubject(Auth::user(), $assignmentId);
         abort_unless($enrollment->classroom_id === $assignment->classroom_id && $enrollment->status->value === 'active', 403);
+        // Impede lançar nota de um bimestre de outro ano letivo (ex.: 2026 em matrícula de 2027).
+        abort_unless($enrollment->acceptsTerm($term), 422, 'O bimestre não pertence ao ano letivo desta matrícula.');
 
         return [$assignmentId, $termId, $assignment->classroom->assessment_mode ?? AssessmentMode::Numeric];
     }
@@ -284,6 +289,30 @@ class Gradebook extends Page implements HasTable
             ->get()
             ->mapWithKeys(fn (ConceptScale $concept): array => [$concept->id => $concept->code.' — '.$concept->label])
             ->all();
+    }
+
+    /** Bimestres dos anos letivos presentes entre os alunos ativos da turma selecionada. */
+    private function availableTerms(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Term::query()->orderByDesc('year')->orderBy('order');
+        $assignmentId = $this->selectedAssignmentId();
+
+        if (! $assignmentId) {
+            return $query;
+        }
+
+        $assignment = TeacherPanel::ensureClassroomSubject(Auth::user(), $assignmentId);
+        $enrollments = Enrollment::query()
+            ->with('academicYear')
+            ->where('classroom_id', $assignment->classroom_id)
+            ->where('status', 'active')
+            ->get();
+
+        if ($enrollments->isEmpty() || $enrollments->contains(fn (Enrollment $enrollment) => ! $enrollment->academicYear)) {
+            return $query;
+        }
+
+        return $query->whereIn('year', $enrollments->pluck('academicYear.year')->unique());
     }
 
     private function selectedAssignmentId(): ?int

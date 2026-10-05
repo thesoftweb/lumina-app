@@ -72,6 +72,7 @@ class TakeAttendance extends Page
             ->with('student')
             ->where('classroom_id', $this->classroomId)
             ->where('status', 'active')
+            ->coveringDate($this->date)
             ->get()
             ->sortBy('student.name')
             ->each(function (Enrollment $enrollment): void {
@@ -103,7 +104,9 @@ class TakeAttendance extends Page
         $teacher = TeacherPanel::teacher(Auth::user());
         TeacherPanel::ensureClassroom(Auth::user(), $this->classroomId);
         $validIds = Enrollment::where('classroom_id', $this->classroomId)
-            ->where('status', 'active')->pluck('id');
+            ->where('status', 'active')
+            ->coveringDate($this->date)
+            ->pluck('id');
 
         DB::transaction(function () use ($teacher, $validIds): void {
             foreach ($this->attendance as $enrollmentId => $state) {

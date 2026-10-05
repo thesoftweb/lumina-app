@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Validation\ValidationException;
 
 class ClassroomSubject extends Pivot
 {
@@ -12,6 +13,22 @@ class ClassroomSubject extends Pivot
         'classroom_id',
         'subject_id',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (ClassroomSubject $assignment): void {
+            if (Grade::query()->where('classroom_subject_id', $assignment->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'subject' => 'Esta disciplina já possui notas lançadas na turma e não pode ser removida.',
+                ]);
+            }
+        });
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
 
     public function classroom()
     {

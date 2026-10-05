@@ -24,6 +24,19 @@ class Classroom extends Model
             $query->orderBy('name');
         });
 
+        static::deleting(function (Classroom $classroom): void {
+            $hasHistory = $classroom->enrollments()->exists()
+                || \Illuminate\Support\Facades\DB::table('attendances')->where('classroom_id', $classroom->id)->exists()
+                || \Illuminate\Support\Facades\DB::table('class_diaries')->where('classroom_id', $classroom->id)->exists()
+                || \Illuminate\Support\Facades\DB::table('lesson_plans')->where('classroom_id', $classroom->id)->exists();
+
+            if ($hasHistory) {
+                throw ValidationException::withMessages([
+                    'classroom' => 'Esta turma possui matrículas, frequência ou diário e não pode ser excluída.',
+                ]);
+            }
+        });
+
         static::updating(function (Classroom $classroom): void {
             if ($classroom->isDirty('assessment_mode') && $classroom->enrollments()->whereHas('grade')->exists()) {
                 throw ValidationException::withMessages([
