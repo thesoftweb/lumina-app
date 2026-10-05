@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\NavGroup;
 use App\Models\Attendance;
 use App\Models\Enrollment;
 use App\Support\TeacherPanel;
@@ -15,9 +16,11 @@ use UnitEnum;
 
 class TakeAttendance extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckCircle;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Classroom;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Fazer chamada';
 

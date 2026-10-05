@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -20,22 +22,23 @@ use UnitEnum;
 
 class UserResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Admin;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Usuários';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Usuários';
 
     protected static ?string $pluralModelLabel = 'Usuários';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Administração';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::user()->hasAnyRole(['admin', 'coordinator']);
-    }
 
     public static function form(Schema $schema): Schema
     {

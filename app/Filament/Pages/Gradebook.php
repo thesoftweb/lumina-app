@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\NavGroup;
 use App\Enums\AssessmentMode;
 use App\Models\ConceptScale;
 use App\Models\Enrollment;
@@ -31,7 +32,9 @@ class Gradebook extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Classroom;
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Lançar notas';
 

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Customers;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Filament\Resources\Customers\Pages\ListCustomers;
@@ -21,20 +23,21 @@ use UnitEnum;
 
 class CustomerResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Customer::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Registry;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Clientes';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Clientes';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Cadastros';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

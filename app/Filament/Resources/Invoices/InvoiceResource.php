@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Invoices;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
@@ -20,20 +22,21 @@ use UnitEnum;
 
 class InvoiceResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Invoice::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Finance;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Faturas';
 
     protected static ?string $recordTitleAttribute = 'Faturas';
 
     protected static ?string $label = 'Faturas';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Financeiro';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

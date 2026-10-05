@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Auth;
 
 class MyProfile extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUser;
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Meu perfil';
 

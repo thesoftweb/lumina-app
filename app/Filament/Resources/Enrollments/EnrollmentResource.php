@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Enrollments;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Enrollments\Pages\CreateEnrollment;
 use App\Filament\Resources\Enrollments\Pages\EditEnrollment;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
@@ -21,20 +23,21 @@ use UnitEnum;
 
 class EnrollmentResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Enrollment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Matrículas';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Matrículas';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Secretaria';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

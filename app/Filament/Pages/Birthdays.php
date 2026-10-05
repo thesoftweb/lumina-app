@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\NavGroup;
 use App\Models\Student;
 use BackedEnum;
 use Carbon\Carbon;
@@ -23,7 +24,9 @@ class Birthdays extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCake;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Classroom;
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $navigationLabel = 'Aniversariantes';
 

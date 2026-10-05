@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Companies;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Companies\Pages\CreateCompany;
 use App\Filament\Resources\Companies\Pages\EditCompany;
 use App\Filament\Resources\Companies\Pages\ListCompanies;
@@ -20,20 +22,19 @@ use UnitEnum;
 
 class CompanyResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Company::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Settings;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Empresa';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Configurações';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
     {

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Classrooms;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Classrooms\Pages\CreateClassroom;
 use App\Filament\Resources\Classrooms\Pages\EditClassroom;
 use App\Filament\Resources\Classrooms\Pages\ListClassrooms;
@@ -21,15 +23,21 @@ use UnitEnum;
 
 class ClassroomResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Classroom::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Turmas';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Turmas';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Cadastros';
 
     public static function form(Schema $schema): Schema
     {

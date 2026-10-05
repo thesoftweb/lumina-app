@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\AcademicYears;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Models\AcademicYear;
 use App\Filament\Resources\AcademicYears\Pages\CreateAcademicYear;
 use App\Filament\Resources\AcademicYears\Pages\EditAcademicYear;
@@ -20,22 +22,23 @@ use UnitEnum;
 
 class AcademicYearResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = AcademicYear::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Configurações';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Settings;
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Ano letivo';
 
     protected static ?string $recordTitleAttribute = 'description';
 
     protected static ?string $label = 'Ano Escolar';
 
     protected static ?string $pluralModelLabel = 'Ano Escolar';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\NavGroup;
 use App\Enums\AssessmentMode;
 use App\Models\Classroom;
 use App\Models\Enrollment;
@@ -26,9 +27,11 @@ class ReportCards extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentChartBar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'Boletins';
 

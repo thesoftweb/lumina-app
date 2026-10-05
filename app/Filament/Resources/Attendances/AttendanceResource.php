@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Attendances;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Attendances\Pages\CreateAttendance;
 use App\Filament\Resources\Attendances\Pages\EditAttendance;
 use App\Filament\Resources\Attendances\Pages\ListAttendances;
@@ -22,17 +24,23 @@ use UnitEnum;
 
 class AttendanceResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Attendance::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckCircle;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 5;
+
+    protected static ?string $navigationLabel = 'Frequências';
 
     protected static ?string $recordTitleAttribute = 'date';
 
     protected static ?string $modelLabel = 'Frequência';
 
     protected static ?string $pluralModelLabel = 'Frequências';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
 
     public static function form(Schema $schema): Schema
     {

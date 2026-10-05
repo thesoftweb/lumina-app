@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\NavGroup;
+use UnitEnum;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\AgendaResource\Pages;
 use App\Models\Schedule;
 use BackedEnum;
@@ -24,17 +27,21 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgendaResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Schedule::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $navigationLabel = 'Agendas';
 
     protected static ?string $modelLabel = 'Agenda';
 
     protected static ?string $pluralModelLabel = 'Agendas';
-
-    protected static ?int $navigationSort = 8;
 
     public static function form(Schema $schema): Schema
     {

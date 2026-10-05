@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Students;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Students\Pages\CreateStudent;
 use App\Filament\Resources\Students\Pages\EditStudent;
 use App\Filament\Resources\Students\Pages\ListStudents;
@@ -21,20 +23,21 @@ use UnitEnum;
 
 class StudentResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Student::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Alunos';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Alunos';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::user()->hasAnyRole(['teacher', 'coordinator', 'admin']);
-    }
 
     public static function form(Schema $schema): Schema
     {
