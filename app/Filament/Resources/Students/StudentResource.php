@@ -73,7 +73,7 @@ class StudentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with(['enrollments.classroom']);
+        $query = parent::getEloquentQuery()->with(['customer', 'latestEnrollment.classroom']);
         $user = Auth::user();
 
         if ($user->hasRole('teacher')) {

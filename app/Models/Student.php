@@ -37,4 +37,9 @@ class Student extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    public function latestEnrollment()
+    {
+        return $this->hasOne(Enrollment::class)->latestOfMany();
+    }
 }

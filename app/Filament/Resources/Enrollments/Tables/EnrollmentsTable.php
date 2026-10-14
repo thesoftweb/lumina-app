@@ -2,13 +2,11 @@
 
 namespace App\Filament\Resources\Enrollments\Tables;
 
-use Filament\Actions\Action;
+use App\Filament\Resources\Enrollments\EnrollmentResource;
+use App\Models\Enrollment;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\CheckboxColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -17,6 +15,7 @@ class EnrollmentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn (Enrollment $record): string => EnrollmentResource::getUrl('edit', ['record' => $record]))
             ->modifyQueryUsing(fn ($query) => $query->with(['student.customer', 'classroom']))
             ->columns([
                 TextColumn::make('student.name')
@@ -33,30 +32,13 @@ class EnrollmentsTable
                 TextColumn::make('status')
                     ->label('Situação')
                     ->badge(),
-                IconColumn::make('tuition_generated')
-                    ->label('MG')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('danger'),
-                IconColumn::make('enrollment_tax_paid')
-                    ->label('TM')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('danger'),
-
             ])
             ->filters([
                 //
             ])
             ->defaultSort('enrollment_date', 'desc')
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-
+                EditAction::make()->label('Editar')->color('gray'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

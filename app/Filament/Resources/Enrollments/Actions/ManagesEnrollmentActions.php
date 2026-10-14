@@ -1,27 +1,21 @@
 <?php
 
-namespace App\Filament\Resources\Enrollments\Pages;
+namespace App\Filament\Resources\Enrollments\Actions;
 
 use App\Enums\EnrollmentStatus;
-use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\ViewRecord;
 
-class ViewEnrollment extends ViewRecord
+trait ManagesEnrollmentActions
 {
-    protected static string $resource = EnrollmentResource::class;
-
-    protected function getHeaderActions(): array
+    protected function getEnrollmentActions(): array
     {
         return [
-            EditAction::make(),
             $this->createSchoolContractPrintAction(),
             $this->createSchoolContractPdfAction(),
             $this->createEnrollmentInvoiceAction(),
@@ -37,7 +31,7 @@ class ViewEnrollment extends ViewRecord
         return Action::make('printSchoolContract')
             ->label('Imprimir Contrato')
             ->icon('heroicon-o-document-text')
-            ->url(fn() => route('enrollments.contract.print', $this->record))
+            ->url(fn () => route('enrollments.contract.print', $this->record))
             ->openUrlInNewTab();
     }
 
@@ -49,7 +43,7 @@ class ViewEnrollment extends ViewRecord
         return Action::make('pdfSchoolContract')
             ->label('Baixar Contrato PDF')
             ->icon('heroicon-o-arrow-down-tray')
-            ->url(fn() => route('enrollments.contract.pdf', $this->record))
+            ->url(fn () => route('enrollments.contract.pdf', $this->record))
             ->openUrlInNewTab();
     }
 
@@ -85,7 +79,7 @@ class ViewEnrollment extends ViewRecord
                         enrollment: $this->record,
                         amount: (float) $data['enrollment_amount'],
                         companyId: 1,
-                        notes: "Taxa de matrícula pelo sistema"
+                        notes: 'Taxa de matrícula pelo sistema'
                     );
 
                     Notification::make()
@@ -125,7 +119,7 @@ class ViewEnrollment extends ViewRecord
                     ->options(function () {
                         return collect(range(1, 12))->mapWithKeys(function ($month) {
                             return [
-                                $month => Carbon::createFromDate(now()->year, $month, 1)->locale('pt_BR')->format('F \d\e Y')
+                                $month => Carbon::createFromDate(now()->year, $month, 1)->locale('pt_BR')->format('F \d\e Y'),
                             ];
                         })->toArray();
                     })
@@ -149,12 +143,13 @@ class ViewEnrollment extends ViewRecord
                     $enrollment = $this->record->load('classroom.plans');
                     $plan = $enrollment->classroom->plans->first();
 
-                    if (!$plan) {
+                    if (! $plan) {
                         Notification::make()
                             ->danger()
                             ->title('Erro!')
                             ->body('Nenhum plano associado à sala de aula')
                             ->send();
+
                         return;
                     }
 

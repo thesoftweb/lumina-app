@@ -7,10 +7,8 @@ use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Enrollments\Pages\CreateEnrollment;
 use App\Filament\Resources\Enrollments\Pages\EditEnrollment;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
-use App\Filament\Resources\Enrollments\Pages\ViewEnrollment;
 use App\Filament\Resources\Enrollments\RelationManagers\GradeRelationManager;
 use App\Filament\Resources\Enrollments\Schemas\EnrollmentForm;
-use App\Filament\Resources\Enrollments\Schemas\EnrollmentInfolist;
 use App\Filament\Resources\Enrollments\Tables\EnrollmentsTable;
 use App\Models\Enrollment;
 use BackedEnum;
@@ -18,7 +16,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class EnrollmentResource extends Resource
@@ -44,11 +41,6 @@ class EnrollmentResource extends Resource
         return EnrollmentForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return EnrollmentInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
         return EnrollmentsTable::configure($table);
@@ -57,7 +49,7 @@ class EnrollmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //GradeRelationManager::class,
+            // GradeRelationManager::class,
         ];
     }
 
@@ -66,7 +58,6 @@ class EnrollmentResource extends Resource
         return [
             'index' => ListEnrollments::route('/'),
             'create' => CreateEnrollment::route('/create'),
-            'view' => ViewEnrollment::route('/{record}'),
             'edit' => EditEnrollment::route('/{record}/edit'),
         ];
     }

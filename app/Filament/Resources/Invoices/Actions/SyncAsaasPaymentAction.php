@@ -12,28 +12,28 @@ class SyncAsaasPaymentAction
     public static function make(): Action
     {
         return Action::make('sync_asaas_payment')
-            ->label('Sincronizar Pagamento')
+            ->label('Sincronizar com Asaas')
             ->icon('heroicon-o-arrow-path')
             ->color('info')
             ->tooltip('Sincronizar status de pagamento do Asaas')
-            ->action(function (Invoice $record) {
-                if (!$record->asaas_invoice_id) {
+            ->action(function (Invoice $record, AsaasService $asaasService) {
+                if (! $record->asaas_invoice_id) {
                     Notification::make()
                         ->title('Cobrança não sincronizada')
                         ->body('Esta fatura ainda não foi enviada para o Asaas.')
                         ->warning()
                         ->send();
+
                     return;
                 }
 
-                $asaasService = new AsaasService();
                 $result = $asaasService->syncPaymentStatus($record);
 
                 if ($result) {
                     $record->refresh();
                     Notification::make()
-                        ->title('✅ Status sincronizado!')
-                        ->body("Status atual: {$record->status}")
+                        ->title('Status sincronizado')
+                        ->body('Situação atual: '.$record->status->getLabel())
                         ->success()
                         ->send();
                 } else {
