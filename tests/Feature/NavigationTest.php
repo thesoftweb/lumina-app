@@ -31,6 +31,7 @@ class NavigationTest extends TestCase
         $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
         $this->assertSame(['Faturas', 'Planos e mensalidades', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores', 'Fornecedores'], $groups['Cadastros']);
+        $this->assertSame(['Empresa', 'Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);
     }
 
     public function test_teacher_only_sees_classroom_and_academic_items(): void

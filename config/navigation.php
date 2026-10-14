@@ -7,9 +7,12 @@ use App\Filament\Resources\DocumentTemplates\DocumentTemplateResource;
 use App\Filament\Resources\Documents\DocumentResource;
 use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Filament\Resources\Levels\LevelResource;
 use App\Filament\Resources\Plans\PlanResource;
+use App\Filament\Resources\Subjects\SubjectResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\Teachers\TeacherResource;
+use App\Filament\Resources\Terms\TermResource;
 use App\Filament\Resources\Users\UserResource;
 
 /*
@@ -44,6 +47,9 @@ return [
         DocumentTemplateResource::class => $staff,
         CompanyResource::class => $staff,
         AcademicYearResource::class => $staff,
+        TermResource::class => $staff,
+        LevelResource::class => $staff,
+        SubjectResource::class => $staff,
 
         // Administração
         UserResource::class => ['roles' => ['coordinator'], 'permission' => null],

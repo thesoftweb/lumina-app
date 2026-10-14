@@ -12,7 +12,7 @@ Grupos e ordem definidos em `app/Enums/NavGroup.php` (a ordem dos `case` é a or
 | Financeiro | Faturas, Planos e mensalidades, Eventos e contribuições |
 | Cadastros | Clientes, Professores, Fornecedores |
 | Documentos | Documentos, Modelos de documentos |
-| Configurações | Empresa, Ano letivo |
+| Configurações | Empresa, Ano letivo, Bimestres, Níveis, Disciplinas |
 | Administração | Usuários |
 
 Critérios: grupos por tarefa (o professor usa "Sala de aula" todo dia; secretaria usa "Acadêmico"), itens mais usados primeiro, ícone exclusivo por item.
@@ -40,4 +40,4 @@ Importante: isto só controla o **menu**. A autorização real está nas policie
 
 - **Matrículas só aparece para `admin`:** `EnrollmentPolicy` aceita `admin` e `secretary`, e o papel `secretary` não existe no `RolePermissionSeeder`. A coordenação não vê o menu de Matrículas. Decidir se coordenação deve ter acesso ou se será criado o papel de secretaria.
 - **Painel duplicado corrigido:** o menu registrava dois painéis iniciais (o do Filament e o do projeto). Ficou só o do projeto.
-- **Cadastros sem menu** (Disciplinas, Bimestres, Níveis): reservados em "Configurações" para a Fase 1 do plano do ano letivo.
+- **Disciplinas, Bimestres e Níveis** agora têm cadastro (Resources simples, com modal) em "Configurações", visíveis para coordenação e admin. Excluir é bloqueado quando há turmas, notas ou vínculos. Estados, cidades, plano de contas e perfis de aluno continuam só por seeder.

@@ -21,6 +21,9 @@ use App\Models\Plan;
 use App\Models\Student;
 use App\Models\Supplier;
 use App\Models\Teacher;
+use App\Models\Level;
+use App\Models\Subject;
+use App\Models\Term;
 use App\Models\User;
 use App\Observers\EnrollmentObserver;
 use App\Policies\AdministrativePolicy;
@@ -86,6 +89,9 @@ class AppServiceProvider extends ServiceProvider
             Plan::class,
             Supplier::class,
             User::class,
+            Subject::class,
+            Term::class,
+            Level::class,
         ] as $model) {
             Gate::policy($model, AdministrativePolicy::class);
         }
