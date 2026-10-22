@@ -94,6 +94,7 @@ class EnrollmentsNavigationTest extends TestCase
                 'plan_id' => $plan->id,
                 'day_of_payment' => 10,
             ])
+            ->assertDontSee('Matrícula bloqueada')
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -104,5 +105,29 @@ class EnrollmentsNavigationTest extends TestCase
             'plan_id' => $plan->id,
             'day_of_payment' => 10,
         ]);
+
+        Livewire::test(CreateEnrollment::class)
+            ->fillForm(['student_id' => $student->id, 'academic_year_id' => $year->id])
+            ->assertSee('Matrícula bloqueada')
+            ->assertSee('Abrir matrícula existente')
+            ->goToNextWizardStep()
+            ->assertHasFormErrors(['student_id'])
+            ->assertNotified('Matrícula bloqueada');
+
+        Livewire::test(CreateEnrollment::class)
+            ->fillForm([
+                'student_id' => $student->id,
+                'academic_year_id' => $year->id,
+                'classroom_id' => $classroom->id,
+                'enrollment_date' => '2026-03-11',
+                'status' => 'active',
+                'plan_id' => $plan->id,
+                'day_of_payment' => 10,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['student_id'])
+            ->assertNotified('Matrícula bloqueada');
+
+        $this->assertSame(1, Enrollment::query()->where('academic_year_id', $year->id)->count());
     }
 }

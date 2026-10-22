@@ -3,14 +3,19 @@
 namespace App\Filament\Resources\Enrollments\Schemas;
 
 use App\Enums\EnrollmentStatus;
+use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\ClassroomPlan;
+use App\Models\Enrollment;
+use Closure;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Callout;
 
 class EnrollmentWizardFields
 {
@@ -18,12 +23,41 @@ class EnrollmentWizardFields
     {
         return [
             Select::make('student_id')->label('Aluno')->relationship('student', 'name')
-                ->searchable()->preload()->default(request()->query('student_id'))->required(),
+                ->searchable()->preload()->default(request()->query('student_id'))->required()->live()
+                ->rule(fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                    if (self::blockingEnrollment($get)) {
+                        $fail(Enrollment::DUPLICATE_IN_YEAR_MESSAGE);
+                    }
+                }),
             Select::make('academic_year_id')->label('Ano letivo')
                 ->options(fn (): array => AcademicYear::query()->orderByDesc('year')->pluck('description', 'id')->all())
                 ->default(fn () => AcademicYear::query()->where('is_default', true)->value('id'))
-                ->searchable()->required(),
+                ->searchable()->required()->live(),
+            Callout::make('Matrícula bloqueada')->danger()->columnSpanFull()
+                ->description(fn (callable $get): ?string => ($enrollment = self::blockingEnrollment($get)) ? sprintf(
+                    '%s já possui matrícula "%s" na turma %s no ano letivo %s. Cada aluno só pode ter uma matrícula não cancelada por ano letivo: cancele a matrícula existente ou escolha outro ano letivo para continuar.',
+                    $enrollment->student?->name, $enrollment->status->getLabel(),
+                    $enrollment->classroom?->name ?? 'não informada', $enrollment->academicYear?->description,
+                ) : null)
+                ->visible(fn (callable $get): bool => (bool) self::blockingEnrollment($get))
+                ->actions([
+                    Action::make('openBlockingEnrollment')->label('Abrir matrícula existente')->color('danger')
+                        ->url(fn (callable $get): ?string => ($enrollment = self::blockingEnrollment($get))
+                            ? EnrollmentResource::getUrl('edit', ['record' => $enrollment]) : null, shouldOpenInNewTab: true),
+                ]),
         ];
+    }
+
+    /** Matrícula que impede um novo cadastro do aluno no ano letivo escolhido. */
+    public static function blockingEnrollment(callable $get): ?Enrollment
+    {
+        if (blank($get('student_id')) || blank($get('academic_year_id'))
+            || in_array($get('status'), [EnrollmentStatus::Canceled, EnrollmentStatus::Canceled->value], true)) {
+            return null;
+        }
+
+        return Enrollment::query()->notCanceledInYear($get('student_id'), $get('academic_year_id'))
+            ->with(['student', 'classroom', 'academicYear'])->first();
     }
 
     public static function classroomFields(): array

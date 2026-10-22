@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use App\Enums\EnrollmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class Enrollment extends Model
 {
+    public const DUPLICATE_IN_YEAR_MESSAGE = 'Este aluno já possui uma matrícula não cancelada neste ano letivo.';
+
     protected $guarded = [];
 
     protected $casts = [
         'enrollment_date' => 'date',
-        'status' => \App\Enums\EnrollmentStatus::class,
+        'status' => EnrollmentStatus::class,
         'doc_historical_delivered' => 'boolean',
         'doc_photo_3x4_delivered' => 'boolean',
         'doc_declaration_delivered' => 'boolean',
@@ -25,20 +28,18 @@ class Enrollment extends Model
         static::saving(function (Enrollment $enrollment): void {
             if (! $enrollment->academic_year_id
                 || ! $enrollment->student_id
-                || $enrollment->status === \App\Enums\EnrollmentStatus::Canceled) {
+                || $enrollment->status === EnrollmentStatus::Canceled) {
                 return;
             }
 
             $duplicate = static::query()
-                ->where('student_id', $enrollment->student_id)
-                ->where('academic_year_id', $enrollment->academic_year_id)
-                ->where('status', '!=', \App\Enums\EnrollmentStatus::Canceled->value)
+                ->notCanceledInYear($enrollment->student_id, $enrollment->academic_year_id)
                 ->when($enrollment->exists, fn ($query) => $query->whereKeyNot($enrollment->getKey()))
                 ->exists();
 
             if ($duplicate) {
                 throw ValidationException::withMessages([
-                    'student_id' => 'Este aluno já possui uma matrícula não cancelada neste ano letivo.',
+                    'student_id' => self::DUPLICATE_IN_YEAR_MESSAGE,
                 ]);
             }
         });
@@ -50,6 +51,14 @@ class Enrollment extends Model
                 ]);
             }
         });
+    }
+
+    /** Um aluno só pode ter uma matrícula não cancelada por ano letivo. */
+    public function scopeNotCanceledInYear($query, $studentId, $academicYearId)
+    {
+        return $query->where('student_id', $studentId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('status', '!=', EnrollmentStatus::Canceled->value);
     }
 
     /** Matrículas sem ano letivo (legado) continuam aceitas em qualquer período. */

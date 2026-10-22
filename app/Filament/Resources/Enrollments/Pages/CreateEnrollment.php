@@ -4,9 +4,12 @@ namespace App\Filament\Resources\Enrollments\Pages;
 
 use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Filament\Resources\Enrollments\Schemas\EnrollmentWizardFields;
+use App\Models\Enrollment;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Wizard\Step;
+use Illuminate\Validation\ValidationException;
 
 class CreateEnrollment extends CreateRecord
 {
@@ -20,6 +23,17 @@ class CreateEnrollment extends CreateRecord
     {
         return $this->getBaseWizardComponent()
             ->extraAttributes(['class' => 'enrollment-create-wizard']);
+    }
+
+    protected function onValidationError(ValidationException $exception): void
+    {
+        if (! in_array(Enrollment::DUPLICATE_IN_YEAR_MESSAGE, $exception->errors()['data.student_id'] ?? [], true)) {
+            return;
+        }
+
+        Notification::make()->danger()->title('Matrícula bloqueada')
+            ->body('Este aluno já possui uma matrícula não cancelada neste ano letivo. Cancele a matrícula existente ou escolha outro ano letivo.')
+            ->send();
     }
 
     protected function getSteps(): array
