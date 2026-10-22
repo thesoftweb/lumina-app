@@ -29,11 +29,18 @@ class CustomerEditFormTest extends TestCase
         $state->abbreviation = 'SP';
         $state->save();
 
+        // Como no seeder do IBGE, cities.state_id guarda o código da UF, não o id da tabela states.
         $city = new City;
         $city->code = 3550308;
         $city->name = 'São Paulo';
-        $city->state_id = $state->id;
+        $city->state_id = $state->code;
         $city->save();
+
+        $otherCity = new City;
+        $otherCity->code = 3304557;
+        $otherCity->name = 'Rio de Janeiro';
+        $otherCity->state_id = 33;
+        $otherCity->save();
 
         $customer = Customer::create(['name' => 'Responsável', 'document' => '123.456.789-00']);
 
@@ -42,7 +49,7 @@ class CustomerEditFormTest extends TestCase
             ->assertFormFieldExists('email')
             ->assertFormFieldExists('city_id')
             ->set('data.state', 35)
-            ->assertFormFieldExists('city_id', fn ($field): bool => array_key_exists($city->id, $field->getOptions()))
+            ->assertFormFieldExists('city_id', fn ($field): bool => array_keys($field->getOptions()) === [$city->id])
             ->fillForm([
                 'email' => 'novo@example.test', 'phone' => '(11) 99999-9999',
                 'postal_code' => '01000-000', 'state' => 35, 'city_id' => $city->id,
@@ -55,5 +62,6 @@ class CustomerEditFormTest extends TestCase
         $this->assertSame('novo@example.test', $customer->email);
         $this->assertSame('Rua da Escola', $customer->address);
         $this->assertSame($city->id, $customer->city_id);
+        $this->assertSame('SP', $customer->city->state->abbreviation);
     }
 }

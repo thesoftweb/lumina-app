@@ -89,11 +89,7 @@ class CustomerForm
                                                     return [];
                                                 }
 
-                                                $stateId = State::query()->where('code', $stateCode)->value('id');
-
-                                                return $stateId
-                                                    ? City::query()->where('state_id', $stateId)->orderBy('name')->pluck('name', 'id')->all()
-                                                    : [];
+                                                return City::query()->where('state_id', $stateCode)->orderBy('name')->pluck('name', 'id')->all();
                                             })
                                             ->searchable()
                                             ->disabled(fn (callable $get): bool => blank($get('state'))),

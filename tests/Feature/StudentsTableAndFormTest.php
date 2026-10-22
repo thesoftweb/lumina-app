@@ -92,18 +92,24 @@ class StudentsTableAndFormTest extends TestCase
         $state->name = 'São Paulo';
         $state->abbreviation = 'SP';
         $state->save();
+        // Como no seeder do IBGE, cities.state_id guarda o código da UF, não o id da tabela states.
         $city = new City;
         $city->code = 3550308;
         $city->name = 'São Paulo';
-        $city->state_id = $state->id;
+        $city->state_id = $state->code;
         $city->save();
+        $otherCity = new City;
+        $otherCity->code = 3304557;
+        $otherCity->name = 'Rio de Janeiro';
+        $otherCity->state_id = 33;
+        $otherCity->save();
 
         Livewire::test(EditStudent::class, ['record' => $student->id])
             ->assertFormFieldExists('name')
             ->assertFormFieldExists('customer_id')
             ->assertFormFieldExists('observations')
             ->set('data.state_of_birth', 35)
-            ->assertFormFieldExists('city_of_birth', fn ($field): bool => array_key_exists('São Paulo', $field->getOptions()))
+            ->assertFormFieldExists('city_of_birth', fn ($field): bool => array_keys($field->getOptions()) === ['São Paulo'])
             ->fillForm([
                 'name' => 'Ana Maria', 'state_of_birth' => 35, 'city_of_birth' => 'São Paulo',
                 'affiliation_1' => 'Maria', 'observations' => 'Acompanhamento pedagógico',

@@ -67,9 +67,7 @@ class StudentForm
                                                             return [];
                                                         }
 
-                                                        $stateId = State::query()->where('code', $state)->value('id');
-
-                                                        return City::query()->where('state_id', $stateId)
+                                                        return City::query()->where('state_id', $state)
                                                             ->orderBy('name')
                                                             ->pluck('name', 'name');
                                                     }

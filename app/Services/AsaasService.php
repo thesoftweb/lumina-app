@@ -583,7 +583,7 @@ class AsaasService
             }
             if ($customer->city) {
                 $payload['addressCity'] = $customer->city->name ?? '';
-                $payload['addressState'] = $customer->city->state ?? '';
+                $payload['addressState'] = $customer->city->state?->abbreviation ?? '';
             }
             if ($customer->postal_code) {
                 $payload['addressPostalCode'] = $this->cleanPostalCode($customer->postal_code);
