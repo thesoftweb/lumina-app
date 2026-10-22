@@ -2,213 +2,151 @@
 
 namespace App\Filament\Resources\Enrollments\Schemas;
 
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Tabs;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\RepeatableEntry;
+use App\Filament\Resources\Customers\CustomerResource;
+use App\Filament\Resources\Students\StudentResource;
+use App\Models\Enrollment;
 use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 
 class EnrollmentInfolist
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(['default' => 1, 'lg' => 3])
             ->components([
-                Tabs::make('Enrollment Details')
+                Section::make()
                     ->columnSpanFull()
+                    ->schema([
+                        Grid::make(['default' => 2, 'md' => 3, 'xl' => 6])
+                            ->schema([
+                                TextEntry::make('status')->label('Situação')->badge(),
+                                TextEntry::make('classroom.name')->label('Turma')->weight(FontWeight::SemiBold)->placeholder('Não informada'),
+                                TextEntry::make('academicYear.description')->label('Ano letivo')->placeholder('Não informado'),
+                                TextEntry::make('enrollment_date')->label('Data da matrícula')->date('d/m/Y'),
+                                TextEntry::make('monthly_amount')->label('Mensalidade')
+                                    ->state(fn (Enrollment $record) => $record->tuitionBreakdown()['final_amount'] ?? null)
+                                    ->money('BRL', locale: 'pt_BR')->weight(FontWeight::SemiBold)->placeholder('Sem plano'),
+                                TextEntry::make('day_of_payment')->label('Vencimento')
+                                    ->formatStateUsing(fn ($state) => "Todo dia {$state}")->placeholder('-'),
+                            ]),
+                    ]),
+
+                Tabs::make('Detalhes da matrícula')
+                    ->columnSpan(['default' => 1, 'lg' => 2])
+                    ->persistTabInQueryString()
                     ->tabs([
-                        Tabs\Tab::make('Matrícula')
+                        Tab::make('Aluno')
+                            ->icon('heroicon-o-user')
+                            ->columns(2)
                             ->schema([
-                                Section::make()
-                                    ->heading('Informações da Matrícula')
-                                    ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('id')
-                                                    ->label('ID Matrícula'),
-                                                TextEntry::make('enrollment_date')
-                                                    ->label('Data da Matrícula')
-                                                    ->date(),
-                                                TextEntry::make('status')
-                                                    ->label('Status'),
-                                                TextEntry::make('day_of_payment')
-                                                    ->label('Dia de Pagamento'),
-                                                TextEntry::make('created_at')
-                                                    ->label('Criado em')
-                                                    ->dateTime(),
-                                                TextEntry::make('updated_at')
-                                                    ->label('Atualizado em')
-                                                    ->dateTime(),
-                                            ]),
-                                    ]),
+                                TextEntry::make('student.name')->label('Nome')->weight(FontWeight::SemiBold)->color('primary')
+                                    ->url(fn (Enrollment $record): ?string => $record->student ? StudentResource::getUrl('view', ['record' => $record->student]) : null)
+                                    ->columnSpanFull(),
+                                TextEntry::make('student.date_of_birth')->label('Data de nascimento')
+                                    ->formatStateUsing(fn ($state) => $state->format('d/m/Y')." ({$state->age} anos)")->placeholder('-'),
+                                TextEntry::make('student.gender_label')->label('Gênero')->placeholder('-'),
+                                TextEntry::make('student.birthplace')->label('Naturalidade')->placeholder('-'),
+                                TextEntry::make('student.doc_number')->label('CPF')->placeholder('-'),
+                                TextEntry::make('student.reg_number')->label('RG')->placeholder('-'),
+                                TextEntry::make('student.affiliation_1')->label('Filiação 1')->placeholder('-'),
+                                TextEntry::make('student.phone_primary')->label('Telefone principal')->placeholder('-'),
+                                TextEntry::make('student.affiliation_2')->label('Filiação 2')->placeholder('-'),
+                                TextEntry::make('student.phone_secondary')->label('Telefone secundário')->placeholder('-'),
+                                TextEntry::make('student.observations')->label('Observações')->placeholder('-')->columnSpanFull(),
                             ]),
 
-                        Tabs\Tab::make('Aluno')
+                        Tab::make('Responsável')
+                            ->icon('heroicon-o-user-group')
+                            ->columns(2)
                             ->schema([
-                                Section::make()
-                                    ->heading('Informações do Aluno')
-                                    ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('student.name')
-                                                    ->label('Nome do Aluno'),
-                                                TextEntry::make('student.doc_number')
-                                                    ->label('Documento do Aluno'),
-                                                TextEntry::make('student.date_of_birth')
-                                                    ->label('Data de Nascimento')
-                                                    ->date(),
-                                                TextEntry::make('student.gender')
-                                                    ->label('Gênero'),
-                                                TextEntry::make('student.phone_primary')
-                                                    ->label('Telefone Principal'),
-                                                TextEntry::make('student.phone_secondary')
-                                                    ->label('Telefone Secundário'),
-                                                TextEntry::make('student.state_of_birth')
-                                                    ->label('Estado de Nascimento'),
-                                                TextEntry::make('student.city_of_birth')
-                                                    ->label('Cidade de Nascimento'),
-                                                TextEntry::make('student.affiliation_1')
-                                                    ->label('Filiação 1')
-                                                    ->columnSpanFull(),
-                                                TextEntry::make('student.affiliation_2')
-                                                    ->label('Filiação 2')
-                                                    ->columnSpanFull(),
-                                            ]),
-                                    ]),
+                                TextEntry::make('student.customer.name')->label('Responsável financeiro')->weight(FontWeight::SemiBold)->color('primary')
+                                    ->url(fn (Enrollment $record): ?string => $record->student?->customer ? CustomerResource::getUrl('edit', ['record' => $record->student->customer]) : null)
+                                    ->placeholder('Não informado'),
+                                TextEntry::make('student.degree_of_kinship')->label('Parentesco')
+                                    ->formatStateUsing(fn ($state) => Str::ucfirst($state))->placeholder('-'),
+                                TextEntry::make('student.customer.document')->label('CPF')->placeholder('-'),
+                                TextEntry::make('student.customer.phone')->label('Telefone')->placeholder('-'),
+                                TextEntry::make('student.customer.email')->label('E-mail')->copyable()->placeholder('-'),
+                                TextEntry::make('student.customer.asaas_customer_id')->label('ID no Asaas')->copyable()->placeholder('Não sincronizado'),
+                                TextEntry::make('student.customer.full_address')->label('Endereço')->placeholder('-')->columnSpanFull(),
                             ]),
 
-                        Tabs\Tab::make('Responsável')
+                        Tab::make('Financeiro')
+                            ->icon('heroicon-o-banknotes')
+                            ->columns(2)
                             ->schema([
-                                Section::make()
-                                    ->heading('Informações Pessoais')
-                                    ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('student.customer.name')
-                                                    ->label('Nome do Responsável'),
-                                                TextEntry::make('student.customer.document')
-                                                    ->label('CPF')
-                                                    ->formatStateUsing(fn($state) => preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $state ?? '')),
-                                                TextEntry::make('student.customer.email')
-                                                    ->label('E-mail'),
-                                                TextEntry::make('student.customer.phone')
-                                                    ->label('Telefone'),
-                                            ]),
-                                    ]),
-                                Section::make()
-                                    ->heading('Endereço')
-                                    ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('student.customer.address')
-                                                    ->label('Endereço')
-                                                    ->columnSpanFull(),
-                                                TextEntry::make('student.customer.address_number')
-                                                    ->label('Número'),
-                                                TextEntry::make('student.customer.address_complement')
-                                                    ->label('Complemento'),
-                                                TextEntry::make('student.customer.neighborhood')
-                                                    ->label('Bairro'),
-                                                TextEntry::make('student.customer.city.name')
-                                                    ->label('Cidade'),
-                                                TextEntry::make('student.customer.state')
-                                                    ->label('Estado'),
-                                                TextEntry::make('student.customer.postal_code')
-                                                    ->label('CEP')
-                                                    ->formatStateUsing(fn($state) => preg_replace('/(\d{5})(\d{3})/', '$1-$2', $state ?? '')),
-                                            ]),
-                                    ]),
-                                Section::make()
-                                    ->heading('Dados do Sistema')
-                                    ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('student.customer.asaas_customer_id')
-                                                    ->label('ID Asaas')
-                                                    ->copyable(),
-                                                TextEntry::make('student.customer.created_at')
-                                                    ->label('Cadastrado em')
-                                                    ->dateTime(),
-                                                TextEntry::make('student.customer.updated_at')
-                                                    ->label('Atualizado em')
-                                                    ->dateTime(),
-                                            ]),
-                                    ]),
+                                TextEntry::make('plan.name')->label('Plano')->placeholder('Não informado'),
+                                TextEntry::make('plan.base_amount')->label('Valor base')->money('BRL', locale: 'pt_BR')->placeholder('-'),
+                                TextEntry::make('discount')->label('Desconto')
+                                    ->state(fn (Enrollment $record): ?string => $record->tuitionDiscountLabel())->placeholder('Sem desconto'),
+                                TextEntry::make('final_amount')->label('Mensalidade com desconto')
+                                    ->state(fn (Enrollment $record) => $record->tuitionBreakdown()['final_amount'] ?? null)
+                                    ->money('BRL', locale: 'pt_BR')->weight(FontWeight::SemiBold)->placeholder('-'),
+                                TextEntry::make('discount_reason')->label('Motivo do desconto')->columnSpanFull()
+                                    ->visible(fn (Enrollment $record): bool => (bool) $record->use_custom_discount)->placeholder('-'),
+                                IconEntry::make('enrollment_tax_paid')->label('Taxa de matrícula paga')->boolean(),
+                                IconEntry::make('tuition_generated')->label('Mensalidades geradas')->boolean(),
                             ]),
 
-                        Tabs\Tab::make('Acadêmico')
+                        Tab::make('Faturas')
+                            ->icon('heroicon-o-receipt-percent')
+                            ->badge(fn (Enrollment $record): ?int => $record->invoices->count() ?: null)
                             ->schema([
-                                Section::make()
-                                    ->heading('Informações Acadêmicas')
+                                RepeatableEntry::make('invoices')
+                                    ->hiddenLabel()
+                                    ->placeholder('Nenhuma fatura gerada para esta matrícula.')
+                                    ->table([
+                                        TableColumn::make('Número'),
+                                        TableColumn::make('Tipo'),
+                                        TableColumn::make('Vencimento'),
+                                        TableColumn::make('Valor'),
+                                        TableColumn::make('Situação'),
+                                    ])
                                     ->schema([
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('classroom.name')
-                                                    ->label('Turma'),
-                                                TextEntry::make('plan.name')
-                                                    ->label('Plano'),
-                                            ]),
+                                        TextEntry::make('number'),
+                                        TextEntry::make('billing_type')->badge(),
+                                        TextEntry::make('due_date')->date('d/m/Y'),
+                                        TextEntry::make('amount')->money('BRL', locale: 'pt_BR'),
+                                        TextEntry::make('status')->badge(),
                                     ]),
                             ]),
+                    ]),
 
-                        Tabs\Tab::make('Faturas')
+                Group::make()
+                    ->columnSpan(['default' => 1, 'lg' => 1])
+                    ->schema([
+                        Section::make('Documentação')
+                            ->icon('heroicon-o-document-check')
+                            ->description(fn (Enrollment $record): string => "{$record->deliveredDocumentsCount()} de ".count(Enrollment::DOCUMENTS).' entregues')
+                            ->compact()
+                            ->dense()
+                            ->schema(collect(Enrollment::DOCUMENTS)
+                                ->map(fn (string $label, string $field): TextEntry => TextEntry::make($field)->hiddenLabel()->state($label)
+                                    ->icon(fn (Enrollment $record) => $record->{$field} ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedXCircle)
+                                    ->iconColor(fn (Enrollment $record): string => $record->{$field} ? 'success' : 'danger'))
+                                ->values()->all()),
+                        Section::make('Registro')
+                            ->icon('heroicon-o-clock')
+                            ->compact()
+                            ->columns(2)
                             ->schema([
-                                Section::make()
-                                    ->heading('Faturas da Matrícula')
-                                    ->schema([
-                                        RepeatableEntry::make('invoices')
-                                            ->schema([
-                                                TextEntry::make('number')
-                                                    ->label('Número'),
-                                                TextEntry::make('status')
-                                                    ->label('Status')
-                                                    ->badge(),
-                                                TextEntry::make('amount')
-                                                    ->label('Valor')
-                                                    ->money('BRL'),
-                                                TextEntry::make('issue_date')
-                                                    ->label('Data de Emissão')
-                                                    ->date(),
-                                                TextEntry::make('due_date')
-                                                    ->label('Data de Vencimento')
-                                                    ->date(),
-                                                TextEntry::make('billing_type')
-                                                    ->label('Tipo de Cobrança'),
-                                            ])
-                                            ->columns(3),
-                                    ]),
-                            ]),
-
-                        Tabs\Tab::make('Documentação')
-                            ->schema([
-                                Section::make()
-                                    ->heading('Documentação Entregue')
-                                    ->schema([
-                                        Grid::make(3)
-                                            ->schema([
-                                                IconEntry::make('doc_historical_delivered')
-                                                    ->label('Histórico Escolar')
-                                                    ->boolean(),
-                                                IconEntry::make('doc_photo_3x4_delivered')
-                                                    ->label('Foto 3x4')
-                                                    ->boolean(),
-                                                IconEntry::make('doc_declaration_delivered')
-                                                    ->label('Declaração')
-                                                    ->boolean(),
-                                                IconEntry::make('doc_residence_proof_delivered')
-                                                    ->label('Comprovante de Residência')
-                                                    ->boolean(),
-                                                IconEntry::make('doc_student_document_delivered')
-                                                    ->label('Documento Aluno')
-                                                    ->boolean(),
-                                                IconEntry::make('doc_responsible_document_delivered')
-                                                    ->label('Documento Responsável')
-                                                    ->boolean(),
-                                            ]),
-                                    ]),
+                                TextEntry::make('id')->label('Nº da matrícula')
+                                    ->formatStateUsing(fn (Enrollment $record): string => $record->number()),
+                                IconEntry::make('new_student')->label('Primeira matrícula')->boolean(),
+                                TextEntry::make('created_at')->label('Cadastrada em')->dateTime('d/m/Y H:i'),
+                                TextEntry::make('updated_at')->label('Atualizada em')->dateTime('d/m/Y H:i'),
                             ]),
                     ]),
             ]);

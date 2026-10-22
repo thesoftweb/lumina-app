@@ -265,7 +265,7 @@ class InvoiceService
      * - discount_type: 'percentage' ou 'fixed'
      * - discount_source: 'plan' ou 'enrollment_custom'
      */
-    private function calculateTuitionDiscount(Enrollment $enrollment, float $baseAmount): array
+    public function calculateTuitionDiscount(Enrollment $enrollment, float $baseAmount): array
     {
         // Verifica se há desconto personalizado na enrollment
         if ($enrollment->use_custom_discount && $enrollment->discount_value > 0) {

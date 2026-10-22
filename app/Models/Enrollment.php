@@ -3,12 +3,24 @@
 namespace App\Models;
 
 use App\Enums\EnrollmentStatus;
+use App\Services\InvoiceService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Number;
 use Illuminate\Validation\ValidationException;
 
 class Enrollment extends Model
 {
     public const DUPLICATE_IN_YEAR_MESSAGE = 'Este aluno já possui uma matrícula não cancelada neste ano letivo.';
+
+    /** Documentos exigidos na matrícula, na ordem usada no formulário, na visualização e na ficha impressa. */
+    public const DOCUMENTS = [
+        'doc_historical_delivered' => 'Histórico escolar',
+        'doc_photo_3x4_delivered' => 'Foto 3x4',
+        'doc_declaration_delivered' => 'Declaração',
+        'doc_residence_proof_delivered' => 'Comprovante de residência',
+        'doc_student_document_delivered' => 'Documento do aluno',
+        'doc_responsible_document_delivered' => 'Documento do responsável',
+    ];
 
     protected $guarded = [];
 
@@ -51,6 +63,41 @@ class Enrollment extends Model
                 ]);
             }
         });
+    }
+
+    public function number(): string
+    {
+        return str_pad((string) $this->getKey(), 6, '0', STR_PAD_LEFT);
+    }
+
+    public function deliveredDocumentsCount(): int
+    {
+        return collect(array_keys(self::DOCUMENTS))->filter(fn (string $field): bool => (bool) $this->{$field})->count();
+    }
+
+    /** Mensalidade com desconto, calculada pelas mesmas regras usadas na geração das faturas. */
+    public function tuitionBreakdown(): ?array
+    {
+        if (! $this->plan) {
+            return null;
+        }
+
+        return app(InvoiceService::class)->calculateTuitionDiscount($this, (float) $this->plan->base_amount);
+    }
+
+    public function tuitionDiscountLabel(): ?string
+    {
+        $tuition = $this->tuitionBreakdown();
+
+        if (! $tuition || ! $tuition['discount_type']) {
+            return null;
+        }
+
+        $value = $tuition['discount_type'] === 'percentage'
+            ? Number::percentage((float) $tuition['discount_value'], maxPrecision: 2, locale: 'pt_BR')
+            : Number::currency((float) $tuition['discount_value'], 'BRL', 'pt_BR');
+
+        return $value.($tuition['discount_source'] === 'enrollment_custom' ? ' (personalizado)' : ' (do plano)');
     }
 
     /** Um aluno só pode ter uma matrícula não cancelada por ano letivo. */

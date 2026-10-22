@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentPrintController;
+use App\Http\Controllers\EnrollmentSheetController;
 use App\Http\Controllers\PortalAgendaController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
@@ -53,6 +54,7 @@ Route::prefix('documents')->name('documents.')->group(function () {
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
     Route::get('{enrollment}/contract/print', [SchoolContractController::class, 'show'])->name('contract.print');
     Route::get('{enrollment}/contract/pdf', [SchoolContractController::class, 'pdf'])->name('contract.pdf');
+    Route::get('{enrollment}/sheet', [EnrollmentSheetController::class, 'show'])->middleware('auth')->name('sheet');
 });
 
 Route::middleware('auth')->prefix('report-cards')->name('report-cards.')->group(function () {

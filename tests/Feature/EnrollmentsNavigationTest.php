@@ -23,7 +23,7 @@ class EnrollmentsNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_enrollment_row_opens_edit_without_view_action_and_keeps_document_actions(): void
+    public function test_enrollment_row_opens_view_and_keeps_document_actions(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
@@ -52,8 +52,8 @@ class EnrollmentsNavigationTest extends TestCase
             ->assertTableActionExists('edit')
             ->assertTableActionDoesNotExist('view');
 
-        $this->assertSame(EnrollmentResource::getUrl('edit', ['record' => $enrollment]), $page->instance()->getTable()->getRecordUrl($enrollment));
-        $this->assertArrayNotHasKey('view', EnrollmentResource::getPages());
+        $this->assertSame(EnrollmentResource::getUrl('view', ['record' => $enrollment]), $page->instance()->getTable()->getRecordUrl($enrollment));
+        $this->assertArrayHasKey('view', EnrollmentResource::getPages());
 
         Livewire::test(CreateEnrollment::class)
             ->assertSee('Aluno e período')

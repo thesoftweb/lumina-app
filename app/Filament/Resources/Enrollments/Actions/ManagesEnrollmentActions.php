@@ -24,6 +24,18 @@ trait ManagesEnrollmentActions
     }
 
     /**
+     * Action para imprimir a ficha de matrícula (abre já com a janela de impressão/salvar PDF)
+     */
+    protected function createEnrollmentSheetAction(): Action
+    {
+        return Action::make('printEnrollmentSheet')
+            ->label('Imprimir ficha')
+            ->icon('heroicon-o-printer')
+            ->url(fn () => route('enrollments.sheet', ['enrollment' => $this->record, 'print' => 1]))
+            ->openUrlInNewTab();
+    }
+
+    /**
      * Action para imprimir contrato escolar
      */
     private function createSchoolContractPrintAction(): Action

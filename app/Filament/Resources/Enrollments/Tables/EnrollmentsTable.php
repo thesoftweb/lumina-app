@@ -22,7 +22,7 @@ class EnrollmentsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->recordUrl(fn (Enrollment $record): string => EnrollmentResource::getUrl('edit', ['record' => $record]))
+            ->recordUrl(fn (Enrollment $record): string => EnrollmentResource::getUrl('view', ['record' => $record]))
             ->modifyQueryUsing(fn ($query) => $query->with(['student.customer', 'classroom', 'academicYear']))
             ->searchPlaceholder('Buscar aluno ou responsável')
             ->emptyStateHeading('Nenhuma matrícula encontrada')
