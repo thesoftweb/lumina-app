@@ -11,8 +11,6 @@ use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\SchoolContractController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
-
 Route::get('/', function () {
     return view('welcome');
 });

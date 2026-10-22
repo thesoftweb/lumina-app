@@ -16,7 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
 
         $middleware->validateCsrfTokens(except: [
-            'artisan',
             'webhooks/asaas',
         ]);
     })
