@@ -1,0 +1,35 @@
+@media (min-width: 768px) {
+    .enrollment-create-wizard .fi-sc-wizard-header {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow-x: visible;
+    }
+
+    .enrollment-create-wizard .fi-sc-wizard-header-step,
+    .enrollment-create-wizard .fi-sc-wizard-header-step-btn,
+    .enrollment-create-wizard .fi-sc-wizard-header-step-text {
+        min-width: 0;
+    }
+
+    .enrollment-create-wizard .fi-sc-wizard-header-step-btn {
+        width: 100%;
+        gap: 0.75rem;
+        padding: 0.875rem;
+    }
+
+    .enrollment-create-wizard .fi-sc-wizard-header-step-text {
+        width: auto;
+        max-width: none;
+    }
+
+    .enrollment-create-wizard .fi-sc-wizard-header-step-label,
+    .enrollment-create-wizard .fi-sc-wizard-header-step-description {
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (min-width: 1280px) {
+    .enrollment-create-wizard .fi-sc-wizard-header {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
