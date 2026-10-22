@@ -5,11 +5,12 @@ namespace App\Policies;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
+/** Cadastros da secretaria: ela vê, cria e edita; só o admin exclui. */
 class AdministrativePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     public function view(User $user, Model $model): bool

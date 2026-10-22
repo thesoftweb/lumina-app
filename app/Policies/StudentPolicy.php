@@ -9,7 +9,7 @@ class StudentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['coordinator', 'admin'])
+        return $user->hasAnyRole(['secretary', 'admin'])
             || ($user->hasRole('teacher') && $user->can('view_assigned_students'));
     }
 
@@ -21,17 +21,17 @@ class StudentPolicy
                 ->exists();
         }
 
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     public function update(User $user, Student $student): bool
     {
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     public function delete(User $user, Student $student): bool

@@ -109,7 +109,7 @@ class EnrollmentViewAndSheetTest extends TestCase
 
     public function test_sheet_is_ready_to_print_and_sign(): void
     {
-        $this->actingAsRole('admin');
+        $this->actingAsRole('secretary');
 
         $this->get(route('enrollments.sheet', ['enrollment' => $this->enrollment, 'print' => 1]))
             ->assertOk()

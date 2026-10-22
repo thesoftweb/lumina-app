@@ -47,12 +47,17 @@ class NavigationTest extends TestCase
         $this->assertArrayNotHasKey('Configurações', $groups);
     }
 
-    public function test_coordinator_sees_staff_items_but_not_admin_only_ones(): void
+    public function test_secretary_sees_office_items_but_not_admin_only_ones(): void
     {
-        $groups = $this->navigationFor('coordinator');
+        $groups = $this->navigationFor('secretary');
 
-        $this->assertContains('Clientes', $groups['Cadastros']);
-        $this->assertContains('Usuários', $groups['Administração']);
+        $this->assertSame(['Diário de classe', 'Planos de aula'], $groups['Sala de aula']);
+        $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
+        $this->assertSame(['Faturas', 'Eventos e contribuições'], $groups['Financeiro']);
+        $this->assertSame(['Clientes', 'Professores'], $groups['Cadastros']);
+        $this->assertSame(['Documentos', 'Modelos de documentos'], $groups['Documentos']);
+        $this->assertSame(['Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);
+        $this->assertArrayNotHasKey('Administração', $groups);
     }
 
     public function test_each_menu_item_has_a_distinct_icon(): void

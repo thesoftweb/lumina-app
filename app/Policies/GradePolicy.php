@@ -15,8 +15,8 @@ class GradePolicy
      */
     public function viewAny(User $user): bool
     {
-        // Teachers can view grades, coordinators and admins can view all
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers can view grades, the school office (read-only) and admins can view all
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -29,8 +29,8 @@ class GradePolicy
             return $grade->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can view any grade
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any grade
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -38,8 +38,8 @@ class GradePolicy
      */
     public function create(User $user): bool
     {
-        // Teachers, coordinators and admins can create grades
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers and admins can create grades
+        return $user->hasAnyRole(['teacher', 'admin']);
     }
 
     /**
@@ -52,8 +52,8 @@ class GradePolicy
             return $grade->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can edit any grade
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only admins can edit any grade
+        return $user->hasRole('admin');
     }
 
     /**

@@ -26,6 +26,7 @@ use App\Models\Subject;
 use App\Models\Term;
 use App\Models\User;
 use App\Observers\EnrollmentObserver;
+use App\Policies\AdminOnlyPolicy;
 use App\Policies\AdministrativePolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\ClassDiaryPolicy;
@@ -79,21 +80,26 @@ class AppServiceProvider extends ServiceProvider
 
         foreach ([
             AcademicYear::class,
-            AccountPlan::class,
             Schedule::class,
-            Company::class,
             Customer::class,
             Document::class,
             DocumentTemplate::class,
             Invoice::class,
-            Plan::class,
-            Supplier::class,
-            User::class,
             Subject::class,
             Term::class,
             Level::class,
         ] as $model) {
             Gate::policy($model, AdministrativePolicy::class);
+        }
+
+        foreach ([
+            AccountPlan::class,
+            Company::class,
+            Plan::class,
+            Supplier::class,
+            User::class,
+        ] as $model) {
+            Gate::policy($model, AdminOnlyPolicy::class);
         }
     }
 }

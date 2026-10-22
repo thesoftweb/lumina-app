@@ -41,8 +41,8 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Create permissions for coordinators
-        $coordinatorPermissions = [
+        // Create permissions for the school office (secretaria): consulta o pedagógico, não altera
+        $secretaryPermissions = [
             'view_all_classrooms',
             'view_all_grades',
             'view_all_teachers',
@@ -50,12 +50,10 @@ class RolePermissionSeeder extends Seeder
             'edit_teacher',
             'view_reports',
             'view_all_students',
-            'manage_attendance',
-            'manage_class_diaries',
-            'manage_lesson_plans',
+            'view_report_cards',
         ];
 
-        foreach ($coordinatorPermissions as $permission) {
+        foreach ($secretaryPermissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
@@ -71,12 +69,12 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Create roles and assign permissions
+        // Create roles and assign permissions (definição dos papéis em docs/NAVEGACAO_E_PERMISSOES.md)
         $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
         $teacherRole->syncPermissions($teacherPermissions);
 
-        $coordinatorRole = Role::firstOrCreate(['name' => 'coordinator', 'guard_name' => 'web']);
-        $coordinatorRole->syncPermissions(array_merge($teacherPermissions, $coordinatorPermissions));
+        $secretaryRole = Role::firstOrCreate(['name' => 'secretary', 'guard_name' => 'web']);
+        $secretaryRole->syncPermissions($secretaryPermissions);
 
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $adminRole->syncPermissions(Permission::all());

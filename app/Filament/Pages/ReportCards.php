@@ -45,7 +45,7 @@ class ReportCards extends Page implements HasTable
     {
         $user = Auth::user();
 
-        return $user?->hasAnyRole(['coordinator', 'admin'])
+        return $user?->hasAnyRole(['secretary', 'admin'])
             || ($user?->hasRole('teacher') && $user->can('view_report_cards') && (bool) $user->teacher);
     }
 

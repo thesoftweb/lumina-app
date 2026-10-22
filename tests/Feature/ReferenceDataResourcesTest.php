@@ -23,9 +23,9 @@ class ReferenceDataResourcesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_coordinator_can_create_edit_and_delete_a_subject(): void
+    public function test_secretary_can_create_and_edit_a_subject(): void
     {
-        $this->actingAs($this->user('coordinator'));
+        $this->actingAs($this->user('secretary'));
 
         Livewire::test(ManageSubjects::class)
             ->callAction('create', ['name' => 'Robótica', 'code' => 'ROB'])
@@ -41,7 +41,7 @@ class ReferenceDataResourcesTest extends TestCase
 
     public function test_subject_code_must_be_unique(): void
     {
-        $this->actingAs($this->user('coordinator'));
+        $this->actingAs($this->user('secretary'));
         Subject::create(['name' => 'Matemática', 'code' => 'MAT']);
 
         Livewire::test(ManageSubjects::class)
@@ -84,9 +84,9 @@ class ReferenceDataResourcesTest extends TestCase
         $this->assertDatabaseHas('levels', ['id' => $level->id]);
     }
 
-    public function test_coordinator_can_create_a_level(): void
+    public function test_secretary_can_create_a_level(): void
     {
-        $this->actingAs($this->user('coordinator'));
+        $this->actingAs($this->user('secretary'));
 
         Livewire::test(ManageLevels::class)
             ->callAction('create', ['name' => 'Ensino Médio', 'description' => '1º ao 3º ano'])
@@ -97,7 +97,7 @@ class ReferenceDataResourcesTest extends TestCase
 
     public function test_term_requires_unique_order_per_year_and_valid_dates(): void
     {
-        $this->actingAs($this->user('coordinator'));
+        $this->actingAs($this->user('secretary'));
         AcademicYear::create(['description' => '2027', 'year' => 2027, 'start_at' => '2027-02-01', 'end_at' => '2027-12-15', 'is_default' => false]);
 
         Livewire::test(ManageTerms::class)

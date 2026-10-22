@@ -25,33 +25,34 @@ use App\Filament\Resources\Users\UserResource;
 |
 | Cada regra aceita:
 |   'permission' => 'nome_da_permissao'   (tem prioridade; usa o Spatie Permission)
-|   'roles'      => ['admin', 'coordinator']
+|   'roles'      => ['admin', 'secretary']
 |
 | O perfil "admin" sempre vê tudo. Para migrar um item de perfis para permissões,
 | basta trocar 'roles' por 'permission' (e criar a permissão no RolePermissionSeeder).
 | Isto controla só o menu, não substitui a autorização.
 */
 
-$staff = ['roles' => ['coordinator'], 'permission' => null];
+$office = ['roles' => ['secretary'], 'permission' => null];
+$adminOnly = ['roles' => ['admin'], 'permission' => null];
 
 return [
     'access' => [
-        // Secretaria e financeiro: indisponíveis para professores
-        EnrollmentResource::class => $staff,
-        InvoiceResource::class => $staff,
-        PlanResource::class => $staff,
-        CustomerResource::class => $staff,
-        TeacherResource::class => $staff,
-        SupplierResource::class => $staff,
-        DocumentResource::class => $staff,
-        DocumentTemplateResource::class => $staff,
-        CompanyResource::class => $staff,
-        AcademicYearResource::class => $staff,
-        TermResource::class => $staff,
-        LevelResource::class => $staff,
-        SubjectResource::class => $staff,
+        // Secretaria: matrículas, cobranças, cadastros, documentos e estrutura do ano (professor não vê)
+        EnrollmentResource::class => $office,
+        InvoiceResource::class => $office,
+        CustomerResource::class => $office,
+        TeacherResource::class => $office,
+        DocumentResource::class => $office,
+        DocumentTemplateResource::class => $office,
+        AcademicYearResource::class => $office,
+        TermResource::class => $office,
+        LevelResource::class => $office,
+        SubjectResource::class => $office,
 
-        // Administração
-        UserResource::class => ['roles' => ['coordinator'], 'permission' => null],
+        // Direção: preços, contas a pagar, dados da empresa e usuários
+        PlanResource::class => $adminOnly,
+        SupplierResource::class => $adminOnly,
+        CompanyResource::class => $adminOnly,
+        UserResource::class => $adminOnly,
     ],
 ];

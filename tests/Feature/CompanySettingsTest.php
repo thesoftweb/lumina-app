@@ -15,7 +15,7 @@ class CompanySettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function signIn(string $role = 'coordinator'): Company
+    private function signIn(string $role = 'admin'): Company
     {
         $this->seed(RolePermissionSeeder::class);
         $company = Company::create(['name' => 'Escola', 'email' => 'escola@example.test', 'asaas_key' => 'existing-secret']);
@@ -49,12 +49,15 @@ class CompanySettingsTest extends TestCase
         $this->assertDatabaseCount('companies', 1);
     }
 
-    public function test_teacher_and_other_company_urls_are_denied(): void
+    public function test_teacher_secretary_and_other_company_urls_are_denied(): void
     {
         $this->signIn('teacher');
         Livewire::test(EditCompany::class)->assertForbidden();
 
-        auth()->user()->syncRoles(['coordinator']);
+        auth()->user()->syncRoles(['secretary']);
+        Livewire::test(EditCompany::class)->assertForbidden();
+
+        auth()->user()->syncRoles(['admin']);
         $other = Company::create(['name' => 'Outra', 'email' => 'outra@example.test']);
         Livewire::test(EditCompany::class, ['record' => $other->id])->assertForbidden();
     }

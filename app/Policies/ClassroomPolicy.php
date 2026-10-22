@@ -15,8 +15,8 @@ class ClassroomPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Teachers can view classrooms, coordinators and admins can view all
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers can view classrooms, secretaries and admins can view all
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -29,8 +29,8 @@ class ClassroomPolicy
             return $classroom->teachers()->where('teacher_id', $user->teacher?->id)->exists();
         }
 
-        // Coordinators and admins can view any classroom
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any classroom
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -38,8 +38,8 @@ class ClassroomPolicy
      */
     public function create(User $user): bool
     {
-        // Only coordinators and admins can create classrooms
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only secretaries and admins can create classrooms
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -47,8 +47,8 @@ class ClassroomPolicy
      */
     public function update(User $user, Classroom $classroom): bool
     {
-        // Only coordinators and admins can edit classrooms
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only secretaries and admins can edit classrooms
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
