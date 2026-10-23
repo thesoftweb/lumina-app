@@ -10,14 +10,16 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
 use App\Http\Controllers\PortalPixQrCodeController;
 use App\Http\Controllers\ReportCardController;
+use App\Http\Middleware\VerifyAsaasWebhookToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Webhook Routes (público, sem CSRF)
+// Webhook do Asaas (sem CSRF; autenticado pelo token do cabeçalho asaas-access-token)
 Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])
+    ->middleware(VerifyAsaasWebhookToken::class)
     ->name('webhook.asaas');
 
 // Portal Routes

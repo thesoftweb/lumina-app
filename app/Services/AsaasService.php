@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
-use App\Enums\InvoiceStatus;
 use App\Models\Customer;
 use App\Models\Invoice;
-use Illuminate\Support\Facades\DB;
+use App\Services\Asaas\PaymentSynchronizer;
+use App\Services\Asaas\SyncResult;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\LazyCollection;
+use RuntimeException;
 
 class AsaasService
 {
@@ -64,7 +67,8 @@ class AsaasService
                 ->post("{$this->baseUrl}/customers", $payload);
 
             if ($response->failed()) {
-                $error = $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
+                // O Asaas manda o motivo em errors[].description
+                $error = $response->json('errors.0.description') ?? $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
                 Log::error("Asaas API error creating customer {$customer->id}: {$error}", $response->json() ?? []);
 
                 $customer->update([
@@ -244,6 +248,7 @@ class AsaasService
                     'asaas_sync_status' => 'pending',
                     'invoice_link' => $invoiceLink,
                     'invoice_qrcode' => $pixQrCode, // Salvar QR code PIX
+                    'asaas_due_date' => self::differentDueDate($invoice, $data),
                 ]);
 
                 Log::info("Cobrança criada com sucesso no Asaas", [
@@ -336,24 +341,32 @@ class AsaasService
      */
     public function getPayment(Invoice $invoice): ?array
     {
-        try {
-            if (!$invoice->asaas_invoice_id) {
-                return null;
-            }
+        if (!$invoice->asaas_invoice_id) {
+            return null;
+        }
 
+        return $this->findPayment($invoice->asaas_invoice_id);
+    }
+
+    /**
+     * Cobrança do Asaas pelo id (GET /payments/{id}); null se a consulta falhar.
+     */
+    public function findPayment(string $asaasPaymentId): ?array
+    {
+        try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(config('asaas.timeout', 30))
                 ->connectTimeout(config('asaas.connect_timeout', 10))
-                ->get("{$this->baseUrl}/payments/{$invoice->asaas_invoice_id}");
+                ->get("{$this->baseUrl}/payments/".rawurlencode($asaasPaymentId));
 
             if ($response->failed()) {
-                Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $response->json('message'), $response->json() ?? []);
+                Log::error("Asaas error fetching payment {$asaasPaymentId}: " . $response->json('message'), $response->json() ?? []);
                 return null;
             }
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $e->getMessage());
+            Log::error("Asaas error fetching payment {$asaasPaymentId}: " . $e->getMessage());
             return null;
         }
     }
@@ -366,70 +379,68 @@ class AsaasService
      */
     public function syncPaymentStatus(Invoice $invoice): bool
     {
+        return $this->syncPayment($invoice)?->recognized() ?? false;
+    }
+
+    /**
+     * Busca a cobrança da fatura no Asaas e aplica a situação dela (ver PaymentSynchronizer).
+     * Devolve null se a cobrança não pôde ser consultada.
+     */
+    public function syncPayment(Invoice $invoice, bool $dryRun = false): ?SyncResult
+    {
         try {
             $paymentData = $this->getPayment($invoice);
 
             if (! $paymentData || ($paymentData['id'] ?? null) !== $invoice->asaas_invoice_id) {
-                return false;
+                return null;
             }
 
-            $status = $paymentData['status'] ?? null;
-
-            $statusMap = [
-                'PENDING' => InvoiceStatus::Open,
-                'CONFIRMED' => InvoiceStatus::Paid,
-                'RECEIVED' => InvoiceStatus::Paid,
-                'OVERDUE' => InvoiceStatus::Overdue,
-                'PARTIALLY_RECEIVED' => InvoiceStatus::Partial,
-                'DISPUTED' => InvoiceStatus::Open,
-                'AWAITING_RISK_ANALYSIS' => InvoiceStatus::Open,
-                'RISK_REJECTED' => InvoiceStatus::Canceled,
-                'DELETED' => InvoiceStatus::Canceled,
-            ];
-
-            $newStatus = $statusMap[$status] ?? null;
-
-            if (! $newStatus) {
-                Log::warning('Asaas payment status not mapped', ['invoice_id' => $invoice->id, 'status' => $status]);
-
-                return false;
-            }
-
-            DB::transaction(function () use ($invoice, $paymentData, $newStatus): void {
-                $lockedInvoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
-
-                if ($newStatus === InvoiceStatus::Paid && $lockedInvoice->status !== InvoiceStatus::Paid) {
-                    $lockedInvoice->balance ??= $lockedInvoice->amount;
-                    $payment = app(PaymentService::class)->payFullInvoice(
-                        $lockedInvoice,
-                        'online_payment',
-                        $paymentData['id'],
-                        'Pagamento sincronizado do Asaas',
-                    );
-                    $payment->update([
-                        'asaas_payment_id' => $paymentData['id'],
-                        'asaas_sync_status' => 'synced',
-                        'asaas_synced_at' => now(),
-                    ]);
-                }
-
-                $lockedInvoice->update([
-                    'status' => $newStatus,
-                    'balance' => $newStatus === InvoiceStatus::Paid ? 0 : $lockedInvoice->balance,
-                    'asaas_sync_status' => 'synced',
-                    'asaas_synced_at' => now(),
-                ]);
-            });
-
-            $invoice->refresh();
-            Log::info("Asaas payment synced for invoice {$invoice->id}: {$status}");
-
-            return true;
+            return app(PaymentSynchronizer::class)->apply($invoice, $paymentData, $dryRun);
         } catch (\Exception $e) {
             Log::error("Asaas error syncing payment for invoice {$invoice->id}: ".$e->getMessage());
 
-            return false;
+            return null;
         }
+    }
+
+    /**
+     * Todas as cobranças do Asaas que atendem aos filtros, página a página (limit 100, offset) até
+     * hasMore=false. Filtros aceitos pela API: status, customer, externalReference, billingType,
+     * paymentDate[ge]/[le], dateCreated[ge]/[le], dueDate[ge]/[le].
+     *
+     * @param  array<string, scalar>  $filters
+     * @return LazyCollection<int, array<string, mixed>>
+     *
+     * @throws RuntimeException se alguma página falhar (melhor parar do que conciliar pela metade)
+     */
+    public function paginatePayments(array $filters = [], int $pageSize = 100): LazyCollection
+    {
+        $pageSize = max(1, min(100, $pageSize));
+
+        return LazyCollection::make(function () use ($filters, $pageSize) {
+            $offset = 0;
+
+            do {
+                $response = Http::withHeaders($this->getHeaders())
+                    ->timeout(config('asaas.timeout', 30))
+                    ->connectTimeout(config('asaas.connect_timeout', 10))
+                    ->get("{$this->baseUrl}/payments", [...$filters, 'offset' => $offset, 'limit' => $pageSize]);
+
+                if ($response->failed()) {
+                    $error = $response->json('errors.0.description') ?? $response->json('message') ?? "HTTP {$response->status()}";
+
+                    throw new RuntimeException("Falha ao listar cobranças do Asaas (offset {$offset}): {$error}");
+                }
+
+                $page = $response->json('data') ?? [];
+
+                foreach ($page as $payment) {
+                    yield $payment;
+                }
+
+                $offset += $pageSize;
+            } while ($response->json('hasMore') === true && $page !== []);
+        });
     }
 
     /**
@@ -597,12 +608,37 @@ class AsaasService
     }
 
     /**
-     * Construir payload de cobrança para Asaas
+     * Vencimento enviado ao Asaas: ele recusa cobrança com vencimento passado, então a fatura gerada
+     * depois do vencimento vai vencendo hoje (a fatura mantém o vencimento original).
+     */
+    public static function chargeDueDate(CarbonInterface $dueDate): CarbonInterface
+    {
+        return $dueDate->copy()->startOfDay()->lt(today()) ? today() : $dueDate;
+    }
+
+    /**
+     * Vencimento da cobrança devolvida pelo Asaas, quando difere do vencimento da fatura (vai para
+     * invoices.asaas_due_date); null quando são iguais.
+     *
+     * @param  array<string, mixed>  $charge
+     */
+    public static function differentDueDate(Invoice $invoice, array $charge): ?string
+    {
+        $chargeDue = $charge['dueDate'] ?? null;
+
+        return is_string($chargeDue) && $invoice->due_date && $chargeDue !== $invoice->due_date->format('Y-m-d')
+            ? $chargeDue
+            : null;
+    }
+
+    /**
+     * Construir payload de cobrança para Asaas (público: as operações do sistema, em
+     * App\Services\Asaas\ChargeOperations, criam a cobrança com o mesmo payload)
      *
      * @param Invoice $invoice
      * @return array
      */
-    private function buildChargePayload(Invoice $invoice): array
+    public function buildChargePayload(Invoice $invoice): array
     {
         // Usar o valor original se existir desconto, caso contrário usar o valor atual
         $chargeValue = $invoice->original_amount ?? $invoice->balance ?? $invoice->amount;
@@ -614,7 +650,7 @@ class AsaasService
             'customer' => $invoice->customer->asaas_customer_id,
             'description' => $invoice->notes ?? 'Mensalidade',
             'value' => $chargeValue,
-            'dueDate' => $invoice->due_date->format('Y-m-d'),
+            'dueDate' => self::chargeDueDate($invoice->due_date)->format('Y-m-d'),
             'billingType' => $billingType,
             'externalReference' => (string) $invoice->id,
         ];

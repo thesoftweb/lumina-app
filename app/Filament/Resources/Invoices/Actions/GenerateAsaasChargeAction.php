@@ -5,10 +5,10 @@ namespace App\Filament\Resources\Invoices\Actions;
 use App\Enums\EnrollmentStatus;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
-use App\Services\AsaasService;
+use App\Services\Asaas\ChargeOperations;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 
+/** Vincula uma cobrança do Asaas a uma fatura que ainda não tem (faturas antigas). */
 class GenerateAsaasChargeAction
 {
     public static function make(): Action
@@ -18,52 +18,18 @@ class GenerateAsaasChargeAction
             ->icon('heroicon-o-arrow-up-tray')
             ->color('primary')
             ->tooltip('Enviar esta fatura para o Asaas e gerar boleto/PIX')
+            ->authorize('update')
             ->requiresConfirmation()
             ->modalHeading('Gerar Cobrança no Asaas')
-            ->modalSubheading('Esta fatura será enviada para o Asaas e gerará boleto e PIX dinâmico.')
-            ->modalButton('Gerar')
-            ->action(function (Invoice $record) {
-                if ($record->enrollment?->status === EnrollmentStatus::Canceled) {
-                    Notification::make()
-                        ->title('Matrícula cancelada')
-                        ->body('Não é possível gerar uma cobrança para uma matrícula cancelada.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                $asaasService = new AsaasService();
-
-                // Sincronizar cliente se necessário
-                if (!$record->customer->asaas_customer_id) {
-                    $result = $asaasService->createOrUpdateCustomer($record->customer);
-                    if (!$result) {
-                        Notification::make()
-                            ->title('Erro ao sincronizar cliente')
-                            ->body('Não foi possível registrar o cliente no Asaas. Verifique as credenciais.')
-                            ->danger()
-                            ->send();
-                        return;
-                    }
-                }
-
-                // Criar cobrança
-                $result = $asaasService->createCharge($record);
-
-                if ($result && isset($result['id'])) {
-                    Notification::make()
-                        ->title('✅ Cobrança gerada com sucesso!')
-                        ->body("ID Asaas: {$result['id']}\nReferência: {$record->reference}")
-                        ->success()
-                        ->send();
-                } else {
-                    Notification::make()
-                        ->title('Erro ao gerar cobrança')
-                        ->body('Não foi possível enviar a cobrança para o Asaas. Tente novamente.')
-                        ->danger()
-                        ->send();
-                }
+            ->modalDescription('Esta fatura será enviada para o Asaas e gerará boleto e PIX dinâmico.')
+            ->modalSubmitActionLabel('Gerar')
+            ->action(function (Action $action, Invoice $record, ChargeOperations $operations): void {
+                RunsChargeOperation::run(
+                    $action,
+                    fn () => $operations->attachCharge($record),
+                    'Cobrança gerada no Asaas',
+                    fn (): string => "ID Asaas: {$record->asaas_invoice_id}",
+                );
             })
             ->visible(fn (Invoice $record) => ! $record->asaas_invoice_id
                 && ! in_array($record->status, [InvoiceStatus::Paid, InvoiceStatus::Canceled], true)

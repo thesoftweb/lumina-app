@@ -82,6 +82,13 @@ Confirmar no código os pontos que a documentação apenas afirma. O resultado p
 
 ### S1-02 - Autenticar o webhook do Asaas
 
+> **Resolvido em 23/10/2026.** Middleware `VerifyAsaasWebhookToken` (401 sem token, com token errado ou
+> sem `ASAAS_WEBHOOK_SECRET` configurado), idempotência e auditoria em `asaas_webhook_events` (chave = `id`
+> da notificação), cobrança relida na API antes de aplicar e cobertura em `tests/Feature/AsaasWebhookTest.php`.
+> Diferença em relação à tarefa 5: a falha de processamento **não** responde 500 — a notificação já foi
+> gravada, fica `failed` e o Asaas recebe 200, porque erros seguidos fazem o Asaas pausar a fila (a
+> conciliação diária corrige). Detalhes em `ASAAS_INTEGRATION.md`, seção "Webhook".
+
 **Problema:** `POST /webhooks/asaas` aceita qualquer payload. `PAYMENT_OVERDUE` e `PAYMENT_DELETED` alteram a invoice direto do payload, e o pagamento de evento (`EVENT-x-y`) marca participante como pago com dados do payload. O `externalReference` é o ID sequencial da invoice.
 
 **Tarefas**
@@ -276,7 +283,7 @@ Detalhar e reestimar ao final da Sprint 1, depois de ler o resultado do S1-00.
 | --- | --- | --- | --- |
 | S1-00 | | A fazer | |
 | S1-01 | | A fazer | |
-| S1-02 | | A fazer | |
+| S1-02 | | Resolvido (23/10/2026) | Token `asaas-access-token` x `ASAAS_WEBHOOK_SECRET` (falha fechada), `asaas_webhook_events`, cobrança relida na API. Falha de processamento responde 200 e fica `failed` (ver nota no item). Falta cadastrar o token no painel do Asaas (sandbox e produção) |
 | S1-03 | | A fazer | |
 | S1-04 | | A fazer | |
 | S1-05 | | A fazer | |

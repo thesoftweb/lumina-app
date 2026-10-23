@@ -15,6 +15,7 @@ class Invoice extends Model
     protected $casts = [
         'issue_date' => 'date',
         'due_date' => 'date',
+        'asaas_due_date' => 'date',
         'billing_period_start' => 'date',
         'billing_period_end' => 'date',
         'amount' => 'decimal:2',
@@ -64,5 +65,20 @@ class Invoice extends Model
     public function scopeOverdue(Builder $query): Builder
     {
         return $query->unpaid()->whereDate('due_date', '<', today());
+    }
+
+    /** Mesmo critério do scope overdue, para uma fatura já carregada. */
+    public function isPastDue(): bool
+    {
+        return (float) $this->balance > 0
+            && in_array($this->status, [InvoiceStatus::Open, InvoiceStatus::Partial, InvoiceStatus::Overdue], true)
+            && (bool) $this->due_date?->isBefore(today());
+    }
+
+    /** Competência legível ("outubro/2026"): mês do período cobrado ou, sem ele, do vencimento. */
+    public function competenceLabel(): ?string
+    {
+        return ($this->billing_period_start ?? $this->due_date)
+            ?->copy()->locale('pt_BR')->translatedFormat('F/Y');
     }
 }

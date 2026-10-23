@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -107,6 +108,10 @@ class CustomerInvoicesTabTest extends TestCase
 
     public function test_new_invoice_action_uses_real_invoice_fields_and_keeps_the_customer_link(): void
     {
+        // A fatura nasce com a cobrança no Asaas (detalhes em InvoiceOperationsTest)
+        $this->customer->update(['asaas_customer_id' => 'cus_1']);
+        Http::fake(['*/payments' => Http::response(['id' => 'pay_new', 'status' => 'PENDING'])]);
+
         $this->table()->callAction(TestAction::make('create')->table(), [
             'customer_id' => $this->customer->id,
             'billing_type' => 'tuition',
@@ -119,6 +124,7 @@ class CustomerInvoicesTabTest extends TestCase
             'customer_id' => $this->customer->id,
             'amount' => 120,
             'billing_type' => 'tuition',
+            'asaas_invoice_id' => 'pay_new',
         ]);
     }
 }
