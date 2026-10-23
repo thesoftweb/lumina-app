@@ -175,7 +175,12 @@ class IssuedDocument extends Model
 
     public function logoDataUri(): ?string
     {
-        $path = $this->data['company']['logo'] ?? null;
+        return $this->fileDataUri($this->data['company']['logo'] ?? null);
+    }
+
+    /** Arquivo copiado na emissão (logo, foto), embutido na página para não depender de URL pública. */
+    public function fileDataUri(?string $path): ?string
+    {
         $disk = Storage::disk(self::LOGO_DISK);
 
         if (! $path || ! $disk->exists($path)) {

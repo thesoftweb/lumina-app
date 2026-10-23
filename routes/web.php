@@ -47,6 +47,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
 Route::get('documentos-emitidos/{issuedDocument}', [IssuedDocumentController::class, 'show'])
     ->middleware('auth')
     ->name('issued-documents.print');
+Route::get('carteirinhas/imprimir', [IssuedDocumentController::class, 'cards'])
+    ->middleware('auth')
+    ->name('pickup-cards.print');
 
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('verificar', [DocumentVerificationController::class, 'form'])->name('documents.verify.form');

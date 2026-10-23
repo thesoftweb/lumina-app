@@ -4,20 +4,27 @@ namespace App\Filament\Resources\Students\Schemas;
 
 use App\Enums\DegreeOfKinship;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
+use App\Filament\Resources\Students\Pages\EditStudent;
+use App\Filament\Resources\Students\RelationManagers\PickupAuthorizationsRelationManager;
 use App\Models\City;
 use App\Models\State;
+use App\Models\Student;
+use App\Models\StudentPickupAuthorization;
 use App\Models\StudentProfile;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire as LivewireComponent;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Gate;
 
 class StudentForm
 {
@@ -35,6 +42,22 @@ class StudentForm
                                 ->description('Identificação e dados de nascimento do aluno.')
                                 ->columnSpanFull()
                                 ->schema([
+                                    FileUpload::make('photo_path')
+                                        ->label('Foto')
+                                        ->helperText('Sai na carteirinha de autorização de saída. Foto de rosto, de frente; JPG, PNG ou WebP de até 2 MB.')
+                                        ->image()
+                                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                                        ->maxSize(2048)
+                                        ->disk(Student::PHOTO_DISK)
+                                        ->directory(Student::PHOTO_DIRECTORY)
+                                        ->visibility('private')
+                                        ->imageEditor()
+                                        ->imageEditorAspectRatioOptions(['3:4'])
+                                        ->automaticallyResizeImagesMode('cover')
+                                        ->automaticallyResizeImagesToWidth('600')
+                                        ->automaticallyResizeImagesToHeight('800')
+                                        ->imagePreviewHeight('160')
+                                        ->columnSpanFull(),
                                     Grid::make()
                                         ->schema([
                                             TextInput::make('name')
@@ -142,6 +165,19 @@ class StudentForm
                                                 ->required(),
                                         ]),
                                 ]),
+                        ]),
+                    Tab::make('Autorizados a buscar')
+                        ->icon('heroicon-o-identification')
+                        ->visibleOn('edit')
+                        ->visible(fn (): bool => Gate::allows('viewAny', StudentPickupAuthorization::class))
+                        ->schema([
+                            LivewireComponent::make(
+                                PickupAuthorizationsRelationManager::class,
+                                fn (Student $record): array => [
+                                    'ownerRecord' => $record,
+                                    'pageClass' => EditStudent::class,
+                                ],
+                            )->key('student-pickup-authorizations'),
                         ]),
                     Tab::make('Informações adicionais')
                         ->icon('heroicon-o-clipboard-document-list')

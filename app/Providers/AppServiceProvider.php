@@ -18,6 +18,7 @@ use App\Models\IssuedDocument;
 use App\Models\LessonPlan;
 use App\Models\Plan;
 use App\Models\Student;
+use App\Models\StudentPickupAuthorization;
 use App\Models\Supplier;
 use App\Models\Teacher;
 use App\Models\Level;
@@ -84,6 +85,7 @@ class AppServiceProvider extends ServiceProvider
             Schedule::class,
             Customer::class,
             Invoice::class,
+            StudentPickupAuthorization::class,
             Subject::class,
             Term::class,
             Level::class,

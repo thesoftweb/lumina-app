@@ -130,24 +130,24 @@ class DocumentIssuer
             'website' => $company->website,
             'address' => $company->full_address,
             'city' => $company->city_and_state,
-            'logo' => $this->copyLogo($company),
+            'logo' => $this->snapshotFile(Company::LOGO_DISK, $company->logo_path, 'logos'),
         ];
     }
 
     /**
-     * Copia a logo atual para o disco privado, com o nome pelo conteúdo: trocar a logo da escola
-     * não muda os documentos já emitidos, e a mesma logo é guardada uma vez só.
+     * Copia um arquivo (logo da escola, foto do aluno) para o disco privado dos documentos, com o nome pelo
+     * conteúdo: trocar o arquivo original não muda os documentos já emitidos, e cópias iguais são guardadas uma vez só.
      */
-    private function copyLogo(Company $company): ?string
+    public function snapshotFile(string $disk, ?string $path, string $directory): ?string
     {
-        $source = Storage::disk(Company::LOGO_DISK);
+        $source = Storage::disk($disk);
 
-        if (! $company->logo_path || ! $source->exists($company->logo_path)) {
+        if (! $path || ! $source->exists($path)) {
             return null;
         }
 
-        $contents = $source->get($company->logo_path);
-        $path = 'issued-documents/logos/'.hash('sha256', $contents).'.'.pathinfo($company->logo_path, PATHINFO_EXTENSION);
+        $contents = $source->get($path);
+        $path = "issued-documents/{$directory}/".hash('sha256', $contents).'.'.pathinfo($path, PATHINFO_EXTENSION);
         $target = Storage::disk(IssuedDocument::LOGO_DISK);
 
         if (! $target->exists($path)) {

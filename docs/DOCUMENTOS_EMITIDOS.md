@@ -10,6 +10,7 @@ Declarações e recibos emitidos pela escola, numerados e com verificação púb
 | Declaração de frequência | Matrícula › Documentos e cobranças | Matrícula ativa e chamadas lançadas no período (do início do ano letivo, ou da matrícula, até hoje) |
 | Declaração de quitação | Clientes › abrir o responsável | "Até hoje": sem faturas vencidas com saldo. "Quitação anual" (Lei nº 12.007/2009): todas as faturas de um ano encerrado pagas |
 | Recibo de pagamento | Fatura (topo da tela) ou Clientes › Faturas › Mais ações | Um recibo por pagamento; pedir de novo reabre o mesmo (2ª via) |
+| Carteirinha de autorização de saída | Alunos › editar › aba Autorizados a buscar | Uma por pessoa autorizada, com a foto do aluno; válida até o fim do ano letivo da matrícula ativa |
 
 Para consultar, reimprimir e cancelar: **Documentos › Documentos emitidos**. Secretaria e admin emitem e reimprimem; só o admin cancela, com motivo.
 
@@ -17,11 +18,18 @@ Antes da primeira emissão, preencha em **Configurações › Empresa › Docume
 
 ## Identificação e validade
 
-- **Número:** série e ano, sem repetir nem pular: `DEC-2026-000001` (declarações) e `REC-2026-000001` (recibos).
+- **Número:** série e ano, sem repetir nem pular: `DEC-2026-000001` (declarações), `REC-2026-000001` (recibos) e `CAR-2026-000001` (carteirinhas).
 - **Código de verificação:** 16 caracteres sem letras ambíguas, impresso no rodapé com o QR code.
 - **Conteúdo congelado:** na emissão são gravados os dados da escola, quem assina, uma cópia da logo e os dados do documento. Mudanças posteriores nos cadastros não alteram o que foi emitido. Um hash do conteúdo detecta alteração direta no banco.
 - **Correção:** documento emitido não se edita nem se exclui. O admin cancela e um novo é emitido.
 - **Cancelamento automático:** estornar um pagamento ou excluir a fatura cancela o recibo correspondente.
+
+## Carteirinha de autorização de saída
+
+- Cadastro em **Alunos › editar › Autorizados a buscar**: nome, documento (RG ou CPF), vínculo e telefone. A foto do aluno fica na aba Cadastro e é guardada em disco privado.
+- **Imprimir carteirinhas** emite as que faltam e abre uma folha A4 com até 4 por folha: recortar na linha pontilhada, dobrar na linha central (frente e verso) e plastificar. Imprimir em tamanho real (100%).
+- **Revogar** retira a autorização e cancela a carteirinha. Alterar nome, documento ou vínculo, excluir a pessoa ou o aluno também cancela; o telefone pode mudar sem cancelar.
+- **Na portaria**, o QR code mostra a situação, o nome e o vínculo do autorizado, o documento mascarado e o nome do aluno abreviado, sem foto. Com login, a equipe vê a carteirinha completa. Carteirinha cancelada ou vencida não mostra quem estava autorizado.
 
 ## Verificação pública
 
