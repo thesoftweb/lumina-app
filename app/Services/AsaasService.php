@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Services\Asaas\PaymentSynchronizer;
 use App\Services\Asaas\SyncResult;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\LazyCollection;
@@ -247,6 +248,7 @@ class AsaasService
                     'asaas_sync_status' => 'pending',
                     'invoice_link' => $invoiceLink,
                     'invoice_qrcode' => $pixQrCode, // Salvar QR code PIX
+                    'asaas_due_date' => self::differentDueDate($invoice, $data),
                 ]);
 
                 Log::info("Cobrança criada com sucesso no Asaas", [
@@ -606,6 +608,30 @@ class AsaasService
     }
 
     /**
+     * Vencimento enviado ao Asaas: ele recusa cobrança com vencimento passado, então a fatura gerada
+     * depois do vencimento vai vencendo hoje (a fatura mantém o vencimento original).
+     */
+    public static function chargeDueDate(CarbonInterface $dueDate): CarbonInterface
+    {
+        return $dueDate->copy()->startOfDay()->lt(today()) ? today() : $dueDate;
+    }
+
+    /**
+     * Vencimento da cobrança devolvida pelo Asaas, quando difere do vencimento da fatura (vai para
+     * invoices.asaas_due_date); null quando são iguais.
+     *
+     * @param  array<string, mixed>  $charge
+     */
+    public static function differentDueDate(Invoice $invoice, array $charge): ?string
+    {
+        $chargeDue = $charge['dueDate'] ?? null;
+
+        return is_string($chargeDue) && $invoice->due_date && $chargeDue !== $invoice->due_date->format('Y-m-d')
+            ? $chargeDue
+            : null;
+    }
+
+    /**
      * Construir payload de cobrança para Asaas (público: as operações do sistema, em
      * App\Services\Asaas\ChargeOperations, criam a cobrança com o mesmo payload)
      *
@@ -624,7 +650,7 @@ class AsaasService
             'customer' => $invoice->customer->asaas_customer_id,
             'description' => $invoice->notes ?? 'Mensalidade',
             'value' => $chargeValue,
-            'dueDate' => $invoice->due_date->format('Y-m-d'),
+            'dueDate' => self::chargeDueDate($invoice->due_date)->format('Y-m-d'),
             'billingType' => $billingType,
             'externalReference' => (string) $invoice->id,
         ];

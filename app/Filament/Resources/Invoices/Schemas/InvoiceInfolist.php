@@ -42,7 +42,10 @@ class InvoiceInfolist
                             ->visible(fn (Invoice $record): bool => (float) $record->discount_value > 0),
                         TextEntry::make('due_date')->label('Vencimento')->date('d/m/Y')
                             ->color(fn (Invoice $record): ?string => $record->isPastDue() ? 'danger' : null)
-                            ->helperText(fn (Invoice $record): ?string => $record->isPastDue() ? 'Vencida e com saldo' : null),
+                            ->helperText(fn (Invoice $record): ?string => collect([
+                                $record->isPastDue() ? 'Vencida e com saldo' : null,
+                                $record->asaas_due_date ? 'Cobrança no Asaas vence em '.$record->asaas_due_date->format('d/m/Y') : null,
+                            ])->filter()->implode(' · ') ?: null),
                         TextEntry::make('competence')->label('Competência')
                             ->state(fn (Invoice $record): ?string => $record->competenceLabel()),
                         TextEntry::make('customer.name')->label('Responsável')

@@ -15,6 +15,7 @@ class Invoice extends Model
     protected $casts = [
         'issue_date' => 'date',
         'due_date' => 'date',
+        'asaas_due_date' => 'date',
         'billing_period_start' => 'date',
         'billing_period_end' => 'date',
         'amount' => 'decimal:2',

@@ -307,7 +307,7 @@ class PaymentSynchronizer
     private function planUndoReceipt(Invoice $invoice, array $asaasPayment, array $plan, Collection $linked): array
     {
         $hasOtherPayments = $invoice->payments()->whereNotIn('id', $linked->modelKeys())->exists();
-        $dueDate = $this->date($asaasPayment['dueDate'] ?? null) ?? $invoice->due_date;
+        $dueDate = $invoice->due_date ?? $this->date($asaasPayment['dueDate'] ?? null);
 
         $target = match (true) {
             $hasOtherPayments => InvoiceStatus::Partial,
@@ -363,8 +363,11 @@ class PaymentSynchronizer
 
         $asaasDueDate = $this->date($asaasPayment['dueDate'] ?? null);
 
-        if ($asaasDueDate && ! $asaasDueDate->isSameDay($invoice->due_date)) {
+        // A cobrança pode vencer em outra data de propósito (fatura gerada depois do vencimento vai
+        // vencendo hoje; o vencimento original fica na fatura): só muda se mudou no Asaas
+        if ($asaasDueDate && ! $asaasDueDate->isSameDay($invoice->asaas_due_date ?? $invoice->due_date)) {
             $attributes['due_date'] = $asaasDueDate->toDateString();
+            $attributes['asaas_due_date'] = null;
             $updates[] = 'vencimento: '.$invoice->due_date?->format('d/m/Y').' → '.$asaasDueDate->format('d/m/Y');
         }
 

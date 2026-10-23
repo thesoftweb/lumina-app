@@ -126,6 +126,45 @@ class InvoiceOperationsTest extends TestCase
             && $request['description'] === 'Mensalidade de novembro');
     }
 
+    public function test_invoice_past_its_due_date_gets_a_charge_due_today_and_keeps_its_own_due_date(): void
+    {
+        Http::fake(['*/payments' => Http::response($this->charge(['id' => 'pay_late', 'dueDate' => '2026-10-23']))]);
+
+        $invoice = $this->operations->createInvoice(fn (): Invoice => $this->invoice([
+            'due_date' => '2026-10-10', 'status' => 'overdue', 'asaas_invoice_id' => null, 'asaas_sync_status' => null,
+        ]));
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && $request['dueDate'] === '2026-10-23');
+        $this->assertSame('2026-10-10', $invoice->due_date->toDateString());
+        $this->assertSame('2026-10-23', $invoice->asaas_due_date->toDateString());
+        $this->assertSame(InvoiceStatus::Overdue, $invoice->status);
+
+        // A conciliação não troca o vencimento da fatura pelo da cobrança
+        $result = app(PaymentSynchronizer::class)->apply($invoice, $this->charge(['id' => 'pay_late', 'dueDate' => '2026-10-23']));
+        $this->assertSame(SyncChange::Unchanged, $result->change);
+        $this->assertSame('2026-10-10', $invoice->fresh()->due_date->toDateString());
+
+        // ...mas um vencimento novo dado no Asaas vale para a fatura
+        app(PaymentSynchronizer::class)->apply($invoice->fresh(), $this->charge(['id' => 'pay_late', 'dueDate' => '2026-10-30']));
+        $fresh = $invoice->fresh();
+        $this->assertSame('2026-10-30', $fresh->due_date->toDateString());
+        $this->assertNull($fresh->asaas_due_date);
+        $this->assertSame(InvoiceStatus::Open, $fresh->status);
+    }
+
+    public function test_due_date_moved_to_the_past_goes_to_asaas_as_today(): void
+    {
+        $invoice = $this->invoice();
+        Http::fake(['*/payments/pay_1' => Http::sequence()->push($this->charge())->push($this->charge(['dueDate' => '2026-10-23']))]);
+
+        $this->operations->update($invoice, ['due_date' => '2026-10-05']);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT' && $request['dueDate'] === '2026-10-23');
+        $this->assertSame('2026-10-05', $invoice->due_date->toDateString());
+        $this->assertSame('2026-10-23', $invoice->asaas_due_date->toDateString());
+        $this->assertSame(InvoiceStatus::Overdue, $invoice->status);
+    }
+
     public function test_invoice_is_not_created_when_asaas_refuses_the_charge(): void
     {
         Http::fake(['*/payments' => $this->refusal('O CPF ou CNPJ do cliente deve ser informado.')]);

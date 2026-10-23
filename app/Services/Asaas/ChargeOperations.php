@@ -245,12 +245,18 @@ class ChargeOperations
                 $current = $this->currentCharge($locked);
                 $preview = (clone $locked)->forceFill($attributes);
 
+                // Vencimento novo no passado vai para o Asaas vencendo hoje; sem mudança, fica o da cobrança
+                $chargeDue = $dueChanged
+                    ? AsaasService::chargeDueDate($dueDate)->format('Y-m-d')
+                    : ($current['dueDate'] ?? AsaasService::chargeDueDate($locked->due_date)->format('Y-m-d'));
+
                 $this->putCharge($locked, $current, [
                     'value' => $valueChanged ? round((float) $data['amount'], 2) : (float) ($current['value'] ?? $locked->amount),
-                    'dueDate' => ($dueDate ?? $locked->due_date)->format('Y-m-d'),
+                    'dueDate' => $chargeDue,
                     'description' => self::description($preview),
                 ]);
 
+                $attributes['asaas_due_date'] = AsaasService::differentDueDate($preview, ['dueDate' => $chargeDue]);
                 $attributes['asaas_sync_status'] = 'synced';
                 $attributes['asaas_synced_at'] = now();
             }
@@ -651,6 +657,7 @@ class ChargeOperations
             'asaas_synced_at' => now(),
             'invoice_link' => $data['invoiceUrl'] ?? null,
             'invoice_qrcode' => $data['pixQrCode']['qrCode'] ?? null,
+            'asaas_due_date' => AsaasService::differentDueDate($invoice, $data),
         ]);
     }
 
