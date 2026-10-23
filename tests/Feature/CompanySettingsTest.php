@@ -35,7 +35,10 @@ class CompanySettingsTest extends TestCase
     {
         $this->signIn();
 
-        $this->get(CompanyResource::getUrl('index'))->assertOk()->assertSeeLivewire(EditCompany::class);
+        $this->get(CompanyResource::getUrl('index'))
+            ->assertOk()
+            ->assertSeeLivewire(EditCompany::class)
+            ->assertSeeInOrder(['Instituição', 'Documentos', 'Avaliação', 'Integração financeira']);
         $this->assertFalse(CompanyResource::canCreate());
     }
 
