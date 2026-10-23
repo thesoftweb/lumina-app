@@ -72,11 +72,16 @@ class SyncAsaasPayments extends Command
 
         foreach ($invoices as $invoice) {
             try {
-                $result = $this->asaasService->syncPaymentStatus($invoice);
+                // Mesmo sincronizador da conciliação (asaas:reconcile) e do webhook
+                $result = $this->asaasService->syncPayment($invoice);
 
-                if ($result) {
+                if ($result?->recognized()) {
                     $synced++;
-                    $this->line("  ✅ Sincronizado: {$invoice->reference} → {$invoice->status->value}");
+                    $this->line("  ✅ Sincronizado: {$invoice->reference} ({$result->asaasStatus}) {$result->statusBefore?->value} → {$invoice->status->value}");
+
+                    foreach ($result->warnings as $warning) {
+                        $this->warn("     {$warning}");
+                    }
                 } else {
                     $failed++;
                     $this->warn("  ⚠️  Falha ao sincronizar: {$invoice->reference}");

@@ -77,7 +77,8 @@ class AsaasInvoiceSyncTest extends TestCase
         $unknown = $this->invoice('pay_unknown');
         Http::fake([
             '*/payments/pay_confirmed' => Http::response(['id' => 'pay_confirmed', 'status' => 'CONFIRMED']),
-            '*/payments/pay_unknown' => Http::response(['id' => 'pay_unknown', 'status' => 'REFUNDED']),
+            // REFUNDED agora é tratado (estorno); um status que a API venha a criar segue sem efeito
+            '*/payments/pay_unknown' => Http::response(['id' => 'pay_unknown', 'status' => 'STATUS_NOVO_DA_API']),
         ]);
 
         $service = app(AsaasService::class);

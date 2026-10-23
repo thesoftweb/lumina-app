@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
-use App\Enums\InvoiceStatus;
 use App\Models\Customer;
 use App\Models\Invoice;
-use Illuminate\Support\Facades\DB;
+use App\Services\Asaas\PaymentSynchronizer;
+use App\Services\Asaas\SyncResult;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\LazyCollection;
+use RuntimeException;
 
 class AsaasService
 {
@@ -366,70 +368,68 @@ class AsaasService
      */
     public function syncPaymentStatus(Invoice $invoice): bool
     {
+        return $this->syncPayment($invoice)?->recognized() ?? false;
+    }
+
+    /**
+     * Busca a cobrança da fatura no Asaas e aplica a situação dela (ver PaymentSynchronizer).
+     * Devolve null se a cobrança não pôde ser consultada.
+     */
+    public function syncPayment(Invoice $invoice, bool $dryRun = false): ?SyncResult
+    {
         try {
             $paymentData = $this->getPayment($invoice);
 
             if (! $paymentData || ($paymentData['id'] ?? null) !== $invoice->asaas_invoice_id) {
-                return false;
+                return null;
             }
 
-            $status = $paymentData['status'] ?? null;
-
-            $statusMap = [
-                'PENDING' => InvoiceStatus::Open,
-                'CONFIRMED' => InvoiceStatus::Paid,
-                'RECEIVED' => InvoiceStatus::Paid,
-                'OVERDUE' => InvoiceStatus::Overdue,
-                'PARTIALLY_RECEIVED' => InvoiceStatus::Partial,
-                'DISPUTED' => InvoiceStatus::Open,
-                'AWAITING_RISK_ANALYSIS' => InvoiceStatus::Open,
-                'RISK_REJECTED' => InvoiceStatus::Canceled,
-                'DELETED' => InvoiceStatus::Canceled,
-            ];
-
-            $newStatus = $statusMap[$status] ?? null;
-
-            if (! $newStatus) {
-                Log::warning('Asaas payment status not mapped', ['invoice_id' => $invoice->id, 'status' => $status]);
-
-                return false;
-            }
-
-            DB::transaction(function () use ($invoice, $paymentData, $newStatus): void {
-                $lockedInvoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
-
-                if ($newStatus === InvoiceStatus::Paid && $lockedInvoice->status !== InvoiceStatus::Paid) {
-                    $lockedInvoice->balance ??= $lockedInvoice->amount;
-                    $payment = app(PaymentService::class)->payFullInvoice(
-                        $lockedInvoice,
-                        'online_payment',
-                        $paymentData['id'],
-                        'Pagamento sincronizado do Asaas',
-                    );
-                    $payment->update([
-                        'asaas_payment_id' => $paymentData['id'],
-                        'asaas_sync_status' => 'synced',
-                        'asaas_synced_at' => now(),
-                    ]);
-                }
-
-                $lockedInvoice->update([
-                    'status' => $newStatus,
-                    'balance' => $newStatus === InvoiceStatus::Paid ? 0 : $lockedInvoice->balance,
-                    'asaas_sync_status' => 'synced',
-                    'asaas_synced_at' => now(),
-                ]);
-            });
-
-            $invoice->refresh();
-            Log::info("Asaas payment synced for invoice {$invoice->id}: {$status}");
-
-            return true;
+            return app(PaymentSynchronizer::class)->apply($invoice, $paymentData, $dryRun);
         } catch (\Exception $e) {
             Log::error("Asaas error syncing payment for invoice {$invoice->id}: ".$e->getMessage());
 
-            return false;
+            return null;
         }
+    }
+
+    /**
+     * Todas as cobranças do Asaas que atendem aos filtros, página a página (limit 100, offset) até
+     * hasMore=false. Filtros aceitos pela API: status, customer, externalReference, billingType,
+     * paymentDate[ge]/[le], dateCreated[ge]/[le], dueDate[ge]/[le].
+     *
+     * @param  array<string, scalar>  $filters
+     * @return LazyCollection<int, array<string, mixed>>
+     *
+     * @throws RuntimeException se alguma página falhar (melhor parar do que conciliar pela metade)
+     */
+    public function paginatePayments(array $filters = [], int $pageSize = 100): LazyCollection
+    {
+        $pageSize = max(1, min(100, $pageSize));
+
+        return LazyCollection::make(function () use ($filters, $pageSize) {
+            $offset = 0;
+
+            do {
+                $response = Http::withHeaders($this->getHeaders())
+                    ->timeout(config('asaas.timeout', 30))
+                    ->connectTimeout(config('asaas.connect_timeout', 10))
+                    ->get("{$this->baseUrl}/payments", [...$filters, 'offset' => $offset, 'limit' => $pageSize]);
+
+                if ($response->failed()) {
+                    $error = $response->json('errors.0.description') ?? $response->json('message') ?? "HTTP {$response->status()}";
+
+                    throw new RuntimeException("Falha ao listar cobranças do Asaas (offset {$offset}): {$error}");
+                }
+
+                $page = $response->json('data') ?? [];
+
+                foreach ($page as $payment) {
+                    yield $payment;
+                }
+
+                $offset += $pageSize;
+            } while ($response->json('hasMore') === true && $page !== []);
+        });
     }
 
     /**

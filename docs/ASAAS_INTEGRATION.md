@@ -14,8 +14,10 @@ Este documento descreve a implementação completa da integração com o gateway
   - `createOrUpdateCustomer()` - Criar/sincronizar cliente no Asaas
   - `createCharge()` - Gerar cobrança no Asaas
   - `getPayment()` - Obter detalhes do pagamento
-  - `syncPaymentStatus()` - Sincronizar status de pagamento
-  - `listPayments()` - Listar cobranças
+  - `syncPaymentStatus()` / `syncPayment()` - Sincronizar a fatura com a cobrança (via `PaymentSynchronizer`)
+  - `listPayments()` - Listar cobranças (uma página)
+  - `paginatePayments()` - Todas as cobranças, página a página, com filtros da API
+- **[app/Services/Asaas/PaymentSynchronizer.php](app/Services/Asaas/PaymentSynchronizer.php)** - Traduz o status de uma cobrança do Asaas para a fatura (ver "Conciliar com o Asaas")
   - `cancelCharge()` - Cancelar cobrança
   - `getPaymentLinks()` - Obter URLs de boleto/PIX
 
@@ -77,9 +79,55 @@ php artisan asaas:sync-payments [options]
 php artisan asaas:sync-payments --company-id=1 --limit=500
 ```
 
+#### 4. Conciliar com o Asaas (`asaas:reconcile`)
+```bash
+php artisan asaas:reconcile [--dry-run] [--since=AAAA-MM-DD] [--status=STATUS]
+```
+
+Percorre **todas** as cobranças do Asaas (paginação de 100 em 100 até `hasMore=false`), acha a fatura
+de cada uma (pelo `asaas_invoice_id` ou, se não houver, pelo `externalReference` = id da fatura) e
+aplica a situação pelo `App\Services\Asaas\PaymentSynchronizer` — o mesmo usado pelo webhook, pelo
+botão "Sincronizar com Asaas" e por `asaas:sync-payments`. Cobranças de eventos (`EVENT-...`) são ignoradas.
+
+**Opções:**
+- `--dry-run` - Só imprime o relatório do que mudaria; não grava nada
+- `--since=AAAA-MM-DD` - Só cobranças com **vencimento** a partir da data (`dueDate[ge]`). Vencimento, e não
+  criação, para pegar cobranças antigas pagas ou baixadas depois
+- `--status=RECEIVED_IN_CASH` - Só cobranças num status do Asaas
+
+**Como o status do Asaas vira status da fatura:**
+
+| Asaas | Fatura |
+|-------|--------|
+| `RECEIVED`, `CONFIRMED`, `RECEIVED_IN_CASH`, `DUNNING_RECEIVED` | Paga; registra o pagamento com a forma real (`RECEIVED_IN_CASH` = dinheiro; senão pelo `billingType`: PIX, boleto, cartão, transferência), a data real (`paymentDate` → `clientPaymentDate` → `confirmedDate`), o valor recebido e a referência = id da cobrança |
+| `PENDING`, `AWAITING_RISK_ANALYSIS` | Aberta (vencida se o vencimento já passou); valor e vencimento são trazidos do Asaas se a fatura está em aberto e sem pagamentos |
+| `OVERDUE`, `DUNNING_REQUESTED` | Vencida (idem valor/vencimento) |
+| `REFUNDED` | Desfaz o pagamento (o recibo é cancelado) e cancela a fatura com a nota "Cobrança estornada no Asaas em dd/mm/aaaa" |
+| `REFUND_REQUESTED`, `REFUND_IN_PROGRESS`, `CHARGEBACK_*`, `AWAITING_CHARGEBACK_REVERSAL` | Não muda; aparece nos avisos |
+| `deleted: true` | Cancela a fatura, se não tiver pagamento (se a cobrança for restaurada, a fatura volta a ser cobrada) |
+
+É idempotente: rodar de novo não cria outro pagamento nem outro recibo, e fatura já paga no sistema
+nunca é alterada (se estiver paga aqui e em aberto no Asaas, sai um aviso para dar baixa lá).
+
+**Relatório:** tabela das faturas que mudam (nº, cliente, status antes → depois, forma, data, valor),
+totais por tipo de mudança, cobranças do Asaas **sem fatura no sistema** (só relatório, nada é importado)
+e avisos (estorno em andamento, chargeback, divergências).
+
+**Em produção (primeira vez):**
+1. `php artisan asaas:reconcile --dry-run` (ou com `--since=` para começar por um período)
+2. Conferir o relatório: faturas que serão baixadas, formas e datas, avisos e cobranças sem fatura
+3. `php artisan asaas:reconcile` com as mesmas opções para aplicar
+4. Tratar à mão os avisos (estornos/chargebacks em andamento, faturas pagas aqui e abertas no Asaas)
+
+Depois disso o agendamento diário mantém tudo em dia.
+
 ### Agendamento Automático
 
-Configurado em [app/Console/Kernel.php](app/Console/Kernel.php):
+`asaas:reconcile --since=<hoje - 1 ano>` roda todo dia às 03:00, sem sobreposição
+(`withoutOverlapping()`), configurado em [routes/console.php](routes/console.php).
+
+Os agendamentos abaixo estão em [app/Console/Kernel.php](app/Console/Kernel.php), que **não é carregado**
+pelo Laravel 12 (o app usa `bootstrap/app.php`); para ativá-los, mova-os para `routes/console.php`:
 
 | Comando | Frequência | Hora | Descrição |
 |---------|-----------|------|-----------|
@@ -174,7 +222,8 @@ Invoice criada → Artisan Command / Action Filament → AsaasService::createCha
 
 ### 3. Sincronização de Pagamento
 ```
-Webhook Asaas → AsaasWebhookController → AsaasService::syncPaymentStatus() → Atualiza status invoice
+Webhook Asaas → AsaasWebhookController → AsaasService::syncPaymentStatus() → PaymentSynchronizer → Atualiza status invoice
+Agendamento diário → asaas:reconcile → PaymentSynchronizer (todas as cobranças) → Relatório
 ```
 
 ### 4. Portal do Cliente
