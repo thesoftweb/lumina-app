@@ -3,8 +3,6 @@
 use App\Filament\Resources\AcademicYears\AcademicYearResource;
 use App\Filament\Resources\Companies\CompanyResource;
 use App\Filament\Resources\Customers\CustomerResource;
-use App\Filament\Resources\DocumentTemplates\DocumentTemplateResource;
-use App\Filament\Resources\Documents\DocumentResource;
 use App\Filament\Resources\Enrollments\EnrollmentResource;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\IssuedDocuments\IssuedDocumentResource;
@@ -44,8 +42,6 @@ return [
         CustomerResource::class => $office,
         TeacherResource::class => $office,
         IssuedDocumentResource::class => $office,
-        DocumentResource::class => $office,
-        DocumentTemplateResource::class => $office,
         AcademicYearResource::class => $office,
         TermResource::class => $office,
         LevelResource::class => $office,

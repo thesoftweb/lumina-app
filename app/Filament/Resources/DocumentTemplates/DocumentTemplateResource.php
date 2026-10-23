@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\DocumentTemplates;
 
 use App\Enums\NavGroup;
-use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\DocumentTemplates\Pages\CreateDocumentTemplate;
 use App\Filament\Resources\DocumentTemplates\Pages\EditDocumentTemplate;
 use App\Filament\Resources\DocumentTemplates\Pages\ListDocumentTemplates;
@@ -21,9 +20,13 @@ use UnitEnum;
 
 class DocumentTemplateResource extends Resource
 {
-    use ChecksNavigationAccess;
-
     protected static ?string $model = DocumentTemplate::class;
+
+    /** Módulo antigo, substituído por Documentos emitidos: fora do menu, só o admin consulta pela URL. */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
 

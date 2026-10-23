@@ -85,8 +85,6 @@ class AppServiceProvider extends ServiceProvider
             AcademicYear::class,
             Schedule::class,
             Customer::class,
-            Document::class,
-            DocumentTemplate::class,
             Invoice::class,
             Subject::class,
             Term::class,
@@ -98,6 +96,9 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             AccountPlan::class,
             Company::class,
+            // Módulo antigo de documentos livres, fora do menu: só o admin consulta
+            Document::class,
+            DocumentTemplate::class,
             Plan::class,
             Supplier::class,
             User::class,

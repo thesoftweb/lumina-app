@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Documents;
 
 use App\Enums\NavGroup;
-use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Documents\Pages\CreateDocument;
 use App\Filament\Resources\Documents\Pages\EditDocument;
 use App\Filament\Resources\Documents\Pages\ListDocuments;
@@ -21,9 +20,13 @@ use UnitEnum;
 
 class DocumentResource extends Resource
 {
-    use ChecksNavigationAccess;
-
     protected static ?string $model = Document::class;
+
+    /** Módulo antigo, substituído por Documentos emitidos: fora do menu, só o admin consulta pela URL. */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 

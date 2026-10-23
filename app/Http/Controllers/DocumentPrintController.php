@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocumentPrintController extends Controller
@@ -12,6 +13,8 @@ class DocumentPrintController extends Controller
      */
     public function show(Document $document)
     {
+        Gate::authorize('view', $document);
+
         return view('documents.print', [
             'document' => $document,
         ]);
@@ -22,6 +25,8 @@ class DocumentPrintController extends Controller
      */
     public function pdf(Document $document)
     {
+        Gate::authorize('view', $document);
+
         return Pdf::view('documents.pdf', [
             'document' => $document,
         ])

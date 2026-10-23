@@ -44,8 +44,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('agendas/{id}', [PortalAgendaController::class, 'show'])->name('agendas.show');
 });
 
-// Document Routes
-Route::prefix('documents')->name('documents.')->group(function () {
+// Documentos do módulo antigo (texto livre): só para quem pode vê-los
+Route::middleware('auth')->prefix('documents')->name('documents.')->group(function () {
     Route::get('{document}/print', [DocumentPrintController::class, 'show'])->name('print');
     Route::get('{document}/pdf', [DocumentPrintController::class, 'pdf'])->name('pdf');
 });
