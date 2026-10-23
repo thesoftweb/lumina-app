@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Services\AsaasService;
 use Illuminate\Http\Request;
@@ -22,6 +23,24 @@ class PortalPixQrCodeController extends Controller
      */
     public function show(Invoice $invoice): JsonResponse
     {
+        $document = session('customer_document');
+        $customer = $document ? Customer::where('document', $document)->first() : null;
+
+        if (!$customer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sua sessão expirou. Entre novamente no portal.',
+            ], 401);
+        }
+
+        // Só o responsável da fatura pode ver o PIX dela; 404 para não revelar faturas de outras famílias
+        if (!$customer->is($invoice->customer)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fatura não encontrada.',
+            ], 404);
+        }
+
         // If not synced yet, try to sync now
         if (!$invoice->asaas_invoice_id) {
             Log::info('Portal PIX: Tentando sincronizar invoice que não foi sincronizada', [
