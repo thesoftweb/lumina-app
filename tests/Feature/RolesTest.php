@@ -12,8 +12,6 @@ use App\Models\ClassDiary;
 use App\Models\Classroom;
 use App\Models\Company;
 use App\Models\Customer;
-use App\Models\Document;
-use App\Models\DocumentTemplate;
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Grade;
@@ -51,7 +49,7 @@ class RolesTest extends TestCase
     private const PEDAGOGICAL_MODELS = [Attendance::class, ClassDiary::class, LessonPlan::class, Grade::class];
 
     /** Usuários, empresa, preços e contas a pagar: só a direção. */
-    private const ADMIN_ONLY_MODELS = [User::class, Company::class, Plan::class, Supplier::class, AccountPlan::class, Document::class, DocumentTemplate::class];
+    private const ADMIN_ONLY_MODELS = [User::class, Company::class, Plan::class, Supplier::class, AccountPlan::class];
 
     private function signInAs(string $role): User
     {
@@ -119,7 +117,7 @@ class RolesTest extends TestCase
     {
         $user = $this->signInAs('teacher');
 
-        foreach ([Enrollment::class, Customer::class, Invoice::class, Document::class, AcademicYear::class, ...self::ADMIN_ONLY_MODELS] as $model) {
+        foreach ([Enrollment::class, Customer::class, Invoice::class, IssuedDocument::class, AcademicYear::class, ...self::ADMIN_ONLY_MODELS] as $model) {
             $this->assertFalse($user->can('viewAny', $model), "{$model}: viewAny");
         }
 

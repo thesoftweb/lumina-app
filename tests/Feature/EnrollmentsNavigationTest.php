@@ -71,8 +71,6 @@ class EnrollmentsNavigationTest extends TestCase
             ->assertCanNotSeeTableRecords([$enrollment]);
 
         Livewire::test(EditEnrollment::class, ['record' => $enrollment->id])
-            ->assertActionExists('printSchoolContract')
-            ->assertActionExists('pdfSchoolContract')
             ->assertActionExists('createEnrollmentInvoice')
             ->assertActionExists('createTuitionInvoice');
 

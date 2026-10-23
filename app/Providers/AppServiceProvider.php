@@ -10,8 +10,6 @@ use App\Models\ClassDiary;
 use App\Models\Classroom;
 use App\Models\Company;
 use App\Models\Customer;
-use App\Models\Document;
-use App\Models\DocumentTemplate;
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Grade;
@@ -96,9 +94,6 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             AccountPlan::class,
             Company::class,
-            // Módulo antigo de documentos livres, fora do menu: só o admin consulta
-            Document::class,
-            DocumentTemplate::class,
             Plan::class,
             Supplier::class,
             User::class,

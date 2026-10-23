@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AsaasWebhookController;
-use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\DocumentVerificationController;
 use App\Http\Controllers\EnrollmentSheetController;
 use App\Http\Controllers\IssuedDocumentController;
@@ -10,7 +9,6 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
 use App\Http\Controllers\PortalPixQrCodeController;
 use App\Http\Controllers\ReportCardController;
-use App\Http\Controllers\SchoolContractController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,13 +42,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('agendas/{id}', [PortalAgendaController::class, 'show'])->name('agendas.show');
 });
 
-// Documentos do módulo antigo (texto livre): só para quem pode vê-los
-Route::middleware('auth')->prefix('documents')->name('documents.')->group(function () {
-    Route::get('{document}/print', [DocumentPrintController::class, 'show'])->name('print');
-    Route::get('{document}/pdf', [DocumentPrintController::class, 'pdf'])->name('pdf');
-});
-
-// Enrollment Contract Routes
 // Documentos emitidos: impressão para a equipe e verificação pública de autenticidade
 Route::get('documentos-emitidos/{issuedDocument}', [IssuedDocumentController::class, 'show'])
     ->middleware('auth')
@@ -62,8 +53,6 @@ Route::middleware('throttle:30,1')->group(function () {
 });
 
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
-    Route::get('{enrollment}/contract/print', [SchoolContractController::class, 'show'])->name('contract.print');
-    Route::get('{enrollment}/contract/pdf', [SchoolContractController::class, 'pdf'])->name('contract.pdf');
     Route::get('{enrollment}/sheet', [EnrollmentSheetController::class, 'show'])->middleware('auth')->name('sheet');
 });
 
