@@ -89,7 +89,7 @@ class IssuedDocumentsTest extends TestCase
 
         Livewire::test(ViewEnrollment::class, ['record' => $this->enrollment->getKey()])
             ->callAction('issueEnrollmentDeclaration', ['purpose' => 'transporte escolar', 'valid_for_days' => 30])
-            ->assertNotified('Declaração emitida');
+            ->assertNotified('Documento emitido');
 
         $document = IssuedDocument::sole();
         $this->assertSame('DEC-2026-000001', $document->number);
@@ -157,7 +157,7 @@ class IssuedDocumentsTest extends TestCase
         $this->company->update(['document_signer_name' => null, 'document_signer_role' => null]);
         Livewire::test(ViewEnrollment::class, ['record' => $this->enrollment->getKey()])
             ->callAction('issueEnrollmentDeclaration', ['valid_for_days' => 90])
-            ->assertNotified('Declaração não emitida');
+            ->assertNotified('Documento não emitido');
 
         $this->assertSame(0, IssuedDocument::count());
     }

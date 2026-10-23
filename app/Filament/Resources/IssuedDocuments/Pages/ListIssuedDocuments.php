@@ -11,6 +11,6 @@ class ListIssuedDocuments extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Declarações e recibos emitidos. Para emitir, use a matrícula do aluno.';
+        return 'Declarações e recibos emitidos. Para emitir, use a matrícula do aluno ou o cadastro do responsável.';
     }
 }

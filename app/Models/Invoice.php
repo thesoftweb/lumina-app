@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
@@ -38,5 +39,18 @@ class Invoice extends Model
     public function payments()
     {
         return $this->hasMany(InvoicePayment::class);
+    }
+
+    /** Fatura com saldo a pagar (aberta, parcial ou vencida); paga, cancelada ou zerada não conta. */
+    public function scopeUnpaid(Builder $query): Builder
+    {
+        return $query->whereIn('status', [InvoiceStatus::Open, InvoiceStatus::Partial, InvoiceStatus::Overdue])
+            ->where('balance', '>', 0);
+    }
+
+    /** Débito vencido: saldo a pagar com vencimento anterior a hoje. */
+    public function scopeOverdue(Builder $query): Builder
+    {
+        return $query->unpaid()->whereDate('due_date', '<', today());
     }
 }

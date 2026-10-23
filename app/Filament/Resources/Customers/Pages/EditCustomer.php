@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Customers\Pages;
 
+use App\Filament\Resources\Customers\Actions\IssueFinancialClearanceAction;
 use App\Filament\Resources\Customers\CustomerResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -37,6 +38,7 @@ class EditCustomer extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            IssueFinancialClearanceAction::make()->color('gray'),
             DeleteAction::make(),
         ];
     }

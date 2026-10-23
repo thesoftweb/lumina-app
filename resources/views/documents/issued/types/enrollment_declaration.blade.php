@@ -1,20 +1,14 @@
 @php
-    use App\Models\IssuedDocument;
+    use App\Documents\DocumentText;
 
     $student = $content['student'] ?? [];
     $enrollment = $content['enrollment'] ?? [];
-    $word = fn (string $male, string $female, string $neutral) => match ($student['gender'] ?? null) {
-        'M' => $male,
-        'F' => $female,
-        default => $neutral,
-    };
-    $cpf = $public ? IssuedDocument::maskDocument($student['cpf'] ?? null) : ($student['cpf'] ?? null);
-    $parents = collect($student['parents'] ?? [])->filter()->map(fn (string $name): string => '<strong>'.e($name).'</strong>');
+    $word = fn (string $male, string $female, string $neutral): string => DocumentText::byGender($student['gender'] ?? null, $male, $female, $neutral);
     $grade = collect([$enrollment['level'] ?? null, $enrollment['classroom'] ?? null])->filter()->implode(' – ');
 @endphp
 
 <p>
-    Declaramos, para os devidos fins, que <strong>{{ $student['name'] ?? '' }}</strong>@if ($parents->isNotEmpty()), {{ $word('filho', 'filha', 'filho(a)') }} de {!! $parents->implode(' e de ') !!}@endif{{ filled($student['birth_date'] ?? null) ? ', '.$word('nascido', 'nascida', 'nascido(a)').' em '.$student['birth_date'] : '' }}{{ filled($cpf) ? ', CPF '.$cpf : '' }},
+    Declaramos, para os devidos fins, que {{ DocumentText::studentIntro($student, $public) }},
     está regularmente {{ $word('matriculado', 'matriculada', 'matriculado(a)') }} nesta instituição de ensino
     @if ($grade)
         em <strong>{{ $grade }}</strong>,
