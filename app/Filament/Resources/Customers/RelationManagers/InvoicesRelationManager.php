@@ -3,11 +3,11 @@
 namespace App\Filament\Resources\Customers\RelationManagers;
 
 use App\Enums\InvoiceStatus;
-use App\Enums\InvoiceType;
 use App\Filament\Resources\Invoices\Actions\IssuePaymentReceiptAction;
 use App\Filament\Resources\Invoices\Actions\SyncAsaasPaymentAction;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Invoices\Schemas\InvoiceForm;
+use App\Filament\Resources\Invoices\Tables\InvoiceFilters;
 use App\Models\Invoice;
 use App\Services\AsaasService;
 use App\Services\PaymentService;
@@ -34,10 +34,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -81,7 +78,7 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Tipo')->badge()->sortable()->toggleable(),
                 TextColumn::make('due_date')
                     ->label('Vencimento')->date('d/m/Y')->sortable()
-                    ->color(fn (Invoice $record): string => self::isPastDue($record) ? 'danger' : 'gray'),
+                    ->color(fn (Invoice $record): string => $record->isPastDue() ? 'danger' : 'gray'),
                 TextColumn::make('status')
                     ->label('Situação')->badge()->sortable(),
                 TextColumn::make('amount')
@@ -94,34 +91,12 @@ class InvoicesRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Situação')->options(InvoiceStatus::class),
-                Filter::make('past_due')->label('Vencidas com saldo')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->whereIn('status', [InvoiceStatus::Open->value, InvoiceStatus::Partial->value, InvoiceStatus::Overdue->value])
-                        ->whereDate('due_date', '<', today())
-                        ->where('balance', '>', 0)),
-                Filter::make('due_soon')->label('Vencem nos próximos 7 dias')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->whereIn('status', [InvoiceStatus::Open->value, InvoiceStatus::Partial->value, InvoiceStatus::Overdue->value])
-                        ->whereBetween('due_date', [today(), today()->addDays(7)])
-                        ->where('balance', '>', 0)),
-                Filter::make('with_balance')->label('Com saldo pendente')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->whereIn('status', [InvoiceStatus::Open->value, InvoiceStatus::Partial->value, InvoiceStatus::Overdue->value])
-                        ->where('balance', '>', 0)),
-                SelectFilter::make('billing_type')->label('Tipo de fatura')->options(InvoiceType::class),
-                Filter::make('due_period')->label('Período de vencimento')
-                    ->schema([
-                        DatePicker::make('from')->label('De'),
-                        DatePicker::make('until')->label('Até')->afterOrEqual('from'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, $date): Builder => $query->whereDate('due_date', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $query, $date): Builder => $query->whereDate('due_date', '<=', $date)))
-                    ->indicateUsing(fn (array $data): array => array_values(array_filter([
-                        filled($data['from'] ?? null) ? 'Vence a partir de '.Carbon::parse($data['from'])->format('d/m/Y') : null,
-                        filled($data['until'] ?? null) ? 'Vence até '.Carbon::parse($data['until'])->format('d/m/Y') : null,
-                    ]))),
+                InvoiceFilters::status(),
+                InvoiceFilters::pastDue(),
+                InvoiceFilters::dueSoon(),
+                InvoiceFilters::withBalance(),
+                InvoiceFilters::billingType(),
+                InvoiceFilters::duePeriod(),
             ])
             ->headerActions([
                 Action::make('syncCustomerInvoices')
@@ -196,13 +171,6 @@ class InvoicesRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    private static function isPastDue(Invoice $invoice): bool
-    {
-        return (float) $invoice->balance > 0
-            && in_array($invoice->status, [InvoiceStatus::Open, InvoiceStatus::Partial, InvoiceStatus::Overdue], true)
-            && $invoice->due_date?->isBefore(today());
     }
 
     /**

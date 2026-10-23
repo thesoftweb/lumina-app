@@ -17,7 +17,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class InvoiceResource extends Resource
@@ -34,9 +33,11 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationLabel = 'Faturas';
 
-    protected static ?string $recordTitleAttribute = 'Faturas';
+    protected static ?string $recordTitleAttribute = 'number';
 
-    protected static ?string $label = 'Faturas';
+    protected static ?string $modelLabel = 'fatura';
+
+    protected static ?string $pluralModelLabel = 'faturas';
 
     public static function form(Schema $schema): Schema
     {
@@ -65,6 +66,7 @@ class InvoiceResource extends Resource
         return [
             'index' => ListInvoices::route('/'),
             'create' => CreateInvoice::route('/create'),
+            // Mantida para links antigos; na listagem o "Visualizar" abre num painel lateral
             'view' => ViewInvoice::route('/{record}'),
             'edit' => EditInvoice::route('/{record}/edit'),
         ];
