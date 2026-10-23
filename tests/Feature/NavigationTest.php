@@ -29,7 +29,7 @@ class NavigationTest extends TestCase
         $groups = $this->navigationFor('admin');
 
         $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
-        $this->assertSame(['Faturas', 'Planos e mensalidades', 'Eventos e contribuições'], $groups['Financeiro']);
+        $this->assertSame(['Faturas', 'Inadimplência', 'Planos e mensalidades', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores', 'Fornecedores'], $groups['Cadastros']);
         $this->assertSame(['Empresa', 'Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);
     }
@@ -53,7 +53,7 @@ class NavigationTest extends TestCase
 
         $this->assertSame(['Diário de classe', 'Planos de aula'], $groups['Sala de aula']);
         $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
-        $this->assertSame(['Faturas', 'Eventos e contribuições'], $groups['Financeiro']);
+        $this->assertSame(['Faturas', 'Inadimplência', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores'], $groups['Cadastros']);
         $this->assertSame(['Documentos emitidos'], $groups['Documentos']);
         $this->assertSame(['Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);

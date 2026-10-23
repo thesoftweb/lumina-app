@@ -15,6 +15,8 @@ class Company extends Model
     protected $casts = [
         'asaas_key' => 'encrypted',
         'minimum_passing_grade' => 'decimal:2',
+        'late_fine_percent' => 'decimal:2',
+        'late_interest_monthly_percent' => 'decimal:2',
     ];
 
     protected $guarded = [];

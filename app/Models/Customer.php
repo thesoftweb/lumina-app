@@ -55,4 +55,20 @@ class Customer extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    /** Faturas com saldo e vencimento passado (inadimplência). */
+    public function overdueInvoices()
+    {
+        return $this->hasMany(Invoice::class)->overdue();
+    }
+
+    public function collectionContacts()
+    {
+        return $this->hasMany(CollectionContact::class)->latest()->latest('id');
+    }
+
+    public function latestCollectionContact()
+    {
+        return $this->hasOne(CollectionContact::class)->latestOfMany();
+    }
 }

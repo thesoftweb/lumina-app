@@ -6,15 +6,18 @@ use App\Models\City;
 use App\Models\Company;
 use App\Models\State;
 use App\Rules\Cnpj;
+use App\Services\Collections\CollectionMessage;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class CompanyForm
 {
@@ -174,6 +177,36 @@ class CompanyForm
                                             ->addActionLabel('Adicionar conceito')
                                             ->reorderable()
                                             ->columnSpanFull(),
+                                    ]),
+                            ]),
+                        Tab::make('Cobrança')
+                            ->icon('heroicon-o-chat-bubble-left-right')
+                            ->schema([
+                                Section::make('Multa e juros por atraso')
+                                    ->description('Use os mesmos valores configurados no Asaas. Servem para estimar o valor atualizado das faturas vencidas; quem cobra é o Asaas.')
+                                    ->columns(['default' => 1, 'md' => 2])
+                                    ->schema([
+                                        TextInput::make('late_fine_percent')
+                                            ->label('Multa')
+                                            ->numeric()->minValue(0)->maxValue(100)
+                                            ->suffix('%')
+                                            ->helperText('Cobrada uma vez sobre o valor da fatura.'),
+                                        TextInput::make('late_interest_monthly_percent')
+                                            ->label('Juros ao mês')
+                                            ->numeric()->minValue(0)->maxValue(100)
+                                            ->suffix('% ao mês')
+                                            ->helperText('Proporcionais aos dias de atraso.'),
+                                    ]),
+                                Section::make('Mensagem de cobrança')
+                                    ->description('Texto enviado pelo WhatsApp na tela de Inadimplência. Deixe em branco para usar a mensagem padrão.')
+                                    ->schema([
+                                        Textarea::make('collection_message')
+                                            ->label('Modelo da mensagem')
+                                            ->rows(10)
+                                            ->placeholder(CollectionMessage::DEFAULT_TEMPLATE)
+                                            ->helperText(new HtmlString('Variáveis: '.collect(CollectionMessage::VARIABLES)
+                                                ->map(fn (string $description, string $variable): string => '<code>'.e($variable).'</code> '.e($description))
+                                                ->implode('; ').'.')),
                                     ]),
                             ]),
                         Tab::make('Integração financeira')
