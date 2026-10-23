@@ -9,6 +9,7 @@ enum SyncChange: string
     case Opened = 'opened';
     case Overdue = 'overdue';
     case Refunded = 'refunded';
+    case ReceiptUndone = 'receipt_undone';
     case Canceled = 'canceled';
     case Updated = 'updated';
     case Attention = 'attention';
@@ -22,6 +23,7 @@ enum SyncChange: string
             self::Opened => 'Reabertas / em aberto',
             self::Overdue => 'Marcadas como vencidas',
             self::Refunded => 'Estornadas (pagamento desfeito e fatura cancelada)',
+            self::ReceiptUndone => 'Recebimento desfeito no Asaas (pagamento desfeito, fatura reaberta)',
             self::Canceled => 'Canceladas (cobrança excluída no Asaas)',
             self::Updated => 'Valor ou vencimento atualizados',
             self::Attention => 'Exigem atenção (sem alteração)',

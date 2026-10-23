@@ -46,19 +46,21 @@ class PaymentSynchronizer
     /**
      * @param  array<string, mixed>  $asaasPayment  cobrança como devolvida pela API do Asaas
      * @param  bool  $dryRun  só calcula o que mudaria, sem gravar nada
+     * @param  bool  $undoReceipt  o recebimento da cobrança foi desfeito no Asaas (PAYMENT_RECEIVED_IN_CASH_UNDONE):
+     *                             com a cobrança de novo a receber, o pagamento local que veio dela é desfeito
      */
-    public function apply(Invoice $invoice, array $asaasPayment, bool $dryRun = false): SyncResult
+    public function apply(Invoice $invoice, array $asaasPayment, bool $dryRun = false, bool $undoReceipt = false): SyncResult
     {
         if ($dryRun) {
             $current = Invoice::query()->find($invoice->getKey()) ?? $invoice;
 
-            return $this->toResult($current, $this->plan($current, $asaasPayment), $asaasPayment, true);
+            return $this->toResult($current, $this->plan($current, $asaasPayment, $undoReceipt), $asaasPayment, true);
         }
 
-        $result = DB::transaction(function () use ($invoice, $asaasPayment): SyncResult {
+        $result = DB::transaction(function () use ($invoice, $asaasPayment, $undoReceipt): SyncResult {
             // Trava a fatura: webhook e conciliação rodando juntos não registram dois pagamentos
             $locked = Invoice::query()->lockForUpdate()->findOrFail($invoice->getKey());
-            $plan = $this->plan($locked, $asaasPayment);
+            $plan = $this->plan($locked, $asaasPayment, $undoReceipt);
             $result = $this->toResult($locked, $plan, $asaasPayment, false);
             $this->execute($locked, $plan, $asaasPayment);
 
@@ -98,7 +100,7 @@ class PaymentSynchronizer
      * @param  array<string, mixed>  $asaasPayment
      * @return array{change: SyncChange, status: ?InvoiceStatus, payment: ?array{amount: float, method: PaymentType, date: CarbonInterface}, reverse: Collection<int, InvoicePayment>, attributes: array<string, mixed>, note: ?string, syncStatus: ?string, updates: list<string>, warnings: list<string>}
      */
-    private function plan(Invoice $invoice, array $asaasPayment): array
+    private function plan(Invoice $invoice, array $asaasPayment, bool $undoReceipt = false): array
     {
         $status = $asaasPayment['status'] ?? null;
         $before = $invoice->status;
@@ -130,7 +132,7 @@ class PaymentSynchronizer
                 return $plan;
             }
 
-            if ($hasPayments) {
+            if ($hasPayments || in_array($before, [InvoiceStatus::Paid, InvoiceStatus::Partial], true)) {
                 return $attention('Cobrança excluída no Asaas, mas a fatura tem pagamento registrado no sistema; não foi cancelada.');
             }
 
@@ -142,6 +144,13 @@ class PaymentSynchronizer
                 'note' => 'Cobrança excluída no Asaas em '.today()->format('d/m/Y').'.',
                 'syncStatus' => 'canceled',
             ];
+        }
+
+        $unpaid = in_array($status, self::PENDING_STATUSES, true) || in_array($status, self::OVERDUE_STATUSES, true);
+
+        // Baixa (em dinheiro) desfeita no Asaas: desfaz o pagamento que veio desta cobrança
+        if ($undoReceipt && $unpaid && $linked->isNotEmpty()) {
+            return $this->planUndoReceipt($invoice, $asaasPayment, $plan, $linked);
         }
 
         if (in_array($status, self::PAID_STATUSES, true)) {
@@ -208,7 +217,7 @@ class PaymentSynchronizer
             return $attention(self::DISPUTE_STATUSES[$status].'; a fatura não foi alterada.');
         }
 
-        if (in_array($status, self::PENDING_STATUSES, true) || in_array($status, self::OVERDUE_STATUSES, true)) {
+        if ($unpaid) {
             return $this->planUnpaid($invoice, $asaasPayment, $plan, $hasPayments);
         }
 
@@ -284,6 +293,37 @@ class PaymentSynchronizer
         }
 
         return $plan;
+    }
+
+    /**
+     * Recebimento desfeito no Asaas: os pagamentos locais desta cobrança são desfeitos (o recibo é
+     * cancelado) e a fatura volta a ser cobrada (parcial, se ainda houver outros pagamentos).
+     *
+     * @param  array<string, mixed>  $asaasPayment
+     * @param  array<string, mixed>  $plan
+     * @param  Collection<int, InvoicePayment>  $linked
+     * @return array<string, mixed>
+     */
+    private function planUndoReceipt(Invoice $invoice, array $asaasPayment, array $plan, Collection $linked): array
+    {
+        $hasOtherPayments = $invoice->payments()->whereNotIn('id', $linked->modelKeys())->exists();
+        $dueDate = $this->date($asaasPayment['dueDate'] ?? null) ?? $invoice->due_date;
+
+        $target = match (true) {
+            $hasOtherPayments => InvoiceStatus::Partial,
+            in_array($asaasPayment['status'], self::OVERDUE_STATUSES, true) => InvoiceStatus::Overdue,
+            $dueDate !== null && Carbon::parse($dueDate)->lt(today()) => InvoiceStatus::Overdue,
+            default => InvoiceStatus::Open,
+        };
+
+        return [
+            ...$plan,
+            'change' => SyncChange::ReceiptUndone,
+            'status' => $target,
+            'reverse' => $linked,
+            'note' => 'Recebimento desfeito no Asaas em '.today()->format('d/m/Y').'; pagamento desfeito e fatura reaberta.',
+            'syncStatus' => 'synced',
+        ];
     }
 
     /**

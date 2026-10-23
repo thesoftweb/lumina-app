@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Services\Asaas\ChargeImporter;
+use App\Services\Asaas\ImportOutcome;
 use App\Services\Asaas\PaymentSynchronizer;
 use App\Services\Asaas\SyncChange;
 use App\Services\Asaas\SyncResult;
@@ -19,20 +21,24 @@ use Illuminate\Support\Number;
  *
  * --since filtra pelo VENCIMENTO da cobrança (dueDate >= data), não pela criação: assim entram as
  * cobranças antigas que foram pagas ou baixadas depois, desde que vençam a partir da data.
+ *
+ * --import importa como fatura "Outro" as cobranças sem fatura no sistema criadas direto no painel do
+ * Asaas para um responsável cadastrado (ver ChargeImporter); as demais só aparecem no relatório.
  */
 class ReconcileAsaasPayments extends Command
 {
     protected $signature = 'asaas:reconcile
                             {--dry-run : Só mostra o que mudaria, sem gravar nada}
                             {--since= : Só cobranças com vencimento a partir desta data (AAAA-MM-DD)}
-                            {--status= : Só cobranças neste status do Asaas (ex.: RECEIVED_IN_CASH)}';
+                            {--status= : Só cobranças neste status do Asaas (ex.: RECEIVED_IN_CASH)}
+                            {--import : Importa como fatura as cobranças sem fatura criadas no Asaas para responsáveis cadastrados}';
 
     protected $description = 'Concilia as faturas com as cobranças do Asaas e imprime o relatório do que mudou';
 
     /** @var array<string, ?string> nome local do cliente por id de cliente no Asaas */
     private array $customerNames = [];
 
-    public function handle(AsaasService $asaas, PaymentSynchronizer $synchronizer): int
+    public function handle(AsaasService $asaas, PaymentSynchronizer $synchronizer, ChargeImporter $importer): int
     {
         if (! config('asaas.api_key')) {
             $this->error('ASAAS_API_KEY não configurada no .env');
@@ -47,6 +53,7 @@ class ReconcileAsaasPayments extends Command
         }
 
         $dryRun = (bool) $this->option('dry-run');
+        $import = (bool) $this->option('import');
 
         if ($dryRun) {
             $this->warn('SIMULAÇÃO (--dry-run): nada será gravado.');
@@ -56,6 +63,9 @@ class ReconcileAsaasPayments extends Command
 
         /** @var list<array{invoice: Invoice, result: SyncResult}> $results */
         $results = [];
+        /** @var list<array{payment: array<string, mixed>, outcome: ImportOutcome}> $imported */
+        $imported = [];
+        /** @var list<array{payment: array<string, mixed>, reason: string}> $orphans */
         $orphans = [];
         $warnings = [];
         $errors = [];
@@ -78,8 +88,40 @@ class ReconcileAsaasPayments extends Command
 
                 if (! $invoice) {
                     // Excluída lá e inexistente aqui: nada a importar
-                    if (! ($payment['deleted'] ?? false)) {
-                        $orphans[] = $payment;
+                    if ($payment['deleted'] ?? false) {
+                        continue;
+                    }
+
+                    $reason = $importer->reasonNotToImport($payment);
+
+                    if ($reason !== null || ! $import) {
+                        $orphans[] = ['payment' => $payment, 'reason' => $reason ?? 'Responsável cadastrado: importável com --import.'];
+
+                        continue;
+                    }
+
+                    try {
+                        $outcome = $importer->import($payment, $dryRun);
+                    } catch (\Throwable $e) {
+                        $errors[] = "Importação da cobrança {$payment['id']}: {$e->getMessage()}";
+
+                        continue;
+                    }
+
+                    if (! $outcome->imported && ! $outcome->invoice) {
+                        $orphans[] = ['payment' => $payment, 'reason' => (string) $outcome->reason];
+
+                        continue;
+                    }
+
+                    $imported[] = ['payment' => $payment, 'outcome' => $outcome];
+
+                    if ($outcome->invoice && $outcome->sync) {
+                        $results[] = ['invoice' => $outcome->invoice, 'result' => $outcome->sync];
+
+                        foreach ($outcome->sync->warnings as $warning) {
+                            $warnings[] = [$this->invoiceLabel($outcome->invoice), $payment['id'], $warning];
+                        }
                     }
 
                     continue;
@@ -115,7 +157,7 @@ class ReconcileAsaasPayments extends Command
             return self::FAILURE;
         }
 
-        $this->report($results, $orphans, $warnings, $errors, $read, $events, $dryRun);
+        $this->report($results, $imported, $orphans, $warnings, $errors, $read, $events, $dryRun, $import);
 
         return $errors === [] ? self::SUCCESS : self::FAILURE;
     }
@@ -173,11 +215,12 @@ class ReconcileAsaasPayments extends Command
 
     /**
      * @param  list<array{invoice: Invoice, result: SyncResult}>  $results
-     * @param  list<array<string, mixed>>  $orphans
+     * @param  list<array{payment: array<string, mixed>, outcome: ImportOutcome}>  $imported
+     * @param  list<array{payment: array<string, mixed>, reason: string}>  $orphans
      * @param  list<array{0: string, 1: string, 2: string}>  $warnings
      * @param  list<string>  $errors
      */
-    private function report(array $results, array $orphans, array $warnings, array $errors, int $read, int $events, bool $dryRun): void
+    private function report(array $results, array $imported, array $orphans, array $warnings, array $errors, int $read, int $events, bool $dryRun, bool $import): void
     {
         $changed = array_values(array_filter($results, fn (array $row): bool => $row['result']->changed()));
 
@@ -205,23 +248,47 @@ class ReconcileAsaasPayments extends Command
             }
         }
 
+        if ($import) {
+            $totals[] = [$dryRun ? 'Cobranças que seriam importadas como fatura' : 'Cobranças importadas como fatura', count($imported)];
+        }
+
         $totals[] = ['Cobranças sem fatura no sistema', count($orphans)];
         $totals[] = ['Cobranças de eventos (ignoradas)', $events];
         $totals[] = ['Total de cobranças lidas no Asaas', $read];
         $this->table(['Tipo', 'Qtd.'], $totals);
 
+        if ($imported !== []) {
+            $this->newLine();
+            $this->info($dryRun ? 'Cobranças que SERIAM importadas como fatura (tipo Outro):' : 'Cobranças importadas como fatura (tipo Outro):');
+            $this->table(
+                ['Cobrança', 'Responsável', 'Descrição', 'Status', 'Valor', 'Vencimento', 'Fatura'],
+                array_map(fn (array $row): array => [
+                    $row['payment']['id'],
+                    $row['outcome']->customer?->name ?? '—',
+                    ((string) ($row['payment']['description'] ?? '')) ?: '—',
+                    $row['payment']['status'] ?? '—',
+                    $this->money($row['payment']['value'] ?? 0),
+                    $this->dueDate($row['payment']),
+                    $row['outcome']->invoice ? $this->invoiceLabel($row['outcome']->invoice) : '—',
+                ], $imported),
+            );
+        }
+
         if ($orphans !== []) {
             $this->newLine();
-            $this->warn('Cobranças do Asaas SEM fatura no sistema (só relatório; nada foi importado):');
+            $this->warn($import
+                ? 'Cobranças do Asaas SEM fatura no sistema que não puderam ser importadas:'
+                : 'Cobranças do Asaas SEM fatura no sistema (só relatório; --import importa as de responsáveis cadastrados):');
             $this->table(
-                ['Cobrança', 'Cliente', 'Referência', 'Status', 'Valor', 'Vencimento'],
-                array_map(fn (array $payment): array => [
-                    $payment['id'],
-                    $this->customerName($payment['customer'] ?? null),
-                    $payment['externalReference'] ?? '—',
-                    $payment['status'] ?? '—',
-                    $this->money($payment['value'] ?? 0),
-                    isset($payment['dueDate']) ? Carbon::parse($payment['dueDate'])->format('d/m/Y') : '—',
+                ['Cobrança', 'Cliente', 'Referência', 'Status', 'Valor', 'Vencimento', 'Motivo'],
+                array_map(fn (array $row): array => [
+                    $row['payment']['id'],
+                    $this->customerName($row['payment']['customer'] ?? null),
+                    $row['payment']['externalReference'] ?? '—',
+                    $row['payment']['status'] ?? '—',
+                    $this->money($row['payment']['value'] ?? 0),
+                    $this->dueDate($row['payment']),
+                    $row['reason'],
                 ], $orphans),
             );
         }
@@ -280,6 +347,12 @@ class ReconcileAsaasPayments extends Command
         }
 
         return $this->customerNames[$asaasCustomerId] ?? $asaasCustomerId;
+    }
+
+    /** @param  array<string, mixed>  $payment */
+    private function dueDate(array $payment): string
+    {
+        return isset($payment['dueDate']) ? Carbon::parse($payment['dueDate'])->format('d/m/Y') : '—';
     }
 
     private function money(float|string|null $value): string

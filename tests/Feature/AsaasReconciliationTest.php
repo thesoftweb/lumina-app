@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Documents\PaymentReceipt;
 use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceType;
 use App\Enums\PaymentType;
 use App\Models\Company;
 use App\Models\Customer;
@@ -316,6 +317,72 @@ class AsaasReconciliationTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request['status'] === 'RECEIVED_IN_CASH');
     }
 
+    /** @return list<array<string, mixed>> */
+    private function panelCharges(): array
+    {
+        return [
+            $this->charge(['id' => 'pay_panel', 'description' => 'Uniforme', 'value' => 120, 'dueDate' => '2026-11-10']),
+            $this->charge(['id' => 'pay_panel_paid', 'description' => 'Excursão', 'status' => 'RECEIVED_IN_CASH', 'value' => 80, 'dueDate' => '2026-10-10', 'paymentDate' => '2026-10-09']),
+            $this->charge(['id' => 'pay_stranger', 'customer' => 'cus_desconhecido', 'value' => 70, 'dueDate' => '2026-11-10']),
+            $this->charge(['id' => 'pay_foreign', 'externalReference' => '99999', 'value' => 60]),
+        ];
+    }
+
+    /** A listagem devolve as mesmas cobranças (uma página) em cada execução do comando. */
+    private function fakeRuns(int $runs, array $charges): void
+    {
+        $responses = Http::sequence();
+
+        for ($run = 0; $run < $runs; $run++) {
+            $responses->push(['object' => 'list', 'hasMore' => false, 'totalCount' => count($charges), 'limit' => 100, 'offset' => 0, 'data' => $charges]);
+        }
+
+        Http::fake(['*/payments?*' => $responses]);
+    }
+
+    public function test_reconcile_import_creates_invoices_for_registered_guardians_and_reports_the_rest(): void
+    {
+        $this->fakeRuns(2, $this->panelCharges());
+
+        $this->artisan('asaas:reconcile', ['--import' => true])
+            ->expectsOutputToContain('Cobranças importadas como fatura')
+            ->expectsOutputToContain('não puderam ser importadas')
+            ->expectsOutputToContain('Cliente do Asaas (cus_desconhecido) não é um responsável cadastrado')
+            ->expectsOutputToContain('referência externa')
+            ->assertSuccessful();
+
+        $open = Invoice::query()->where('asaas_invoice_id', 'pay_panel')->sole();
+        $paid = Invoice::query()->where('asaas_invoice_id', 'pay_panel_paid')->sole();
+        $this->assertSame(InvoiceType::OTHER, $open->billing_type);
+        $this->assertSame($this->customer->id, $open->customer_id);
+        $this->assertSame('120.00', $open->amount);
+        $this->assertSame('Uniforme', $open->reference);
+        $this->assertSame(InvoiceStatus::Open, $open->status);
+        $this->assertSame(InvoiceStatus::Paid, $paid->status);
+        $this->assertSame(PaymentType::CASH, $paid->payments()->sole()->payment_method);
+        $this->assertSame(2, Invoice::count());
+
+        // De novo: as importadas já têm fatura, nada é duplicado
+        $this->artisan('asaas:reconcile', ['--import' => true])->assertSuccessful();
+        $this->assertSame(2, Invoice::count());
+        $this->assertSame(1, InvoicePayment::count());
+    }
+
+    public function test_reconcile_import_dry_run_and_without_import_only_report(): void
+    {
+        $this->fakeRuns(2, $this->panelCharges());
+        $this->artisan('asaas:reconcile', ['--import' => true, '--dry-run' => true])
+            ->expectsOutputToContain('SERIAM importadas')
+            ->expectsOutputToContain('pay_panel_paid')
+            ->assertSuccessful();
+
+        $this->artisan('asaas:reconcile')
+            ->expectsOutputToContain('importável com --import')
+            ->assertSuccessful();
+
+        $this->assertSame(0, Invoice::count());
+    }
+
     public function test_reconcile_rejects_invalid_options(): void
     {
         $this->artisan('asaas:reconcile', ['--since' => '23/10/2026'])->assertFailed();
@@ -336,9 +403,11 @@ class AsaasReconciliationTest extends TestCase
     public function test_webhook_payment_received_still_marks_the_invoice_paid(): void
     {
         $invoice = $this->invoice();
+        config(['asaas.webhook.secret' => 'segredo-do-webhook']);
         Http::fake(['*/payments/pay_1' => Http::response($this->charge(['status' => 'RECEIVED', 'billingType' => 'BOLETO', 'paymentDate' => '2026-10-20']))]);
 
-        $this->postJson('/webhooks/asaas', [
+        $this->withHeader('asaas-access-token', 'segredo-do-webhook')->postJson('/webhooks/asaas', [
+            'id' => 'evt_received_1',
             'event' => 'PAYMENT_RECEIVED',
             'payment' => $this->charge(['status' => 'RECEIVED', 'externalReference' => (string) $invoice->id]),
         ])->assertOk();

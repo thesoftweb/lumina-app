@@ -338,24 +338,32 @@ class AsaasService
      */
     public function getPayment(Invoice $invoice): ?array
     {
-        try {
-            if (!$invoice->asaas_invoice_id) {
-                return null;
-            }
+        if (!$invoice->asaas_invoice_id) {
+            return null;
+        }
 
+        return $this->findPayment($invoice->asaas_invoice_id);
+    }
+
+    /**
+     * Cobrança do Asaas pelo id (GET /payments/{id}); null se a consulta falhar.
+     */
+    public function findPayment(string $asaasPaymentId): ?array
+    {
+        try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(config('asaas.timeout', 30))
                 ->connectTimeout(config('asaas.connect_timeout', 10))
-                ->get("{$this->baseUrl}/payments/{$invoice->asaas_invoice_id}");
+                ->get("{$this->baseUrl}/payments/".rawurlencode($asaasPaymentId));
 
             if ($response->failed()) {
-                Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $response->json('message'), $response->json() ?? []);
+                Log::error("Asaas error fetching payment {$asaasPaymentId}: " . $response->json('message'), $response->json() ?? []);
                 return null;
             }
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error("Asaas error fetching payment {$invoice->asaas_invoice_id}: " . $e->getMessage());
+            Log::error("Asaas error fetching payment {$asaasPaymentId}: " . $e->getMessage());
             return null;
         }
     }
