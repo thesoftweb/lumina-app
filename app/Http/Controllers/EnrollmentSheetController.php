@@ -18,7 +18,7 @@ class EnrollmentSheetController extends Controller
 
         $enrollment->load(['student.customer.city.state', 'classroom.level', 'academicYear', 'plan']);
         $user = $request->user();
-        $company = $user->company ?? (Company::count() === 1 ? Company::first() : null);
+        $company = Company::current($user);
 
         return view('enrollments.sheet', [
             'enrollment' => $enrollment,

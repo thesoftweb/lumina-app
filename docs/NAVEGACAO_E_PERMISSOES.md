@@ -11,7 +11,7 @@ Grupos e ordem definidos em `app/Enums/NavGroup.php` (a ordem dos `case` é a or
 | Acadêmico | Alunos, Turmas, Matrículas, Boletins, Frequências, Agendas |
 | Financeiro | Faturas, Planos e mensalidades, Eventos e contribuições |
 | Cadastros | Clientes, Professores, Fornecedores |
-| Documentos | Documentos, Modelos de documentos |
+| Documentos | Documentos emitidos, Documentos, Modelos de documentos |
 | Configurações | Empresa, Ano letivo, Bimestres, Níveis, Disciplinas |
 | Administração | Usuários |
 
@@ -44,6 +44,7 @@ O sistema tem três papéis, criados pelo `RolePermissionSeeder`. Quem tinha o a
 | Eventos e contribuições | total | ver, cadastrar, editar | ver os das suas turmas |
 | Agendas | total | ver, cadastrar, editar | — |
 | Documentos e modelos | total | ver, emitir, editar | — |
+| Documentos emitidos (declarações, recibos) | emitir, reimprimir, cancelar | emitir, reimprimir | — |
 | Frequência, diário de classe, planos de aula, notas | total, inclusive corrigir | só consulta | lança e edita os próprios |
 | Boletins | todos | todos | das suas turmas |
 | Fazer chamada, Lançar notas, Aniversariantes, Meu perfil | — | — | sim |

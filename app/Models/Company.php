@@ -69,6 +69,12 @@ class Company extends Model
         return $this->hasMany(ConceptScale::class)->orderBy('sort_order');
     }
 
+    /** Empresa do usuário; sem vínculo, a única cadastrada (instalação de uma escola só). */
+    public static function current(?User $user = null): ?self
+    {
+        return $user?->company ?? (static::count() === 1 ? static::first() : null);
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class);

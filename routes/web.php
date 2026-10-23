@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentPrintController;
+use App\Http\Controllers\DocumentVerificationController;
 use App\Http\Controllers\EnrollmentSheetController;
+use App\Http\Controllers\IssuedDocumentController;
 use App\Http\Controllers\PortalAgendaController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
@@ -49,6 +51,16 @@ Route::prefix('documents')->name('documents.')->group(function () {
 });
 
 // Enrollment Contract Routes
+// Documentos emitidos: impressão para a equipe e verificação pública de autenticidade
+Route::get('documentos-emitidos/{issuedDocument}', [IssuedDocumentController::class, 'show'])
+    ->middleware('auth')
+    ->name('issued-documents.print');
+
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('verificar', [DocumentVerificationController::class, 'form'])->name('documents.verify.form');
+    Route::get('verificar/{code}', [DocumentVerificationController::class, 'show'])->name('documents.verify');
+});
+
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
     Route::get('{enrollment}/contract/print', [SchoolContractController::class, 'show'])->name('contract.print');
     Route::get('{enrollment}/contract/pdf', [SchoolContractController::class, 'pdf'])->name('contract.pdf');

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Enrollments\Actions;
 
+use App\Documents\EnrollmentDeclaration;
 use App\Enums\EnrollmentStatus;
+use App\Models\IssuedDocument;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -10,12 +12,15 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 trait ManagesEnrollmentActions
 {
     protected function getEnrollmentActions(): array
     {
         return [
+            $this->createEnrollmentDeclarationAction(),
             $this->createSchoolContractPrintAction(),
             $this->createSchoolContractPdfAction(),
             $this->createEnrollmentInvoiceAction(),
@@ -33,6 +38,60 @@ trait ManagesEnrollmentActions
             ->icon('heroicon-o-printer')
             ->url(fn () => route('enrollments.sheet', ['enrollment' => $this->record, 'print' => 1]))
             ->openUrlInNewTab();
+    }
+
+    /**
+     * Action para emitir a declaração de matrícula (numerada e com código de verificação)
+     */
+    private function createEnrollmentDeclarationAction(): Action
+    {
+        return Action::make('issueEnrollmentDeclaration')
+            ->label('Emitir declaração de matrícula')
+            ->icon('heroicon-o-document-check')
+            ->visible(fn () => EnrollmentDeclaration::canIssue($this->record) && Gate::allows('create', IssuedDocument::class))
+            ->modalHeading('Emitir declaração de matrícula')
+            ->modalDescription('A declaração recebe um número e um código de verificação. Depois de emitida, não pode ser alterada; se houver erro, o admin a cancela e uma nova é emitida.')
+            ->modalSubmitActionLabel('Emitir')
+            ->schema([
+                TextInput::make('purpose')
+                    ->label('Finalidade')
+                    ->placeholder('Ex.: transporte escolar')
+                    ->helperText('Opcional. Sai no texto como "para fins de ...".')
+                    ->maxLength(150),
+                Select::make('valid_for_days')
+                    ->label('Validade')
+                    ->options([30 => '30 dias', 60 => '60 dias', 90 => '90 dias'])
+                    ->placeholder('Sem prazo de validade')
+                    ->default(90),
+            ])
+            ->action(function (array $data, Action $action): void {
+                try {
+                    $document = EnrollmentDeclaration::issue(
+                        $this->record,
+                        auth()->user(),
+                        $data['purpose'] ?? null,
+                        filled($data['valid_for_days'] ?? null) ? (int) $data['valid_for_days'] : null,
+                    );
+                } catch (ValidationException $e) {
+                    Notification::make()->danger()->title('Declaração não emitida')->body(collect($e->errors())->flatten()->first())->send();
+                    $action->halt();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->success()
+                    ->title('Declaração emitida')
+                    ->body("Nº {$document->number}")
+                    ->actions([
+                        Action::make('open')
+                            ->label('Abrir para imprimir')
+                            ->button()
+                            ->url(route('issued-documents.print', ['issuedDocument' => $document, 'print' => 1]), shouldOpenInNewTab: true),
+                    ])
+                    ->persistent()
+                    ->send();
+            });
     }
 
     /**
