@@ -5,8 +5,12 @@ namespace App\Filament\Resources\Invoices\Schemas;
 use App\Documents\PaymentReceipt;
 use App\Enums\AsaasChargeState;
 use App\Filament\Resources\Customers\CustomerResource;
+use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Services\Collections\LateAmounts;
+use App\Services\Collections\LateFeeCalculator;
+use App\Services\Collections\OverdueDebt;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
@@ -46,6 +50,17 @@ class InvoiceInfolist
                                 $record->isPastDue() ? 'Vencida e com saldo' : null,
                                 $record->asaas_due_date ? 'Cobrança no Asaas vence em '.$record->asaas_due_date->format('d/m/Y') : null,
                             ])->filter()->implode(' · ') ?: null),
+                        // Vencida: quanto o responsável paga hoje (multa e juros estimados com as regras do Asaas)
+                        TextEntry::make('late_charges')->label('Multa e juros até hoje')
+                            ->state(fn (Invoice $record): float => self::lateAmounts($record)->charges())
+                            ->money('BRL', locale: 'pt_BR')
+                            ->helperText(fn (Invoice $record): ?string => self::lateDetails($record))
+                            ->visible(fn (Invoice $record): bool => $record->isPastDue()),
+                        TextEntry::make('updated_total')->label('Valor atualizado (estimado)')
+                            ->state(fn (Invoice $record): float => self::lateAmounts($record)->total)
+                            ->money('BRL', locale: 'pt_BR')->weight(FontWeight::SemiBold)->color('danger')
+                            ->helperText('O valor exato está no link de pagamento do Asaas.')
+                            ->visible(fn (Invoice $record): bool => $record->isPastDue()),
                         TextEntry::make('competence')->label('Competência')
                             ->state(fn (Invoice $record): ?string => $record->competenceLabel()),
                         TextEntry::make('customer.name')->label('Responsável')
@@ -116,5 +131,29 @@ class InvoiceInfolist
                         TextEntry::make('notes')->hiddenLabel()->prose(),
                     ]),
             ]);
+    }
+
+    private static function lateAmounts(Invoice $record): LateAmounts
+    {
+        return LateFeeCalculator::forCompany(Company::current(auth()->user()))->invoice($record);
+    }
+
+    /** "2% de multa (R$ 2,00) + juros de 13 dias (R$ 2,60), sobre R$ 100,00" */
+    private static function lateDetails(Invoice $record): ?string
+    {
+        $calculator = LateFeeCalculator::forCompany(Company::current(auth()->user()));
+        $amounts = $calculator->invoice($record);
+
+        if ($amounts->chargedDays === 0) {
+            return 'A cobrança no Asaas ainda não venceu.';
+        }
+
+        if ($calculator->rulesLabel() === null) {
+            return 'Configure multa e juros nas configurações da empresa.';
+        }
+
+        return LateFeeCalculator::percent($calculator->finePercent).' de multa ('.OverdueDebt::money($amounts->fine).')'
+            .' + '.LateFeeCalculator::percent($calculator->monthlyInterestPercent).' ao mês por '.$amounts->chargedDays.' dia(s) ('.OverdueDebt::money($amounts->interest).')'
+            .', sobre '.OverdueDebt::money($amounts->base);
     }
 }
