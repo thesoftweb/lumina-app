@@ -10,6 +10,7 @@ enum IssuedDocumentType: string implements HasLabel
     case EnrollmentDeclaration = 'enrollment_declaration';
     case AttendanceDeclaration = 'attendance_declaration';
     case FinancialClearanceDeclaration = 'financial_clearance_declaration';
+    case PaymentReceipt = 'payment_receipt';
 
     public function getLabel(): string
     {
@@ -17,6 +18,7 @@ enum IssuedDocumentType: string implements HasLabel
             self::EnrollmentDeclaration => 'Declaração de matrícula',
             self::AttendanceDeclaration => 'Declaração de frequência',
             self::FinancialClearanceDeclaration => 'Declaração de quitação',
+            self::PaymentReceipt => 'Recibo de pagamento',
         };
     }
 
@@ -26,6 +28,7 @@ enum IssuedDocumentType: string implements HasLabel
             self::EnrollmentDeclaration,
             self::AttendanceDeclaration,
             self::FinancialClearanceDeclaration => 'DEC',
+            self::PaymentReceipt => 'REC',
         };
     }
 

@@ -4,6 +4,7 @@ namespace App\Documents;
 
 use App\Models\IssuedDocument;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Number;
 
 /** Trechos de texto comuns às declarações, montados a partir do conteúdo congelado. */
 class DocumentText
@@ -53,6 +54,30 @@ class DocumentText
         return new HtmlString($names->count() > 1
             ? $names->slice(0, -1)->implode(', ').$lastJoin.$names->last()
             : (string) $names->first());
+    }
+
+    /**
+     * Valor em reais por extenso: "mil duzentos e trinta e quatro reais e cinquenta centavos",
+     * "um real", "um milhão de reais", "cinquenta centavos".
+     */
+    public static function moneyInWords(float|string $amount): string
+    {
+        $cents = (int) round(((float) $amount) * 100);
+        $reais = intdiv($cents, 100);
+        $cents %= 100;
+        $parts = [];
+
+        if ($reais > 0) {
+            $unit = $reais === 1 ? 'real' : 'reais';
+            // "um milhão de reais", mas "um milhão e duzentos mil reais"
+            $parts[] = Number::spell($reais, locale: 'pt_BR').($reais % 1_000_000 === 0 ? ' de ' : ' ').$unit;
+        }
+
+        if ($cents > 0) {
+            $parts[] = Number::spell($cents, locale: 'pt_BR').($cents === 1 ? ' centavo' : ' centavos');
+        }
+
+        return $parts === [] ? 'zero real' : implode(' e ', $parts);
     }
 
     private static function strong(string $text): string

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Documents\PaymentReceipt;
 use App\Enums\PaymentType as EnumsPaymentType;
 use Illuminate\Database\Eloquent\Model;
 use PaymentType;
@@ -17,6 +18,13 @@ class InvoicePayment extends Model
         'amount' => 'decimal:2',
         'payment_method' => EnumsPaymentType::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (InvoicePayment $payment): void {
+            PaymentReceipt::cancelFor($payment, 'Pagamento estornado em '.now()->format('d/m/Y').'.');
+        });
+    }
 
     public function invoice()
     {

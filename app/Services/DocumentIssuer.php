@@ -75,7 +75,8 @@ class DocumentIssuer
         });
     }
 
-    public function cancel(IssuedDocument $document, User $user, string $reason): IssuedDocument
+    /** Sem usuário, o cancelamento é automático (ex.: recibo de pagamento estornado). */
+    public function cancel(IssuedDocument $document, ?User $user, string $reason): IssuedDocument
     {
         if ($document->canceled_at) {
             throw ValidationException::withMessages(['reason' => 'Este documento já foi cancelado.']);
@@ -83,7 +84,7 @@ class DocumentIssuer
 
         $document->update([
             'canceled_at' => now(),
-            'canceled_by' => $user->getKey(),
+            'canceled_by' => $user?->getKey(),
             'cancel_reason' => trim($reason),
         ]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Documents\PaymentReceipt;
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +26,17 @@ class Invoice extends Model
         'billing_type' => InvoiceType::class,
         'asaas_synced_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Os pagamentos saem do banco em cascata, sem eventos: os recibos são cancelados antes
+        static::deleting(function (Invoice $invoice): void {
+            $invoice->payments->each(fn (InvoicePayment $payment) => PaymentReceipt::cancelFor(
+                $payment,
+                'Fatura excluída em '.now()->format('d/m/Y').'.',
+            ));
+        });
+    }
 
     public function customer()
     {
