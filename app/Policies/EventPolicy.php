@@ -4,15 +4,18 @@ namespace App\Policies;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class EventPolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -25,8 +28,8 @@ class EventPolicy
             return $event->classroom->teachers()->where('teacher_id', $user->teacher?->id)->exists();
         }
 
-        // Coordinators and admins can view any event
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any event
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -34,8 +37,8 @@ class EventPolicy
      */
     public function create(User $user): bool
     {
-        // Only coordinators and admins can create events
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only secretaries and admins can create events
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -43,8 +46,8 @@ class EventPolicy
      */
     public function update(User $user, Event $event): bool
     {
-        // Only coordinators and admins can update events
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only secretaries and admins can update events
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**

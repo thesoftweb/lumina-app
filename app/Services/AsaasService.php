@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Customer;
 use App\Models\Invoice;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -367,52 +369,65 @@ class AsaasService
         try {
             $paymentData = $this->getPayment($invoice);
 
-            if (!$paymentData) {
+            if (! $paymentData || ($paymentData['id'] ?? null) !== $invoice->asaas_invoice_id) {
                 return false;
             }
 
             $status = $paymentData['status'] ?? null;
 
-            // Mapear status Asaas para status local
             $statusMap = [
-                'PENDING' => 'open',
-                'CONFIRMED' => 'partial',
-                'RECEIVED' => 'paid',
-                'OVERDUE' => 'overdue',
-                'REFUNDED' => 'paid',
-                'PARTIALLY_RECEIVED' => 'partial',
-                'DISPUTED' => 'open',
-                'AWAITING_RISK_ANALYSIS' => 'open',
-                'RISK_REJECTED' => 'canceled',
-                'DELETED' => 'canceled',
+                'PENDING' => InvoiceStatus::Open,
+                'CONFIRMED' => InvoiceStatus::Paid,
+                'RECEIVED' => InvoiceStatus::Paid,
+                'OVERDUE' => InvoiceStatus::Overdue,
+                'PARTIALLY_RECEIVED' => InvoiceStatus::Partial,
+                'DISPUTED' => InvoiceStatus::Open,
+                'AWAITING_RISK_ANALYSIS' => InvoiceStatus::Open,
+                'RISK_REJECTED' => InvoiceStatus::Canceled,
+                'DELETED' => InvoiceStatus::Canceled,
             ];
 
-            $newStatus = $statusMap[$status] ?? 'open';
+            $newStatus = $statusMap[$status] ?? null;
 
-            // Se pagamento recebido, registrar na tabela de pagamentos
-            if ($status === 'RECEIVED' && $invoice->status !== 'paid') {
-                $paymentService = new PaymentService();
-                $paymentDate = $paymentData['confirmedDate'] ?? now()->format('Y-m-d');
-                $paymentReference = $paymentData['id'] ?? 'asaas-' . $invoice->id;
+            if (! $newStatus) {
+                Log::warning('Asaas payment status not mapped', ['invoice_id' => $invoice->id, 'status' => $status]);
 
-                $paymentService->payFullInvoice(
-                    $invoice,
-                    'online_payment',
-                    $paymentReference,
-                    "Pagamento sincronizado do Asaas em {$paymentDate}"
-                );
-            } else {
-                // Apenas atualizar status
-                $invoice->update([
-                    'status' => $newStatus,
-                    'asaas_sync_status' => 'synced',
-                ]);
+                return false;
             }
 
+            DB::transaction(function () use ($invoice, $paymentData, $newStatus): void {
+                $lockedInvoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
+
+                if ($newStatus === InvoiceStatus::Paid && $lockedInvoice->status !== InvoiceStatus::Paid) {
+                    $lockedInvoice->balance ??= $lockedInvoice->amount;
+                    $payment = app(PaymentService::class)->payFullInvoice(
+                        $lockedInvoice,
+                        'online_payment',
+                        $paymentData['id'],
+                        'Pagamento sincronizado do Asaas',
+                    );
+                    $payment->update([
+                        'asaas_payment_id' => $paymentData['id'],
+                        'asaas_sync_status' => 'synced',
+                        'asaas_synced_at' => now(),
+                    ]);
+                }
+
+                $lockedInvoice->update([
+                    'status' => $newStatus,
+                    'balance' => $newStatus === InvoiceStatus::Paid ? 0 : $lockedInvoice->balance,
+                    'asaas_sync_status' => 'synced',
+                    'asaas_synced_at' => now(),
+                ]);
+            });
+
+            $invoice->refresh();
             Log::info("Asaas payment synced for invoice {$invoice->id}: {$status}");
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Asaas error syncing payment for invoice {$invoice->id}: " . $e->getMessage());
+            Log::error("Asaas error syncing payment for invoice {$invoice->id}: ".$e->getMessage());
+
             return false;
         }
     }
@@ -568,7 +583,7 @@ class AsaasService
             }
             if ($customer->city) {
                 $payload['addressCity'] = $customer->city->name ?? '';
-                $payload['addressState'] = $customer->city->state ?? '';
+                $payload['addressState'] = $customer->city->state?->abbreviation ?? '';
             }
             if ($customer->postal_code) {
                 $payload['addressPostalCode'] = $this->cleanPostalCode($customer->postal_code);

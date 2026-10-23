@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Enrollments;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Enrollments\Pages\CreateEnrollment;
 use App\Filament\Resources\Enrollments\Pages\EditEnrollment;
 use App\Filament\Resources\Enrollments\Pages\ListEnrollments;
@@ -16,24 +18,56 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class EnrollmentResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Enrollment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
 
-    protected static ?string $modelLabel = 'Matrículas';
+    protected static ?int $navigationSort = 3;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Secretaria';
+    protected static ?string $navigationLabel = 'Matrículas';
 
-    public static function shouldRegisterNavigation(): bool
+    protected static ?string $modelLabel = 'Matrícula';
+
+    protected static ?string $pluralModelLabel = 'Matrículas';
+
+    /** Matrículas não têm coluna "name": o título (breadcrumbs, busca global) é o nome do aluno. */
+    public static function hasRecordTitle(): bool
     {
-        return !Auth::user()->hasRole('teacher');
+        return true;
+    }
+
+    public static function getRecordTitle(?Model $record): string|Htmlable|null
+    {
+        return $record?->student?->name ?? static::getModelLabel();
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['student.name'];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['student', 'classroom', 'academicYear']);
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return array_filter([
+            'Turma' => $record->classroom?->name,
+            'Ano letivo' => $record->academicYear?->description,
+        ]);
     }
 
     public static function form(Schema $schema): Schema
@@ -54,7 +88,7 @@ class EnrollmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //GradeRelationManager::class,
+            // GradeRelationManager::class,
         ];
     }
 

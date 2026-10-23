@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Documents;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Documents\Pages\CreateDocument;
 use App\Filament\Resources\Documents\Pages\EditDocument;
 use App\Filament\Resources\Documents\Pages\ListDocuments;
@@ -19,20 +21,21 @@ use UnitEnum;
 
 class DocumentResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Document::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::DocumentText;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Documents;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Documentos';
 
     protected static ?string $recordTitleAttribute = 'id';
 
     protected static ?string $modelLabel = 'Documentos';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Documentos';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Suppliers;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
@@ -20,20 +22,21 @@ use UnitEnum;
 
 class SupplierResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Supplier::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Registry;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Fornecedores';
+
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Cadastros';
-
     protected static ?string $modelLabel = 'Fornecedores';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

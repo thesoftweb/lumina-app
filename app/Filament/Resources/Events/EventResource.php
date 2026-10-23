@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Events;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Events\Pages\CreateEvent;
 use App\Filament\Resources\Events\Pages\EditEvent;
 use App\Filament\Resources\Events\Pages\ListEvents;
@@ -20,20 +22,21 @@ use UnitEnum;
 
 class EventResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Event::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;
 
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Finance;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Eventos e contribuições';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Eventos/Contribuições';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Financeiro';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return Auth::user()->hasAnyRole(['admin', 'coordinator', 'teacher']);
-    }
 
     public static function form(Schema $schema): Schema
     {

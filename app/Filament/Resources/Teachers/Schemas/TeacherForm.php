@@ -2,12 +2,16 @@
 
 namespace App\Filament\Resources\Teachers\Schemas;
 
+use App\Models\Teacher;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherForm
 {
@@ -21,6 +25,14 @@ class TeacherForm
                     ->schema([
                         Grid::make(2)
                             ->schema([
+                                Select::make('user_id')
+                                    ->label('Usuário de acesso')
+                                    ->helperText('Selecione um usuário teacher ainda não vinculado a outro professor.')
+                                    ->options(fn (?Teacher $record): array => self::availableUserOptions($record))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->unique(table: 'teachers', column: 'user_id', ignorable: fn (?Teacher $record) => $record),
                                 TextInput::make('name')
                                     ->prefixIcon('heroicon-o-user')
                                     ->label('Nome')
@@ -35,7 +47,7 @@ class TeacherForm
                                     ->label('Email')
                                     ->email()
                                     ->nullable()
-                                    ->unique(table: 'teachers', column: 'email', ignorable: fn($record) => $record)
+                                    ->unique(table: 'teachers', column: 'email', ignorable: fn ($record) => $record)
                                     ->maxLength(255),
                                 TextInput::make('phone')
                                     ->prefixIcon('heroicon-o-phone')
@@ -48,7 +60,7 @@ class TeacherForm
                                     ->label('CPF / Documento')
                                     ->nullable()
                                     ->mask('999.999.999-99')
-                                    ->unique(table: 'teachers', column: 'document_number', ignorable: fn($record) => $record)
+                                    ->unique(table: 'teachers', column: 'document_number', ignorable: fn ($record) => $record)
                                     ->maxLength(100),
                             ]),
                     ]),
@@ -117,6 +129,40 @@ class TeacherForm
                                     ->maxLength(255),
                             ]),
                     ]),
+                Section::make('Disciplinas atribuídas')
+                    ->description('Selecione as disciplinas que o professor leciona em cada turma.')
+                    ->columnSpanFull()
+                    ->schema([
+                        Select::make('classroomSubjects')
+                            ->label('Turma / disciplina')
+                            ->relationship('classroomSubjects', 'id')
+                            ->getOptionLabelFromRecordUsing(
+                                fn ($record): string => ($record->classroom?->name ?? 'Turma').' - '.($record->subject?->name ?? 'Disciplina')
+                            )
+                            ->multiple()
+                            ->searchable()
+                            ->preload(),
+                    ]),
             ]);
+    }
+
+    public static function availableUserOptions(?Teacher $record = null): array
+    {
+        return User::query()
+            ->whereHas('roles', fn (Builder $query) => $query->where('name', 'teacher'))
+            ->where(function (Builder $query) use ($record): void {
+                $query->whereDoesntHave('teacher')
+                    ->when(
+                        $record?->user_id,
+                        fn (Builder $query, int $userId) => $query->orWhere($query->qualifyColumn('id'), $userId)
+                    );
+            })
+            ->when(
+                Auth::user()?->company_id,
+                fn (Builder $query, int $companyId) => $query->where('company_id', $companyId)
+            )
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 }

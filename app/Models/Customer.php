@@ -28,6 +28,19 @@ class Customer extends Model
         'asaas_synced_at' => 'datetime',
     ];
 
+    public function getFullAddressAttribute(): ?string
+    {
+        $city = collect([$this->city?->name, $this->city?->state?->abbreviation])->filter()->implode('/');
+
+        return collect([
+            collect([$this->address, $this->address_number])->filter()->implode(', '),
+            $this->address_complement,
+            $this->neighborhood,
+            $city,
+            $this->postal_code ? "CEP {$this->postal_code}" : null,
+        ])->filter()->implode(' - ') ?: null;
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class);

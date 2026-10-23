@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ClassDiaries\Pages;
 
 use App\Filament\Resources\ClassDiaries\ClassDiaryResource;
+use App\Models\ClassroomSubject;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,6 +18,11 @@ class CreateClassDiary extends CreateRecord
             $teacher = Auth::user()->teacher;
             if ($teacher) {
                 $data['teacher_id'] = $teacher->id;
+                abort_unless(ClassroomSubject::query()
+                    ->where('classroom_id', $data['classroom_id'])
+                    ->where('subject_id', $data['subject_id'])
+                    ->whereHas('teachers', fn ($query) => $query->whereKey($teacher->id))
+                    ->exists(), 403);
             }
         }
 

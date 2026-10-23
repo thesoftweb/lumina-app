@@ -4,17 +4,19 @@ namespace App\Policies;
 
 use App\Models\LessonPlan;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class LessonPlanPolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Teachers, coordinators and admins can view lesson plans
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers, the school office (read-only) and admins can view lesson plans
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -27,8 +29,8 @@ class LessonPlanPolicy
             return $lessonPlan->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can view any lesson plan
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any lesson plan
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -36,8 +38,8 @@ class LessonPlanPolicy
      */
     public function create(User $user): bool
     {
-        // Teachers, coordinators and admins can create lesson plans
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers and admins can create lesson plans
+        return $user->hasAnyRole(['teacher', 'admin']);
     }
 
     /**
@@ -50,8 +52,8 @@ class LessonPlanPolicy
             return $lessonPlan->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can update any lesson plan
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only admins can update any lesson plan
+        return $user->hasRole('admin');
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\DocumentTemplates;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\DocumentTemplates\Pages\CreateDocumentTemplate;
 use App\Filament\Resources\DocumentTemplates\Pages\EditDocumentTemplate;
 use App\Filament\Resources\DocumentTemplates\Pages\ListDocumentTemplates;
@@ -19,20 +21,21 @@ use UnitEnum;
 
 class DocumentTemplateResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = DocumentTemplate::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::RectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Documents;
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Modelos de documentos';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $modelLabel = 'Modelos de Documentos';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Documentos';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

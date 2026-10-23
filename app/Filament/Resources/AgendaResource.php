@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\NavGroup;
+use UnitEnum;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\AgendaResource\Pages;
-use App\Models\Agenda;
+use App\Models\Schedule;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
@@ -21,13 +24,18 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
 class AgendaResource extends Resource
 {
-    protected static ?string $model = Agenda::class;
+    use ChecksNavigationAccess;
+
+    protected static ?string $model = Schedule::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Academic;
+
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $navigationLabel = 'Agendas';
 
@@ -35,43 +43,52 @@ class AgendaResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Agendas';
 
-    protected static ?int $navigationSort = 8;
-
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                Section::make('Informações da Agenda')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('title')
-                            ->label('Título')
-                            ->required()
-                            ->maxLength(255),
-
-                        RichEditor::make('description')
-                            ->label('Descrição')
-                            ->columnSpanFull(),
-
-                        DateTimePicker::make('date')
-                            ->label('Data e Hora')
-                            ->required(),
-
-                        Toggle::make('global')
-                            ->label('Agenda Global')
-                            ->helperText('Se ativada, a agenda aparecerá para todos os alunos. Caso contrário, aparecerá apenas para a turma selecionada.')
-                            ->default(false)
-                            ->reactive(),
-
-                        Select::make('classroom_id')
-                            ->label('Turma')
-                            ->relationship('classroom', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->required(fn (callable $get) => !$get('global'))
-                            ->hidden(fn (callable $get) => $get('global')),
-                    ]),
-            ]);
+        return $schema->components([
+            Section::make('O que vai acontecer?')
+                ->description('Escreva a informação como ela deve aparecer para alunos e responsáveis.')
+                ->columns(2)
+                ->schema([
+                    TextInput::make('title')
+                        ->label('Título')
+                        ->prefixIcon('heroicon-o-megaphone')
+                        ->placeholder('Ex.: Reunião de pais e responsáveis')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpanFull(),
+                    RichEditor::make('description')
+                        ->label('Descrição')
+                        ->helperText('Inclua orientações, local ou materiais necessários.')
+                        ->columnSpanFull(),
+                    DateTimePicker::make('date')
+                        ->label('Data e hora')
+                        ->prefixIcon('heroicon-o-calendar-days')
+                        ->seconds(false)
+                        ->required()
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Quem deve receber?')
+                ->description('Defina o alcance da publicação. Essa escolha controla a visibilidade no Portal do Aluno.')
+                ->icon('heroicon-o-user-group')
+                ->schema([
+                    Toggle::make('global')
+                        ->label('Publicar para toda a escola')
+                        ->helperText('Ative para exibir a agenda a todos. Desative para escolher turmas específicas.')
+                        ->default(false)
+                        ->live(),
+                    Select::make('classrooms')
+                        ->label('Turmas que receberão a agenda')
+                        ->relationship('classrooms', 'name')
+                        ->multiple()
+                        ->placeholder('Selecione uma ou mais turmas')
+                        ->helperText('Alunos de qualquer turma selecionada verão esta publicação.')
+                        ->searchable()
+                        ->preload()
+                        ->required(fn (callable $get): bool => ! $get('global'))
+                        ->visible(fn (callable $get): bool => ! $get('global')),
+                ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -79,62 +96,47 @@ class AgendaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Título')
-                    ->searchable()
-                    ->sortable(),
-
+                    ->label('Título')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('date')
-                    ->label('Data e Hora')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('classroom.name')
-                    ->label('Turma')
-                    ->sortable()
+                    ->label('Data e hora')->dateTime('d/m/Y H:i')->sortable(),
+                Tables\Columns\TextColumn::make('classrooms.name')
+                    ->label('Turmas')->badge()->separator(',')
+                    ->placeholder('Todas as turmas')
                     ->toggleable(isToggledHiddenByDefault: false),
-
                 Tables\Columns\IconColumn::make('global')
-                    ->label('Global')
-                    ->boolean()
+                    ->label('Global')->boolean()
                     ->toggleable(isToggledHiddenByDefault: false),
-
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Criada em')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
+                    ->label('Criada em')->dateTime('d/m/Y H:i')->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\Filter::make('global')
-                    ->label('Apenas Globais')
-                    ->query(fn (Builder $query) => $query->where('global', true)),
-
+                    ->label('Apenas globais')
+                    ->query(fn (Builder $query): Builder => $query->where('global', true)),
                 Tables\Filters\Filter::make('classroom')
-                    ->label('Por Turma')
+                    ->label('Por turma')
                     ->form([
                         Select::make('classroom_id')
                             ->label('Turma')
-                            ->relationship('classroom', 'name')
-                            ->searchable()
-                            ->preload(),
+                            ->relationship('classrooms', 'name')
+                            ->searchable()->preload(),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
                             $data['classroom_id'] ?? null,
-                            fn (Builder $query, $classroomId) => $query->where('classroom_id', $classroomId),
+                            fn (Builder $query, $classroomId): Builder => $query->whereHas(
+                                'classrooms',
+                                fn (Builder $query): Builder => $query->whereKey($classroomId),
+                            ),
                         );
                     }),
             ])
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
+            ->recordActions([EditAction::make(), DeleteAction::make()])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                BulkActionGroup::make([DeleteBulkAction::make()]),
             ])
-            ->defaultSort('date', 'asc');
+            ->defaultSort('date');
     }
 
     public static function getRelations(): array

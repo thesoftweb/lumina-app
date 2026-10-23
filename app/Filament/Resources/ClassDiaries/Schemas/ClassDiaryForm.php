@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\ClassDiaries\Schemas;
 
 use App\Enums\ClassDiaryStatus;
+use App\Models\ClassroomSubject;
+use App\Models\Subject;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -23,8 +25,8 @@ class ClassDiaryForm
                     ->relationship(
                         'classroom',
                         'name',
-                        fn($query) => $isTeacher && $user->teacher
-                            ? $query->whereHas('teachers', fn($q) => $q->where('teacher_id', $user->teacher->id))
+                        fn ($query) => $isTeacher && $user->teacher
+                            ? $query->whereHas('teachers', fn ($q) => $q->where('teacher_id', $user->teacher->id))
                             : $query
                     )
                     ->required()
@@ -37,11 +39,22 @@ class ClassDiaryForm
                     ->searchable()
                     ->preload()
                     ->hidden($isTeacher)
-                    ->visible(!$isTeacher)
+                    ->visible(! $isTeacher)
                     ->default($isTeacher ? $user->teacher?->id : null),
 
                 Select::make('subject_id')
-                    ->relationship('subject', 'name')
+                    ->options(function (callable $get) use ($isTeacher, $user) {
+                        if (! $isTeacher) {
+                            return Subject::query()->orderBy('name')->pluck('name', 'id');
+                        }
+
+                        return ClassroomSubject::query()
+                            ->where('classroom_id', $get('classroom_id'))
+                            ->whereHas('teachers', fn ($query) => $query->whereKey($user->teacher?->id ?? 0))
+                            ->with('subject')
+                            ->get()
+                            ->pluck('subject.name', 'subject_id');
+                    })
                     ->required()
                     ->searchable()
                     ->preload(),

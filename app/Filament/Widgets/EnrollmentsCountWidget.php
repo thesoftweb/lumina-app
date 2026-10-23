@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Enrollment;
+use App\Models\Student;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -11,29 +12,28 @@ class EnrollmentsCountWidget extends BaseWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Total de Matrículas', Enrollment::count())
-                ->description('Quantidade total de matrículas')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->color('success')
-                ->icon('heroicon-o-user-plus'),
+            Stat::make('Total de matrículas', Enrollment::count())
+                ->description('Histórico completo de matrículas')
+                ->color('primary')
+                ->icon('heroicon-o-academic-cap'),
 
-            Stat::make('Matrículas Ativas', Enrollment::where('status', 'active')->count())
-                ->description('Matrículas ativas')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->color('info')
+            Stat::make('Matrículas ativas', Enrollment::where('status', 'active')->count())
+                ->description('Alunos atualmente matriculados')
+                ->color('success')
                 ->icon('heroicon-o-check-circle'),
 
-            Stat::make('Matrículas Reservadas', Enrollment::where('status', 'reserved')->count())
-                ->description('Matrículas reservadas')
-                ->descriptionIcon('heroicon-m-clock')
-                ->color('warning')
-                ->icon('heroicon-o-exclamation-circle'),
+            Stat::make('Novatos', Enrollment::where('new_student', true)->count())
+                ->description('Primeira matrícula na instituição')
+                ->color('info')
+                ->icon('heroicon-o-sparkles'),
 
-            Stat::make('Matrículas Canceladas', Enrollment::where('status', 'canceled')->count())
-                ->description('Matrículas canceladas')
-                ->descriptionIcon('heroicon-m-arrow-trending-down')
-                ->color('danger')
-                ->icon('heroicon-o-x-circle'),
+            Stat::make('Aniversariantes', Student::query()
+                ->whereMonth('date_of_birth', now()->month)
+                ->whereHas('enrollments', fn ($query) => $query->where('status', 'active'))
+                ->count())
+                ->description('Alunos aniversariantes neste mês')
+                ->color('warning')
+                ->icon('heroicon-o-gift'),
         ];
     }
 }

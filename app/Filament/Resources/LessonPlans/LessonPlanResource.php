@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\LessonPlans;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\LessonPlans\Pages\CreateLessonPlan;
 use App\Filament\Resources\LessonPlans\Pages\EditLessonPlan;
 use App\Filament\Resources\LessonPlans\Pages\ListLessonPlans;
@@ -17,21 +19,28 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class LessonPlanResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = LessonPlan::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLightBulb;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Classroom;
+
+    protected static ?int $navigationSort = 4;
+
+    protected static ?string $navigationLabel = 'Planos de aula';
 
     protected static ?string $recordTitleAttribute = 'title';
 
     protected static ?string $modelLabel = 'Plano de Aula';
 
     protected static ?string $pluralModelLabel = 'Planos de Aula';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
 
     public static function form(Schema $schema): Schema
     {
@@ -71,5 +80,15 @@ class LessonPlanResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        return $user->hasRole('teacher')
+            ? $query->where('teacher_id', $user->teacher?->id ?? 0)
+            : $query;
     }
 }

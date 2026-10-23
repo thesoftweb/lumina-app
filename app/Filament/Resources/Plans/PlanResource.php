@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Plans;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Plans\Pages\CreatePlan;
 use App\Filament\Resources\Plans\Pages\EditPlan;
 use App\Filament\Resources\Plans\Pages\ListPlans;
@@ -20,20 +22,21 @@ use UnitEnum;
 
 class PlanResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Plan::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Finance;
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Planos e mensalidades';
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Financeiro';
-
     protected static ?string $modelLabel = 'Planos e Mensalidades';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
 
     public static function form(Schema $schema): Schema
     {

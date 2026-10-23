@@ -2,14 +2,14 @@
 
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentPrintController;
-use App\Http\Controllers\SchoolContractController;
-use App\Http\Controllers\PortalController;
-use App\Http\Controllers\PortalPixQrCodeController;
-use App\Http\Controllers\PortalEventController;
+use App\Http\Controllers\EnrollmentSheetController;
 use App\Http\Controllers\PortalAgendaController;
+use App\Http\Controllers\PortalController;
+use App\Http\Controllers\PortalEventController;
+use App\Http\Controllers\PortalPixQrCodeController;
+use App\Http\Controllers\ReportCardController;
+use App\Http\Controllers\SchoolContractController;
 use Illuminate\Support\Facades\Route;
-
-Route::post('/artisan', App\Http\Controllers\ArtisanController::class);
 
 Route::get('/', function () {
     return view('welcome');
@@ -23,7 +23,10 @@ Route::post('/webhooks/asaas', [AsaasWebhookController::class, 'handle'])
 Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('login', [PortalController::class, 'login'])->name('login');
     Route::post('access', [PortalController::class, 'accessPortal'])->name('access');
-    Route::get('student', [PortalController::class, 'showStudent'])->name('show');
+    Route::get('aluno', [PortalController::class, 'showStudent'])->name('show');
+    Route::get('matriculas', [PortalController::class, 'showEnrollments'])->name('enrollments.index');
+    Route::get('faturas', [PortalController::class, 'showInvoices'])->name('invoices.index');
+    Route::redirect('student', '/portal/aluno');
 
     // PIX QR Code Routes
     Route::get('invoices/{invoice}/pix-qrcode', [PortalPixQrCodeController::class, 'show'])->name('invoices.pix-qrcode');
@@ -49,4 +52,10 @@ Route::prefix('documents')->name('documents.')->group(function () {
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
     Route::get('{enrollment}/contract/print', [SchoolContractController::class, 'show'])->name('contract.print');
     Route::get('{enrollment}/contract/pdf', [SchoolContractController::class, 'pdf'])->name('contract.pdf');
+    Route::get('{enrollment}/sheet', [EnrollmentSheetController::class, 'show'])->middleware('auth')->name('sheet');
+});
+
+Route::middleware('auth')->prefix('report-cards')->name('report-cards.')->group(function () {
+    Route::get('{enrollment}', [ReportCardController::class, 'show'])->name('show');
+    Route::get('{enrollment}/pdf', [ReportCardController::class, 'pdf'])->name('pdf');
 });

@@ -12,8 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Não há rota "login" padrão: visitantes em rotas com "auth" vão para o login do painel.
+        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
+
         $middleware->validateCsrfTokens(except: [
-            'artisan',
             'webhooks/asaas',
         ]);
     })

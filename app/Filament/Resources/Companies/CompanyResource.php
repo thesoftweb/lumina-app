@@ -2,38 +2,36 @@
 
 namespace App\Filament\Resources\Companies;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Companies\Pages\CreateCompany;
 use App\Filament\Resources\Companies\Pages\EditCompany;
-use App\Filament\Resources\Companies\Pages\ListCompanies;
-use App\Filament\Resources\Companies\Pages\ViewCompany;
 use App\Filament\Resources\Companies\Schemas\CompanyForm;
 use App\Filament\Resources\Companies\Schemas\CompanyInfolist;
 use App\Filament\Resources\Companies\Tables\CompaniesTable;
-use BackedEnum;
 use App\Models\Company;
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class CompanyResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = Company::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Settings;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Empresa';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Configurações';
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return !Auth::user()->hasRole('teacher');
-    }
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
     {
@@ -60,10 +58,14 @@ class CompanyResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListCompanies::route('/'),
+            'index' => EditCompany::route('/'),
             'create' => CreateCompany::route('/create'),
-            'view' => ViewCompany::route('/{record}'),
             'edit' => EditCompany::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return parent::canCreate() && ! Company::exists();
     }
 }

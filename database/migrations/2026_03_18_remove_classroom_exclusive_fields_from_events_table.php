@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::table('events', function (Blueprint $table) {
             // Remover classroom_id como foreign key e o campo apply_to_all_classrooms
             if (Schema::hasColumn('events', 'classroom_id')) {
+                $table->dropIndex('events_classroom_id_status_index');
                 try {
                     $table->dropForeign(['classroom_id']);
                 } catch (\Exception $e) {

@@ -4,17 +4,19 @@ namespace App\Policies;
 
 use App\Models\Attendance;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class AttendancePolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Teachers, coordinators and admins can view attendance records
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers, the school office (read-only) and admins can view attendance records
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -27,8 +29,8 @@ class AttendancePolicy
             return $attendance->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can view any attendance record
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any attendance record
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -36,8 +38,8 @@ class AttendancePolicy
      */
     public function create(User $user): bool
     {
-        // Teachers, coordinators and admins can create attendance records
-        return $user->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        // Teachers and admins can create attendance records
+        return $user->hasAnyRole(['teacher', 'admin']);
     }
 
     /**
@@ -50,8 +52,8 @@ class AttendancePolicy
             return $attendance->teacher_id === $user->teacher?->id;
         }
 
-        // Coordinators and admins can update any attendance record
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only admins can update any attendance record
+        return $user->hasRole('admin');
     }
 
     /**

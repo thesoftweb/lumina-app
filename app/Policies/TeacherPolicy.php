@@ -4,17 +4,19 @@ namespace App\Policies;
 
 use App\Models\Teacher;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\HandlesBulkActions;
 
 class TeacherPolicy
 {
+    use HandlesBulkActions;
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        // Coordinators and admins can view all teachers
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view all teachers
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -27,8 +29,8 @@ class TeacherPolicy
             return $user->teacher?->id === $teacher->id;
         }
 
-        // Coordinators and admins can view any teacher
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can view any teacher
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -36,8 +38,8 @@ class TeacherPolicy
      */
     public function create(User $user): bool
     {
-        // Only coordinators and admins can create teachers
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // Only secretaries and admins can create teachers
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**
@@ -50,8 +52,8 @@ class TeacherPolicy
             return $user->teacher?->id === $teacher->id;
         }
 
-        // Coordinators and admins can edit any teacher
-        return $user->hasAnyRole(['coordinator', 'admin']);
+        // The school office and admins can edit any teacher
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**

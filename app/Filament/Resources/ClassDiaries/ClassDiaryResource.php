@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\ClassDiaries;
 
+use App\Enums\NavGroup;
+use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\ClassDiaries\Pages\CreateClassDiary;
 use App\Filament\Resources\ClassDiaries\Pages\EditClassDiary;
 use App\Filament\Resources\ClassDiaries\Pages\ListClassDiaries;
@@ -17,21 +19,28 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class ClassDiaryResource extends Resource
 {
+    use ChecksNavigationAccess;
+
     protected static ?string $model = ClassDiary::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
+
+    protected static string|UnitEnum|null $navigationGroup = NavGroup::Classroom;
+
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Diário de classe';
 
     protected static ?string $recordTitleAttribute = 'content';
 
     protected static ?string $modelLabel = 'Diário de Classe';
 
     protected static ?string $pluralModelLabel = 'Diários de Classe';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Pedagógico';
 
     public static function form(Schema $schema): Schema
     {
@@ -71,5 +80,15 @@ class ClassDiaryResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        return $user->hasRole('teacher')
+            ? $query->where('teacher_id', $user->teacher?->id ?? 0)
+            : $query;
     }
 }

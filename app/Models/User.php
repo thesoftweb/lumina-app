@@ -12,7 +12,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -61,7 +61,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // Allow access only to users with teacher, coordinator, or admin roles
-        return $this->hasAnyRole(['teacher', 'coordinator', 'admin']);
+        if (! $this->hasAnyRole(['teacher', 'secretary', 'admin'])) {
+            return false;
+        }
+
+        return ! $this->hasRole('teacher') || $this->teacher()->exists();
     }
 }

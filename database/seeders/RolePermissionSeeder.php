@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()['cache']->forget('spatie.permission.cache');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // Create permissions for teachers
         $teacherPermissions = [
@@ -29,24 +29,32 @@ class RolePermissionSeeder extends Seeder
             'create_class_diary',
             'view_own_lesson_plan',
             'create_lesson_plan',
+            'view_assigned_students',
+            'view_birthdays',
+            'view_report_cards',
+            'edit_own_attendance',
+            'edit_own_class_diary',
+            'edit_own_lesson_plan',
         ];
 
         foreach ($teacherPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Create permissions for coordinators
-        $coordinatorPermissions = [
+        // Create permissions for the school office (secretaria): consulta o pedagógico, não altera
+        $secretaryPermissions = [
             'view_all_classrooms',
             'view_all_grades',
             'view_all_teachers',
             'create_teacher',
             'edit_teacher',
             'view_reports',
+            'view_all_students',
+            'view_report_cards',
         ];
 
-        foreach ($coordinatorPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+        foreach ($secretaryPermissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create admin permissions
@@ -58,17 +66,19 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($adminPermissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Create roles and assign permissions
-        $teacherRole = Role::create(['name' => 'teacher', 'guard_name' => 'web']);
-        $teacherRole->givePermissionTo($teacherPermissions);
+        // Create roles and assign permissions (definição dos papéis em docs/NAVEGACAO_E_PERMISSOES.md)
+        $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
+        $teacherRole->syncPermissions($teacherPermissions);
 
-        $coordinatorRole = Role::create(['name' => 'coordinator', 'guard_name' => 'web']);
-        $coordinatorRole->givePermissionTo(array_merge($teacherPermissions, $coordinatorPermissions));
+        $secretaryRole = Role::firstOrCreate(['name' => 'secretary', 'guard_name' => 'web']);
+        $secretaryRole->syncPermissions($secretaryPermissions);
 
-        $adminRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $adminRole->givePermissionTo(Permission::all());
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $adminRole->syncPermissions(Permission::all());
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
