@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\DocumentVerificationController;
+use App\Http\Controllers\EnrollmentContractController;
 use App\Http\Controllers\EnrollmentSheetController;
 use App\Http\Controllers\IssuedDocumentController;
 use App\Http\Controllers\PortalAgendaController;
@@ -54,6 +55,7 @@ Route::middleware('throttle:30,1')->group(function () {
 
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
     Route::get('{enrollment}/sheet', [EnrollmentSheetController::class, 'show'])->middleware('auth')->name('sheet');
+    Route::get('{enrollment}/contract', [EnrollmentContractController::class, 'show'])->middleware('auth')->name('contract');
 });
 
 Route::middleware('auth')->prefix('report-cards')->name('report-cards.')->group(function () {

@@ -19,6 +19,7 @@ trait ManagesEnrollmentActions
     protected function getEnrollmentActions(): array
     {
         return [
+            $this->createEnrollmentContractAction(),
             $this->createEnrollmentDeclarationAction(),
             $this->createAttendanceDeclarationAction(),
             $this->createEnrollmentInvoiceAction(),
@@ -35,6 +36,18 @@ trait ManagesEnrollmentActions
             ->label('Imprimir ficha')
             ->icon('heroicon-o-printer')
             ->url(fn () => route('enrollments.sheet', ['enrollment' => $this->record, 'print' => 1]))
+            ->openUrlInNewTab();
+    }
+
+    /**
+     * Action para imprimir o contrato de matrícula (abre já com a janela de impressão/salvar PDF)
+     */
+    private function createEnrollmentContractAction(): Action
+    {
+        return Action::make('printEnrollmentContract')
+            ->label('Imprimir contrato')
+            ->icon('heroicon-o-document-text')
+            ->url(fn () => route('enrollments.contract', ['enrollment' => $this->record, 'print' => 1]))
             ->openUrlInNewTab();
     }
 
