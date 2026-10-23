@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\Enrollments\Actions;
 
+use App\Documents\AttendanceDeclaration;
+use App\Documents\EnrollmentDeclaration;
 use App\Enums\EnrollmentStatus;
+use App\Filament\Actions\IssueDocumentAction;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -16,8 +19,9 @@ trait ManagesEnrollmentActions
     protected function getEnrollmentActions(): array
     {
         return [
-            $this->createSchoolContractPrintAction(),
-            $this->createSchoolContractPdfAction(),
+            $this->createEnrollmentContractAction(),
+            $this->createEnrollmentDeclarationAction(),
+            $this->createAttendanceDeclarationAction(),
             $this->createEnrollmentInvoiceAction(),
             $this->createTuitionInvoiceAction(),
         ];
@@ -36,27 +40,39 @@ trait ManagesEnrollmentActions
     }
 
     /**
-     * Action para imprimir contrato escolar
+     * Action para imprimir o contrato de matrícula (abre já com a janela de impressão/salvar PDF)
      */
-    private function createSchoolContractPrintAction(): Action
+    private function createEnrollmentContractAction(): Action
     {
-        return Action::make('printSchoolContract')
-            ->label('Imprimir Contrato')
+        return Action::make('printEnrollmentContract')
+            ->label('Imprimir contrato')
             ->icon('heroicon-o-document-text')
-            ->url(fn () => route('enrollments.contract.print', $this->record))
+            ->url(fn () => route('enrollments.contract', ['enrollment' => $this->record, 'print' => 1]))
             ->openUrlInNewTab();
     }
 
     /**
-     * Action para baixar contrato escolar em PDF
+     * Declarações escolares (numeradas e com código de verificação), só para matrícula ativa
      */
-    private function createSchoolContractPdfAction(): Action
+    private function createEnrollmentDeclarationAction(): Action
     {
-        return Action::make('pdfSchoolContract')
-            ->label('Baixar Contrato PDF')
-            ->icon('heroicon-o-arrow-down-tray')
-            ->url(fn () => route('enrollments.contract.pdf', $this->record))
-            ->openUrlInNewTab();
+        return IssueDocumentAction::make(
+            'issueEnrollmentDeclaration',
+            'Emitir declaração de matrícula',
+            fn (array $data) => EnrollmentDeclaration::issue($this->record, auth()->user(), $data['purpose'] ?? null, $data['valid_for_days']),
+        )->visible(fn (): bool => EnrollmentDeclaration::canIssue($this->record));
+    }
+
+    private function createAttendanceDeclarationAction(): Action
+    {
+        return IssueDocumentAction::make(
+            'issueAttendanceDeclaration',
+            'Emitir declaração de frequência',
+            fn (array $data) => AttendanceDeclaration::issue($this->record, auth()->user(), $data['purpose'] ?? null, $data['valid_for_days']),
+        )
+            ->visible(fn (): bool => AttendanceDeclaration::canIssue($this->record))
+            // Mostra a frequência apurada antes de emitir, para conferir se as chamadas estão em dia
+            ->modalDescription(fn (): string => AttendanceDeclaration::describe(AttendanceDeclaration::summary($this->record)).' '.IssueDocumentAction::DESCRIPTION);
     }
 
     /**

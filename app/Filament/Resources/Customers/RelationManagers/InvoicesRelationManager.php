@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Customers\RelationManagers;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
+use App\Filament\Resources\Invoices\Actions\IssuePaymentReceiptAction;
 use App\Filament\Resources\Invoices\Actions\SyncAsaasPaymentAction;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Invoices\Schemas\InvoiceForm;
@@ -179,6 +180,7 @@ class InvoicesRelationManager extends RelationManager
                 $this->paymentAction(),
                 $this->updateInvoiceAction(),
                 ActionGroup::make([
+                    IssuePaymentReceiptAction::make(),
                     Action::make('editFullInvoice')
                         ->label('Editar todos os dados')
                         ->icon('heroicon-o-pencil-square')

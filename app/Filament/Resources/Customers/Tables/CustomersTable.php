@@ -29,7 +29,7 @@ class CustomersTable
             ->emptyStateHeading('Nenhum cliente encontrado')
             ->emptyStateDescription('Cadastre um responsável financeiro ou ajuste os filtros da busca.')
             ->modifyQueryUsing(fn (Builder $query) => $query->withCount([
-                'invoices as overdue_invoices_count' => fn (Builder $query) => self::overdueInvoices($query),
+                'invoices as overdue_invoices_count' => fn (Builder $query) => $query->overdue(),
             ]))
             ->columns([
                 TextColumn::make('name')
@@ -83,7 +83,7 @@ class CustomersTable
                         blank: fn (Builder $query) => $query,
                     ),
                 Filter::make('overdue')->label('Com faturas vencidas')
-                    ->query(fn (Builder $query) => $query->whereHas('invoices', fn (Builder $query) => self::overdueInvoices($query))),
+                    ->query(fn (Builder $query) => $query->whereHas('invoices', fn (Builder $query) => $query->overdue())),
                 Filter::make('missing_contact')->label('Telefone ou e-mail não informado')
                     ->query(fn (Builder $query) => $query->where(fn (Builder $query) => $query
                         ->whereNull('phone')->orWhere('phone', '')->orWhereNull('email')->orWhere('email', ''))),
@@ -110,12 +110,5 @@ class CustomersTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    private static function overdueInvoices(Builder $query): Builder
-    {
-        return $query->whereIn('status', ['open', 'partial', 'overdue'])
-            ->whereDate('due_date', '<', today())
-            ->where('balance', '>', 0);
     }
 }

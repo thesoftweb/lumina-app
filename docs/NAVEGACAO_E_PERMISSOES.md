@@ -11,7 +11,7 @@ Grupos e ordem definidos em `app/Enums/NavGroup.php` (a ordem dos `case` é a or
 | Acadêmico | Alunos, Turmas, Matrículas, Boletins, Frequências, Agendas |
 | Financeiro | Faturas, Planos e mensalidades, Eventos e contribuições |
 | Cadastros | Clientes, Professores, Fornecedores |
-| Documentos | Documentos, Modelos de documentos |
+| Documentos | Documentos emitidos |
 | Configurações | Empresa, Ano letivo, Bimestres, Níveis, Disciplinas |
 | Administração | Usuários |
 
@@ -43,7 +43,7 @@ O sistema tem três papéis, criados pelo `RolePermissionSeeder`. Quem tinha o a
 | Ano letivo, Bimestres, Níveis, Disciplinas | total | ver, cadastrar, editar | — |
 | Eventos e contribuições | total | ver, cadastrar, editar | ver os das suas turmas |
 | Agendas | total | ver, cadastrar, editar | — |
-| Documentos e modelos | total | ver, emitir, editar | — |
+| Documentos emitidos (declarações, recibos) | emitir, reimprimir, cancelar | emitir, reimprimir | — |
 | Frequência, diário de classe, planos de aula, notas | total, inclusive corrigir | só consulta | lança e edita os próprios |
 | Boletins | todos | todos | das suas turmas |
 | Fazer chamada, Lançar notas, Aniversariantes, Meu perfil | — | — | sim |
@@ -76,3 +76,4 @@ Importante: isto só controla o **menu**. A autorização real está nas policie
 - **Matrículas só aparecia para `admin`:** resolvido com a criação do papel `secretary` (ver "Papéis").
 - **Painel duplicado corrigido:** o menu registrava dois painéis iniciais (o do Filament e o do projeto). Ficou só o do projeto.
 - **Disciplinas, Bimestres e Níveis** agora têm cadastro (Resources simples, com modal) em "Configurações", visíveis para secretaria e admin. Excluir é bloqueado quando há turmas, notas ou vínculos. Estados, cidades, plano de contas e perfis de aluno continuam só por seeder.
+- **Documentos e Modelos de documentos (texto livre) e contrato escolar antigo:** removidos. Os documentos da escola são emitidos em Documentos emitidos (ver `docs/DOCUMENTOS_EMITIDOS.md`); o contrato foi refeito como página de impressão da matrícula, como a ficha.

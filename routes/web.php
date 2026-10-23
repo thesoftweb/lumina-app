@@ -1,14 +1,15 @@
 <?php
 
 use App\Http\Controllers\AsaasWebhookController;
-use App\Http\Controllers\DocumentPrintController;
+use App\Http\Controllers\DocumentVerificationController;
+use App\Http\Controllers\EnrollmentContractController;
 use App\Http\Controllers\EnrollmentSheetController;
+use App\Http\Controllers\IssuedDocumentController;
 use App\Http\Controllers\PortalAgendaController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
 use App\Http\Controllers\PortalPixQrCodeController;
 use App\Http\Controllers\ReportCardController;
-use App\Http\Controllers\SchoolContractController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,17 +43,19 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('agendas/{id}', [PortalAgendaController::class, 'show'])->name('agendas.show');
 });
 
-// Document Routes
-Route::prefix('documents')->name('documents.')->group(function () {
-    Route::get('{document}/print', [DocumentPrintController::class, 'show'])->name('print');
-    Route::get('{document}/pdf', [DocumentPrintController::class, 'pdf'])->name('pdf');
+// Documentos emitidos: impressão para a equipe e verificação pública de autenticidade
+Route::get('documentos-emitidos/{issuedDocument}', [IssuedDocumentController::class, 'show'])
+    ->middleware('auth')
+    ->name('issued-documents.print');
+
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('verificar', [DocumentVerificationController::class, 'form'])->name('documents.verify.form');
+    Route::get('verificar/{code}', [DocumentVerificationController::class, 'show'])->name('documents.verify');
 });
 
-// Enrollment Contract Routes
 Route::prefix('enrollments')->name('enrollments.')->group(function () {
-    Route::get('{enrollment}/contract/print', [SchoolContractController::class, 'show'])->name('contract.print');
-    Route::get('{enrollment}/contract/pdf', [SchoolContractController::class, 'pdf'])->name('contract.pdf');
     Route::get('{enrollment}/sheet', [EnrollmentSheetController::class, 'show'])->middleware('auth')->name('sheet');
+    Route::get('{enrollment}/contract', [EnrollmentContractController::class, 'show'])->middleware('auth')->name('contract');
 });
 
 Route::middleware('auth')->prefix('report-cards')->name('report-cards.')->group(function () {

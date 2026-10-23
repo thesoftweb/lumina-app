@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\Actions\GenerateAsaasChargeAction;
+use App\Filament\Resources\Invoices\Actions\IssuePaymentReceiptAction;
 use App\Filament\Resources\Invoices\Actions\SyncAsaasPaymentAction;
 use App\Filament\Resources\Invoices\Actions\ViewAsaasLinksAction;
 use App\Filament\Resources\Invoices\InvoiceResource;
@@ -17,6 +18,7 @@ class ViewInvoice extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            IssuePaymentReceiptAction::make(),
             GenerateAsaasChargeAction::make(),
             SyncAsaasPaymentAction::make(),
             ViewAsaasLinksAction::make(),

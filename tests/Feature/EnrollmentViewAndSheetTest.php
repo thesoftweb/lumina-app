@@ -8,6 +8,7 @@ use App\Filament\Resources\Enrollments\Pages\ViewEnrollment;
 use App\Models\AcademicYear;
 use App\Models\City;
 use App\Models\Classroom;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Enrollment;
 use App\Models\Level;
@@ -17,6 +18,8 @@ use App\Models\Student;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -123,6 +126,65 @@ class EnrollmentViewAndSheetTest extends TestCase
             ->assertSee(['Responsável legal · CPF 096.234.214-94', 'Secretaria escolar'])
             ->assertSee('por Secretária Teste')
             ->assertSee('window.print()', false);
+    }
+
+    public function test_sheet_header_and_signature_use_the_company_identity(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('company-logos/logo.png', UploadedFile::fake()->image('logo.png', 10, 10)->getContent());
+        Company::create([
+            'name' => 'Escola Ceci', 'email' => 'escola@example.test', 'tax_id' => '11.222.333/0001-81',
+            'inep_code' => '25012345', 'address' => 'Av. Principal', 'address_number' => '100', 'neighborhood' => 'Centro',
+            'city_id' => City::where('code', 2513703)->value('id'), 'postal_code' => '58300-000',
+            'logo_path' => 'company-logos/logo.png', 'document_signer_name' => 'Joana Diretora', 'document_signer_role' => 'Diretora',
+        ]);
+        $this->actingAsRole('secretary');
+
+        $this->get(route('enrollments.sheet', ['enrollment' => $this->enrollment]))
+            ->assertOk()
+            ->assertSee('src="data:image/png;base64,', false)
+            ->assertSee('CNPJ 11.222.333/0001-81 · INEP 25012345')
+            ->assertSee('Av. Principal, 100 - Centro - Santa Rita/PB - CEP 58300-000')
+            ->assertSee('Local e data: Santa Rita/PB,')
+            ->assertSee(['Joana Diretora', 'Diretora · Escola Ceci'])
+            ->assertDontSee('Secretaria escolar');
+    }
+
+    public function test_contract_fills_the_parties_and_clauses_from_the_enrollment(): void
+    {
+        Company::create([
+            'name' => 'Escola Ceci', 'email' => 'escola@example.test', 'tax_id' => '11.222.333/0001-81', 'inep_code' => '25012345',
+            'address' => 'Av. Principal', 'address_number' => '100', 'neighborhood' => 'Centro',
+            'city_id' => City::where('code', 2513703)->value('id'), 'postal_code' => '58300-000',
+            'document_signer_name' => 'Joana Diretora', 'document_signer_role' => 'Diretora',
+        ]);
+        $this->enrollment->academicYear->update(['end_at' => '2026-12-18']);
+        $this->actingAsRole('secretary');
+
+        $this->get(route('enrollments.contract', ['enrollment' => $this->enrollment, 'print' => 1]))
+            ->assertOk()
+            ->assertSee(['Contrato de Matrícula Escolar', 'Ano letivo 2026.1 · Matrícula nº '.$this->enrollment->number()])
+            ->assertSee('<strong>Escola Ceci</strong>, inscrita no CNPJ sob o nº 11.222.333/0001-81, código INEP 25012345, com sede em Av. Principal, 100 - Centro - Santa Rita/PB - CEP 58300-000, doravante denominada simplesmente <strong>"ESCOLA"</strong>.', false)
+            ->assertSee('<strong>Maria Responsável</strong>, CPF 096.234.214-94, residente em Rua das Flores, 10 - Centro - Santa Rita/PB - CEP 58000-000, telefone (83) 99999-0000, responsável legal da aluna indicada abaixo', false)
+            ->assertSee('<strong>Ana Clara</strong>, filha de <strong>Maria Responsável</strong>, nascida em 10/03/2015, matriculada em <strong>Fundamental – Turma A</strong>.', false)
+            ->assertSee('referentes ao ano letivo de <strong>2026.1</strong>', false)
+            ->assertSee("contrata o plano denominado <strong>Mensal</strong>, constante na tabela de preços vigente, com mensalidade de <strong>R\$\u{a0}90,00</strong> (noventa reais) e vencimento todo dia <strong>10</strong>, com vigência até 18/12/2026.", false)
+            ->assertSee('A matrícula foi formalizada em <strong>01/02/2026</strong>. A aluna compromete-se', false)
+            ->assertSee('poderá suspender as atividades da aluna.')
+            ->assertSee('Santa Rita/PB, ______ de')
+            ->assertSee(['Responsável legal · CPF 096.234.214-94', 'Joana Diretora', 'Diretora · Escola Ceci', 'por Secretária Teste'])
+            ->assertDontSee('N/A')
+            ->assertSee('window.print()', false);
+    }
+
+    public function test_contract_requires_an_authorized_user(): void
+    {
+        $url = route('enrollments.contract', ['enrollment' => $this->enrollment]);
+
+        $this->get($url)->assertRedirect(route('filament.admin.auth.login'));
+
+        $this->actingAsRole('teacher');
+        $this->get($url)->assertForbidden();
     }
 
     public function test_global_search_finds_enrollments_by_student_name(): void

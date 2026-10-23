@@ -55,7 +55,7 @@ class NavigationTest extends TestCase
         $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
         $this->assertSame(['Faturas', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores'], $groups['Cadastros']);
-        $this->assertSame(['Documentos', 'Modelos de documentos'], $groups['Documentos']);
+        $this->assertSame(['Documentos emitidos'], $groups['Documentos']);
         $this->assertSame(['Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);
         $this->assertArrayNotHasKey('Administração', $groups);
     }

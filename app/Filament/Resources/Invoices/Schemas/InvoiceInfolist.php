@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Invoices\Schemas;
 
+use App\Documents\PaymentReceipt;
+use App\Models\InvoicePayment;
 use Dom\Text;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -123,7 +125,16 @@ class InvoiceInfolist
                         TextEntry::make('payment_method')
                             ->badge()
                             ->label('Método de Pagamento'),
-                    ])->columns(4),
+                        TextEntry::make('receipt')
+                            ->label('Recibo')
+                            ->state(fn (InvoicePayment $record): ?string => PaymentReceipt::existing($record)?->number)
+                            ->placeholder('Não emitido')
+                            ->url(fn (InvoicePayment $record): ?string => ($receipt = PaymentReceipt::existing($record))
+                                ? route('issued-documents.print', $receipt)
+                                : null)
+                            ->openUrlInNewTab()
+                            ->color('primary'),
+                    ])->columns(5),
 
                 Section::make('Informações do Sistema')
                     ->columnSpanFull()

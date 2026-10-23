@@ -12,12 +12,11 @@ use App\Models\ClassDiary;
 use App\Models\Classroom;
 use App\Models\Company;
 use App\Models\Customer;
-use App\Models\Document;
-use App\Models\DocumentTemplate;
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Grade;
 use App\Models\Invoice;
+use App\Models\IssuedDocument;
 use App\Models\LessonPlan;
 use App\Models\Level;
 use App\Models\Plan;
@@ -41,7 +40,7 @@ class RolesTest extends TestCase
 
     /** Secretaria cadastra e edita, mas só o admin exclui. */
     private const OFFICE_MODELS = [
-        Enrollment::class, Student::class, Customer::class, Invoice::class, Document::class, DocumentTemplate::class,
+        Enrollment::class, Student::class, Customer::class, Invoice::class,
         Classroom::class, Teacher::class, AcademicYear::class, Term::class, Subject::class, Level::class,
         Event::class, Schedule::class,
     ];
@@ -93,6 +92,12 @@ class RolesTest extends TestCase
             $this->assertFalse($user->can('viewAny', $model), "{$model}: viewAny");
         }
 
+        // Documento emitido: a secretaria emite e reimprime; não se edita nem se exclui, e só o admin cancela
+        $this->assertTrue($user->can('viewAny', IssuedDocument::class));
+        $this->assertTrue($user->can('create', IssuedDocument::class));
+        $this->assertFalse($user->can('update', new IssuedDocument));
+        $this->assertFalse($user->can('cancel', new IssuedDocument));
+
         $this->assertTrue(ReportCards::canAccess());
         $this->assertFalse(TakeAttendance::canAccess());
         $this->assertFalse(Gradebook::canAccess());
@@ -112,7 +117,7 @@ class RolesTest extends TestCase
     {
         $user = $this->signInAs('teacher');
 
-        foreach ([Enrollment::class, Customer::class, Invoice::class, Document::class, AcademicYear::class, ...self::ADMIN_ONLY_MODELS] as $model) {
+        foreach ([Enrollment::class, Customer::class, Invoice::class, IssuedDocument::class, AcademicYear::class, ...self::ADMIN_ONLY_MODELS] as $model) {
             $this->assertFalse($user->can('viewAny', $model), "{$model}: viewAny");
         }
 

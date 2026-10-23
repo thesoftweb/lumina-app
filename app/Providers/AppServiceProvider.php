@@ -10,12 +10,11 @@ use App\Models\ClassDiary;
 use App\Models\Classroom;
 use App\Models\Company;
 use App\Models\Customer;
-use App\Models\Document;
-use App\Models\DocumentTemplate;
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Grade;
 use App\Models\Invoice;
+use App\Models\IssuedDocument;
 use App\Models\LessonPlan;
 use App\Models\Plan;
 use App\Models\Student;
@@ -34,6 +33,7 @@ use App\Policies\ClassroomPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\GradePolicy;
+use App\Policies\IssuedDocumentPolicy;
 use App\Policies\LessonPlanPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\TeacherPolicy;
@@ -57,6 +57,7 @@ class AppServiceProvider extends ServiceProvider
         LessonPlan::class => LessonPlanPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
         Event::class => EventPolicy::class,
+        IssuedDocument::class => IssuedDocumentPolicy::class,
     ];
 
     /**
@@ -82,8 +83,6 @@ class AppServiceProvider extends ServiceProvider
             AcademicYear::class,
             Schedule::class,
             Customer::class,
-            Document::class,
-            DocumentTemplate::class,
             Invoice::class,
             Subject::class,
             Term::class,

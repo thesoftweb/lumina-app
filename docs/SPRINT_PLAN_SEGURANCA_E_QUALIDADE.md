@@ -104,6 +104,8 @@ Confirmar no código os pontos que a documentação apenas afirma. O resultado p
 
 ### S1-03 - Proteger impressão de documentos e contratos
 
+> **Resolvido (2026-10-23):** as quatro rotas foram removidas junto com o módulo antigo de documentos e o contrato escolar, que será refeito. Os documentos emitidos novos exigem login e policy, e a verificação pública mostra o CPF mascarado.
+
 **Problema:** `/documents/{id}/print`, `/documents/{id}/pdf`, `/enrollments/{id}/contract/print` e `/enrollments/{id}/contract/pdf` não têm middleware nem policy. IDs sequenciais expõem CPF, e-mail, telefone e dados do contrato.
 
 **Tarefas**
@@ -204,7 +206,7 @@ Confirmar no código os pontos que a documentação apenas afirma. O resultado p
 
 - `ASAAS_INTEGRATION.md`: token do webhook, idempotência, localização real do agendamento, itens pendentes atualizados.
 - `API_STUDENTS_DOCUMENTATION.md`: rotas com `{tenant}`, `/login`, `/settings`, `/classes`, campo da turma, remoção do texto "sem autenticação" como característica, aviso de depreciação das rotas legadas.
-- `PRINT_DOCUMENTS_GUIDE.md`: remover "pronto para produção" sem ressalva, documentar a proteção por login e policy.
+- ~~`PRINT_DOCUMENTS_GUIDE.md`~~: removido com o módulo antigo; ver `DOCUMENTOS_EMITIDOS.md`.
 - `TEACHER_PANEL_IMPLEMENTATION.md` e `PEDAGOGICAL_MODELS_IMPLEMENTATION.md`: remover credenciais, corrigir `admin@example.com` e o trecho "quando o Resource for criado".
 - `AGENDA_IMPLEMENTATION.md`: remover "próximas etapas" já feitas e alinhar com a decisão sobre turma única ou múltipla.
 - `ROADMAP_DOCUMENTOS_PEDAGOGICOS.md`: marcar o que o painel do professor já entrega (boletim, PDF) e corrigir a tabela de status.
