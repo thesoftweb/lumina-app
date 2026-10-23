@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $document->number }} · {{ $document->type->getLabel() }}</title>
+    @include('documents.issued.fonts')
     <style>
         * {
             box-sizing: border-box;
@@ -14,7 +15,7 @@
         body {
             margin: 0;
             background: #e2e8f0;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
         .toolbar {
@@ -92,7 +93,8 @@
 
     @if ($autoPrint)
         <script>
-            window.addEventListener('load', () => window.print());
+            // Espera a fonte carregar para não imprimir com a fonte reserva
+            window.addEventListener('load', () => document.fonts.ready.then(() => window.print()));
         </script>
     @endif
 </body>

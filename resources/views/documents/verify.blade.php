@@ -12,6 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Verificar documento</title>
+    @include('documents.issued.fonts')
     <style>
         * {
             box-sizing: border-box;
@@ -21,7 +22,7 @@
             margin: 0;
             background: #e2e8f0;
             color: #0f172a;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
         .panel {
@@ -55,8 +56,8 @@
             padding: 10px 12px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            font: 16px ui-monospace, Consolas, monospace;
-            letter-spacing: 0.05em;
+            font: 600 16px 'Inter Variable', Inter, system-ui, sans-serif;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
 

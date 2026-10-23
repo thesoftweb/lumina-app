@@ -1,6 +1,7 @@
 {{--
     Documento emitido em A4. Tudo vem do conteúdo congelado na emissão ($document->data).
     $public = true na página de verificação: oculta parte do CPF.
+    A página que inclui este arquivo carrega a fonte Inter (documents.issued.fonts).
 --}}
 @php
     use App\Enums\IssuedDocumentStatus;
@@ -16,24 +17,29 @@
         filled($company['inep_code'] ?? null) ? "INEP {$company['inep_code']}" : null,
         $company['phone'] ?? null,
         $company['email'] ?? null,
-    ])->filter()->implode(' · ');
+    ])->filter()->implode('  ·  ');
     $issuedOn = $document->issued_at->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y');
 @endphp
 <style>
     .issued-doc {
         --ink: #0f172a;
-        --muted: #475569;
-        --line: #cbd5e1;
+        --text: #1e293b;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --accent: #0369a1;
         position: relative;
         width: 210mm;
         min-height: 297mm;
         margin: 24px auto;
-        padding: 18mm 20mm 14mm;
+        padding: 16mm 20mm 14mm;
         display: flex;
         flex-direction: column;
         background: #fff;
-        color: var(--ink);
-        font: 12pt/1.6 Georgia, 'Times New Roman', serif;
+        color: var(--text);
+        font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 11pt;
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
     }
 
@@ -45,96 +51,145 @@
         display: flex;
         align-items: center;
         gap: 14px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid var(--ink);
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
     }
 
     .issued-doc .logo {
         flex-shrink: 0;
-        max-width: 72px;
-        max-height: 72px;
+        max-width: 64px;
+        max-height: 64px;
         object-fit: contain;
     }
 
     .issued-doc .school-name {
-        font-size: 15px;
-        font-weight: 700;
-        text-transform: uppercase;
+        color: var(--ink);
+        font-size: 12.5pt;
+        font-weight: 650;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
     }
 
     .issued-doc .school-info {
-        font-size: 10px;
+        margin-top: 2px;
+        font-size: 8pt;
         line-height: 1.5;
         color: var(--muted);
+        white-space: pre-wrap;
+    }
+
+    .issued-doc .title {
+        margin: 22mm 0 14mm;
+        text-align: center;
     }
 
     .issued-doc h1 {
-        margin: 18mm 0 4mm;
-        text-align: center;
-        font-size: 17pt;
-        letter-spacing: 0.08em;
+        margin: 0;
+        color: var(--ink);
+        font-size: 15pt;
+        font-weight: 700;
+        line-height: 1.3;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
     }
 
+    .issued-doc .title::after {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 2px;
+        margin: 10px auto 8px;
+        background: var(--accent);
+    }
+
     .issued-doc .doc-number {
-        margin-bottom: 12mm;
-        text-align: center;
-        font: 11px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 8.5pt;
+        font-weight: 500;
+        letter-spacing: 0.02em;
         color: var(--muted);
     }
 
     .issued-doc .body p {
-        margin: 0 0 5mm;
+        margin: 0 0 4.5mm;
         text-align: justify;
-        text-indent: 12mm;
+        hyphens: auto;
+    }
+
+    .issued-doc .body strong {
+        color: var(--ink);
+        font-weight: 600;
     }
 
     .issued-doc .place-date {
-        margin: 10mm 0 0;
+        margin: 12mm 0 0;
         text-align: right;
     }
 
     .issued-doc .signature {
-        width: 90mm;
-        margin: 24mm auto 0;
-        padding-top: 6px;
+        width: 80mm;
+        margin: 26mm auto 0;
+        padding-top: 8px;
         border-top: 1px solid var(--ink);
         text-align: center;
         line-height: 1.4;
     }
 
+    .issued-doc .signature strong {
+        display: block;
+        color: var(--ink);
+        font-weight: 600;
+    }
+
     .issued-doc .signature small {
         display: block;
-        font-size: 10pt;
+        margin-top: 2px;
+        font-size: 9pt;
         color: var(--muted);
     }
 
     .issued-doc footer {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         margin-top: auto;
-        padding-top: 10px;
-        border-top: 1px solid var(--line);
-        font: 9.5px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 7.5pt;
+        line-height: 1.6;
         color: var(--muted);
     }
 
     .issued-doc footer img {
         flex-shrink: 0;
-        width: 26mm;
-        height: 26mm;
+        width: 22mm;
+        height: 22mm;
+        padding: 4px;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+    .issued-doc footer .label {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--ink);
+        font-size: 7pt;
+        font-weight: 650;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
     }
 
     .issued-doc footer strong {
-        color: var(--ink);
+        color: var(--text);
+        font-weight: 600;
     }
 
     .issued-doc .code {
-        font-family: ui-monospace, Consolas, monospace;
-        font-size: 11px;
-        letter-spacing: 0.05em;
+        color: var(--ink);
+        font-size: 9.5pt;
+        font-weight: 650;
+        letter-spacing: 0.12em;
     }
 
     .issued-doc .watermark {
@@ -144,10 +199,12 @@
         transform: translate(-50%, -50%) rotate(-28deg);
         padding: 4mm 10mm;
         border: 4px solid #dc2626;
+        border-radius: 6px;
         color: #dc2626;
-        font: 700 40pt system-ui, sans-serif;
-        letter-spacing: 0.1em;
-        opacity: 0.35;
+        font-size: 38pt;
+        font-weight: 750;
+        letter-spacing: 0.14em;
+        opacity: 0.3;
         pointer-events: none;
     }
 
@@ -160,8 +217,16 @@
             box-shadow: none;
         }
 
-        .issued-doc h1 {
-            margin-top: 24px;
+        .issued-doc .title {
+            margin: 28px 0 20px;
+        }
+
+        .issued-doc .signature {
+            margin-top: 48px;
+        }
+
+        .issued-doc footer {
+            margin-top: 32px;
         }
     }
 
@@ -174,6 +239,8 @@
         .issued-doc {
             margin: 0;
             box-shadow: none;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
     }
 </style>
@@ -198,8 +265,10 @@
         </div>
     </header>
 
-    <h1>{{ $document->type->getLabel() }}</h1>
-    <div class="doc-number">Nº {{ $document->number }}</div>
+    <div class="title">
+        <h1>{{ $document->type->getLabel() }}</h1>
+        <div class="doc-number">Nº {{ $document->number }}</div>
+    </div>
 
     <div class="body">
         @include($document->type->view(), ['content' => $content, 'public' => $public, 'document' => $document])
@@ -215,13 +284,10 @@
     <footer>
         <img src="{{ $document->qrCodeDataUri() }}" alt="QR code para verificar este documento">
         <div>
-            Documento <strong>{{ $document->number }}</strong>, emitido em {{ $document->issued_at->format('d/m/Y') }} às {{ $document->issued_at->format('H:i') }}.
-            @if ($document->valid_until)
-                Válido até <strong>{{ $document->valid_until->format('d/m/Y') }}</strong>.
-            @endif
-            <br>
-            Código de verificação: <strong class="code">{{ $document->formattedCode() }}</strong><br>
-            Confira a autenticidade lendo o QR code ou em <strong>{{ route('documents.verify.form') }}</strong>
+            <span class="label">Verificação de autenticidade</span>
+            Código <strong class="code">{{ $document->formattedCode() }}</strong><br>
+            Leia o QR code ou acesse <strong>{{ route('documents.verify.form') }}</strong> e informe o código.<br>
+            Documento <strong>{{ $document->number }}</strong>, emitido em {{ $document->issued_at->format('d/m/Y') }} às {{ $document->issued_at->format('H:i') }}@if ($document->valid_until), válido até <strong>{{ $document->valid_until->format('d/m/Y') }}</strong>@endif.
         </div>
     </footer>
 </article>

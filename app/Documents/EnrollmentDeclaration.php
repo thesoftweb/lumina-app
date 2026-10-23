@@ -39,6 +39,7 @@ class EnrollmentDeclaration
                     'gender' => $student->gender,
                     'birth_date' => $student->date_of_birth?->format('d/m/Y'),
                     'cpf' => $student->doc_number,
+                    'parents' => array_values(array_filter([$student->affiliation_1, $student->affiliation_2], 'filled')),
                 ],
                 'guardian' => ['name' => $student->customer?->name],
                 'enrollment' => [

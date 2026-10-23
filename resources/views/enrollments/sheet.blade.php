@@ -21,6 +21,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ficha de matrícula - {{ $student?->name }} - {{ $enrollment->academicYear?->description ?? $enrollment->number() }}</title>
+    @include('documents.issued.fonts')
     <style>
         :root {
             --ink: #111827;
@@ -37,7 +38,7 @@
         }
 
         body {
-            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            font-family: 'Inter Variable', Inter, "Segoe UI", Arial, Helvetica, sans-serif;
             font-size: 11px;
             line-height: 1.4;
             color: var(--ink);
@@ -460,7 +461,7 @@
 
     @if ($autoPrint)
         <script>
-            window.addEventListener('load', () => window.print());
+            window.addEventListener('load', () => document.fonts.ready.then(() => window.print()));
         </script>
     @endif
 </body>

@@ -58,6 +58,7 @@ class IssuedDocumentsTest extends TestCase
         $customer = Customer::create(['name' => 'Maria Responsável', 'document' => '096.234.214-94']);
         $student = Student::create([
             'name' => 'Ana Clara', 'customer_id' => $customer->id, 'date_of_birth' => '2015-03-10', 'gender' => 'F', 'doc_number' => '123.456.789-09',
+            'affiliation_1' => 'Maria Responsável', 'affiliation_2' => 'João Pereira',
         ]);
         $classroom = Classroom::create(['name' => 'Turma A', 'level_id' => Level::create(['name' => 'Fundamental'])->id]);
         $year = AcademicYear::create(['description' => '2026', 'year' => 2026, 'is_default' => true]);
@@ -177,16 +178,32 @@ class IssuedDocumentsTest extends TestCase
             ->assertOk()
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
             ->assertSee(['Declaração de matrícula', 'Nº DEC-2026-000001'])
-            ->assertSee('Declaramos, para os devidos fins, que <strong>Ana Clara</strong>, nascida em 10/03/2015, CPF 123.456.789-09', false)
+            ->assertSee('fonts/filament/filament/inter/index.css', false)
+            ->assertSee('Declaramos, para os devidos fins, que <strong>Ana Clara</strong>, filha de <strong>Maria Responsável</strong> e de <strong>João Pereira</strong>, nascida em 10/03/2015, CPF 123.456.789-09', false)
             ->assertSee('regularmente matriculada')
             ->assertSee('em <strong>Fundamental – Turma A</strong>', false)
             ->assertSee('para fins de transporte escolar')
             ->assertSee('Santa Rita/PB, 23 de outubro de 2026.')
-            ->assertSee(['Joana Albuquerque', 'Diretora', 'CNPJ 11.222.333/0001-81 · INEP 25012345'])
-            ->assertSee(['Válido até', '21/01/2027', $document->formattedCode(), route('documents.verify.form')])
+            ->assertSee(['Joana Albuquerque', 'Diretora', 'CNPJ 11.222.333/0001-81  ·  INEP 25012345'])
+            ->assertSee(['Verificação de autenticidade', 'válido até', '21/01/2027', $document->formattedCode(), route('documents.verify.form')])
             ->assertSee('src="data:image/svg+xml;base64,', false)
             ->assertSee('src="data:image/png;base64,', false)
             ->assertSee('window.print()', false);
+    }
+
+    public function test_declaration_text_follows_gender_and_known_parents(): void
+    {
+        $this->enrollment->student->update(['gender' => 'M', 'name' => 'Pedro', 'affiliation_1' => null, 'affiliation_2' => 'João Pereira']);
+        $document = $this->issue();
+
+        $this->get(route('issued-documents.print', $document))
+            ->assertSee('que <strong>Pedro</strong>, filho de <strong>João Pereira</strong>, nascido em 10/03/2015', false)
+            ->assertSee('regularmente matriculado nesta');
+
+        $this->enrollment->student->update(['affiliation_2' => null]);
+        $this->get(route('issued-documents.print', $this->issue()))
+            ->assertSee('que <strong>Pedro</strong>, nascido em', false)
+            ->assertDontSee('filho de');
     }
 
     public function test_verification_shows_the_original_with_the_cpf_masked(): void
