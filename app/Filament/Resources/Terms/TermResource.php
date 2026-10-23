@@ -7,6 +7,7 @@ use App\Filament\Concerns\ChecksNavigationAccess;
 use App\Filament\Resources\Terms\Pages\ManageTerms;
 use App\Models\Term;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use App\Models\AcademicYear;
@@ -99,6 +100,15 @@ class TermResource extends Resource
                 TextColumn::make('start_date')->label('Início')->date('d/m/Y'),
                 TextColumn::make('end_date')->label('Fim')->date('d/m/Y'),
                 TextColumn::make('grades_count')->label('Notas')->counts('grades')->badge()->alignCenter(),
+                TextColumn::make('closed_at')
+                    ->label('Situação')
+                    ->state(fn (Term $record): string => $record->isClosed() ? 'Fechado' : 'Aberto')
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Fechado' ? 'gray' : 'success')
+                    ->icon(fn (string $state): Heroicon => $state === 'Fechado' ? Heroicon::OutlinedLockClosed : Heroicon::OutlinedLockOpen)
+                    ->tooltip(fn (Term $record): ?string => $record->isClosed()
+                        ? 'Fechado em '.$record->closed_at->format('d/m/Y H:i').($record->closedBy ? ' por '.$record->closedBy->name : '')
+                        : 'Professores podem lançar e alterar notas'),
             ])
             ->modifyQueryUsing(fn ($query) => $query->orderByDesc('year')->orderBy('order'))
             ->paginated(false)
@@ -106,6 +116,30 @@ class TermResource extends Resource
                 SelectFilter::make('year')->label('Ano letivo')->options(fn (): array => static::yearOptions()),
             ])
             ->recordActions([
+                Action::make('close')
+                    ->label('Fechar')
+                    ->icon(Heroicon::OutlinedLockClosed)
+                    ->color('warning')
+                    ->visible(fn (Term $record): bool => ! $record->isClosed())
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (Term $record): string => "Fechar {$record->name} ({$record->year})?")
+                    ->modalDescription('Os professores não poderão mais lançar nem alterar notas deste bimestre. A secretaria continua podendo corrigir notas pela matrícula, com registro do motivo.')
+                    ->modalSubmitActionLabel('Fechar bimestre')
+                    ->action(function (Term $record): void {
+                        $record->update(['closed_at' => now(), 'closed_by' => auth()->id()]);
+                        Notification::make()->success()->title('Bimestre fechado')->send();
+                    }),
+                Action::make('reopen')
+                    ->label('Reabrir')
+                    ->icon(Heroicon::OutlinedLockOpen)
+                    ->color('gray')
+                    ->visible(fn (Term $record): bool => $record->isClosed())
+                    ->requiresConfirmation()
+                    ->modalDescription('Os professores voltam a poder alterar as notas deste bimestre.')
+                    ->action(function (Term $record): void {
+                        $record->update(['closed_at' => null, 'closed_by' => null]);
+                        Notification::make()->success()->title('Bimestre reaberto')->send();
+                    }),
                 EditAction::make(),
                 static::deleteAction(),
             ]);

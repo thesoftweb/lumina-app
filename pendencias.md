@@ -1,6 +1,6 @@
 # Pendências
 
-Questões em aberto que dependem de decisão da escola (não de código). Ao resolver uma, registre a
+Questões em aberto: decisões da escola e débitos técnicos conhecidos. Ao resolver uma, registre a
 decisão e a data e mova para "Resolvidas".
 
 ## Em aberto
@@ -50,6 +50,28 @@ matrícula.
       modelo da mensagem de cobrança, se tiver sido personalizado.
 
 > Este item é um levantamento técnico e não substitui a orientação jurídica da escola.
+
+### 2. Débito técnico: acesso ao portal do aluno só com o CPF
+
+**Situação atual (23/10/2026):** o portal (`/portal/aluno`) entra apenas com o CPF do responsável,
+sem senha, sem um segundo dado e sem limite de tentativas. Quem souber o CPF de um responsável vê os
+dados da família: alunos, matrículas, faturas e PIX. Com boletim e histórico no portal, também passa
+a ver notas e frequência de menores.
+
+**Risco:** exposição de dados pessoais de crianças e adolescentes (LGPD, art. 14) e tentativa de
+CPFs em sequência, já que não há limite de tentativas.
+
+**Decisão (23/10/2026):** manter como está por enquanto e tratar depois.
+
+**Opções quando for tratar:**
+
+- CPF + data de nascimento de um dos alunos, com limite de tentativas. É a mais simples e não exige
+  cadastro.
+- Código de acesso enviado por WhatsApp ou e-mail. Depende de envio automático.
+- Senha do responsável criada no primeiro acesso, com recuperação por e-mail.
+
+O mínimo imediato, independente da opção, é limitar as tentativas de acesso (`throttle` na rota
+`portal.access`).
 
 ## Resolvidas
 

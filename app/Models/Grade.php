@@ -46,6 +46,12 @@ class Grade extends Model
         return $this->belongsTo(ConceptScale::class);
     }
 
+    /** Correções feitas pela secretaria. */
+    public function changes()
+    {
+        return $this->hasMany(GradeChange::class);
+    }
+
     public function classroomSubject()
     {
         return $this->belongsTo(ClassroomSubject::class);

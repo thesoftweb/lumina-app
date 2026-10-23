@@ -38,8 +38,8 @@ class GradePolicy
      */
     public function create(User $user): bool
     {
-        // Teachers and admins can create grades
-        return $user->hasAnyRole(['teacher', 'admin']);
+        // Professores lançam pelo diário; a secretaria lança o que faltou e corrige
+        return $user->hasAnyRole(['teacher', 'secretary', 'admin']);
     }
 
     /**
@@ -52,8 +52,8 @@ class GradePolicy
             return $grade->teacher_id === $user->teacher?->id;
         }
 
-        // Only admins can edit any grade
-        return $user->hasRole('admin');
+        // A secretaria e o admin corrigem qualquer nota (com motivo, em grade_changes)
+        return $user->hasAnyRole(['secretary', 'admin']);
     }
 
     /**

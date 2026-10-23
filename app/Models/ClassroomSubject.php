@@ -12,6 +12,7 @@ class ClassroomSubject extends Pivot
     public $fillable = [
         'classroom_id',
         'subject_id',
+        'workload_hours',
     ];
 
     protected static function booted(): void

@@ -3,72 +3,54 @@
 namespace App\Services;
 
 use App\Enums\AssessmentMode;
-use App\Models\Attendance;
+use App\Models\Company;
 use App\Models\Enrollment;
-use App\Models\Term;
+use App\Services\Academic\AnnualResultCalculator;
+use App\Services\Academic\SubjectResult;
 
+/** Dados do boletim: notas por bimestre, média anual, situação de cada disciplina, frequência e resultado. */
 class ReportCardService
 {
+    public function __construct(private AnnualResultCalculator $calculator) {}
+
     public function forEnrollment(Enrollment $enrollment): array
     {
-        $enrollment->load(['student', 'classroom.classroomSubjects.subject', 'classroom.level', 'academicYear']);
-        $academicYear = $enrollment->academicYear;
-        $terms = Term::query()
-            ->when($academicYear?->year, fn ($query, $year) => $query->where('year', $year))
-            ->orderBy('order')
-            ->get();
-
-        $grades = $enrollment->grade()
-            ->with(['classroomSubject.subject', 'term', 'conceptScale'])
-            ->get()
+        $company = Company::current(auth()->user());
+        $annual = $this->calculator->forEnrollment($enrollment, $company);
+        $grades = $enrollment->grade()->with('conceptScale')->get()
             ->keyBy(fn ($grade) => $grade->classroom_subject_id.':'.$grade->term_id);
-        $mode = $enrollment->classroom->assessment_mode ?? AssessmentMode::Numeric;
 
-        $subjects = $enrollment->classroom->classroomSubjects
-            ->map(function ($assignment) use ($grades, $mode, $terms): array {
-                $termGrades = $terms->mapWithKeys(function ($term) use ($assignment, $grades): array {
-                    $grade = $grades->get($assignment->id.':'.$term->id);
+        $subjects = $annual->subjects->map(fn (SubjectResult $subject): array => [
+            'name' => $subject->name,
+            // Valor lançado em cada bimestre (nota ou código do conceito)
+            'grades' => $annual->terms->mapWithKeys(function ($term) use ($grades, $subject): array {
+                $grade = $grades->get($subject->assignmentId.':'.$term->id);
 
-                    return [$term->id => $grade?->grade ?? $grade?->conceptScale?->code];
-                })->all();
-                $numericGrades = collect($termGrades)->filter(fn ($grade) => is_numeric($grade));
-                $annualAverage = $mode === AssessmentMode::Numeric
-                    && $terms->isNotEmpty()
-                    && $numericGrades->count() === $terms->count()
-                        ? round($numericGrades->average(), 2)
-                        : null;
-
-                return [
-                    'name' => $assignment->subject->name,
-                    'grades' => $termGrades,
-                    'annual_average' => $annualAverage,
-                ];
-            })
-            ->sortBy('name')
-            ->values();
-
-        $attendance = Attendance::query()
-            ->where('enrollment_id', $enrollment->id)
-            ->when($academicYear?->start_at, fn ($query, $date) => $query->whereDate('date', '>=', $date))
-            ->when($academicYear?->end_at, fn ($query, $date) => $query->whereDate('date', '<=', $date))
-            ->get();
-        $total = $attendance->count();
-        $absences = $attendance->where('present', false);
+                return [$term->id => $grade?->grade ?? $grade?->conceptScale?->code];
+            })->all(),
+            'annual_average' => $subject->average,
+            'final' => $subject->finalLabel(),
+            'status' => $subject->status,
+            'status_label' => $subject->statusLabel(),
+            'workload' => $subject->workload,
+        ]);
 
         return [
             'enrollment' => $enrollment,
             'student' => $enrollment->student,
             'classroom' => $enrollment->classroom,
-            'academicYear' => $academicYear,
-            'assessmentMode' => $mode,
-            'terms' => $terms,
+            'academicYear' => $enrollment->academicYear,
+            'assessmentMode' => $annual->mode ?? AssessmentMode::Numeric,
+            'terms' => $annual->terms,
             'subjects' => $subjects,
             'attendance' => [
-                'total' => $total,
-                'absences' => $absences->count(),
-                'justified' => $absences->where('justified', true)->count(),
-                'percentage' => $total ? round(($attendance->where('present', true)->count() / $total) * 100, 1) : null,
+                'total' => $annual->attendance['total'],
+                'absences' => $annual->attendance['absences'],
+                'justified' => $annual->attendance['justified'],
+                'percentage' => $annual->attendance['percentage'],
             ],
+            'annual' => $annual,
+            'company' => $company,
         ];
     }
 }

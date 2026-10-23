@@ -173,6 +173,17 @@ class IssuedDocument extends Model
         ])))->render($this->verificationUrl());
     }
 
+    /** QR code em PNG para os PDFs gerados com dompdf. */
+    public function qrCodePngDataUri(): string
+    {
+        return (new QRCode(new QROptions([
+            'outputType' => QROutputInterface::GDIMAGE_PNG,
+            'outputBase64' => true,
+            'addQuietzone' => false,
+            'scale' => 6,
+        ])))->render($this->verificationUrl());
+    }
+
     public function logoDataUri(): ?string
     {
         return $this->fileDataUri($this->data['company']['logo'] ?? null);

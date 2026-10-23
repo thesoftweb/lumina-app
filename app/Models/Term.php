@@ -13,6 +13,12 @@ class Term extends Model
         'end_date',
         'year',
         'order',
+        'closed_at',
+        'closed_by',
+    ];
+
+    protected $casts = [
+        'closed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -22,6 +28,17 @@ class Term extends Model
                 throw ValidationException::withMessages(['term' => $reason]);
             }
         });
+    }
+
+    /** Bimestre fechado pela secretaria: o professor não altera mais as notas; só a secretaria corrige. */
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
+    }
+
+    public function closedBy()
+    {
+        return $this->belongsTo(User::class, 'closed_by');
     }
 
     public function grades()

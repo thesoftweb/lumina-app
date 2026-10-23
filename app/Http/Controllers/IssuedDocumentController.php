@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\IssuedDocumentType;
 use App\Models\IssuedDocument;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -25,6 +26,18 @@ class IssuedDocumentController extends Controller
                 'autoPrint' => $request->boolean('print'),
             ])
             ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /** Documento emitido em PDF (dompdf): abre no navegador ou, com ?download=1, baixa o arquivo. */
+    public function pdf(Request $request, IssuedDocument $issuedDocument)
+    {
+        Gate::authorize('view', $issuedDocument);
+        abort_if($issuedDocument->type === IssuedDocumentType::PickupCard, 404);
+
+        $pdf = Pdf::loadView('pdf.issued-document', ['document' => $issuedDocument])->setPaper('a4');
+        $filename = str($issuedDocument->type->getLabel().' '.$issuedDocument->subject.' '.$issuedDocument->number)->slug().'.pdf';
+
+        return $request->boolean('download') ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
     /** Várias carteirinhas numa folha A4 (até 4 por folha): ?ids[]=1&ids[]=2 */

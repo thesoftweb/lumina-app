@@ -2,17 +2,24 @@
 
 namespace App\Filament\Pages;
 
-use App\Enums\NavGroup;
 use App\Enums\AssessmentMode;
+use App\Enums\NavGroup;
+use App\Enums\TranscriptResult;
+use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Enrollment;
+use App\Services\Academic\AnnualResultCalculator;
+use App\Services\Academic\YearClosing;
 use App\Services\ReportCardService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -21,6 +28,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 class ReportCards extends Page implements HasTable
@@ -87,6 +95,12 @@ class ReportCards extends Page implements HasTable
                     ->badge()
                     ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray')
                     ->alignCenter(),
+                TextColumn::make('annual_result')
+                    ->label('Situação')
+                    ->state(fn (Enrollment $record): TranscriptResult => $record->transcriptYear?->result
+                        ?? app(AnnualResultCalculator::class)->forEnrollment($record)->result)
+                    ->badge()
+                    ->description(fn (Enrollment $record): ?string => $record->transcriptYear ? 'Ano fechado' : null),
             ])
             ->filters([
                 SelectFilter::make('classroom_id')
@@ -143,9 +157,17 @@ class ReportCards extends Page implements HasTable
                                             ->badge()
                                             ->color('primary'),
                                         TextEntry::make('annual_average')
-                                            ->label('Média anual')
+                                            ->label($this->conceptLabel())
                                             ->badge()
-                                            ->color(fn (string $state): string => $state === 'Não se aplica' ? 'gray' : 'success'),
+                                            ->color('gray'),
+                                        TextEntry::make('status')
+                                            ->label('Situação')
+                                            ->badge()
+                                            ->color(fn (string $state): string => match ($state) {
+                                                'Aprovado' => 'success',
+                                                'Reprovado' => 'danger',
+                                                default => 'gray',
+                                            }),
                                     ])
                                     ->columns(2),
                             ]),
@@ -166,16 +188,28 @@ class ReportCards extends Page implements HasTable
                                     ->badge()
                                     ->color('success'),
                             ]),
+                        Section::make('Situação no ano')
+                            ->icon(Heroicon::OutlinedCheckBadge)
+                            ->columns(2)
+                            ->schema([
+                                TextEntry::make('result')
+                                    ->label('Resultado')
+                                    ->badge()
+                                    ->color(fn (string $state): string => TranscriptResult::tryFromLabel($state)?->getColor() ?? 'gray'),
+                                TextEntry::make('rules')
+                                    ->label('Critério'),
+                            ]),
                     ])
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Fechar'),
                 Action::make('view')
-                    ->label('Abrir')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->label('Visualizar PDF')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->color('gray')
                     ->url(fn (Enrollment $record): string => route('report-cards.show', $record))
                     ->openUrlInNewTab(),
                 Action::make('pdf')
-                    ->label('Gerar PDF')
+                    ->label('Baixar PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->color('success')
                     ->url(fn (Enrollment $record): string => route('report-cards.pdf', $record))
@@ -191,6 +225,86 @@ class ReportCards extends Page implements HasTable
             ->striped();
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('closeYear')
+                ->label('Fechar ano letivo')
+                ->icon(Heroicon::OutlinedLockClosed)
+                ->visible(fn (): bool => (bool) Auth::user()?->hasAnyRole(['secretary', 'admin']))
+                ->modalHeading('Fechar ano letivo da turma')
+                ->modalDescription('Grava o resultado de cada aluno no histórico escolar: médias ou conceitos finais, carga horária, frequência e resultado. Fechar de novo atualiza os dados; resultados ajustados manualmente são mantidos.')
+                ->modalSubmitActionLabel('Fechar ano')
+                ->schema([
+                    Select::make('classroom_id')
+                        ->label('Turma')
+                        ->options(fn (): array => Classroom::query()->pluck('name', 'id')->all())
+                        ->required()
+                        ->live()
+                        ->native(false),
+                    Select::make('academic_year_id')
+                        ->label('Ano letivo')
+                        ->options(fn (): array => AcademicYear::query()->orderByDesc('year')->pluck('description', 'id')->all())
+                        ->default(fn (): ?int => AcademicYear::query()->where('year', now()->year)->value('id'))
+                        ->required()
+                        ->live()
+                        ->native(false),
+                    TextEntry::make('preview')
+                        ->label('Prévia')
+                        ->state(fn (Get $get): ?string => $this->closingPreview($get('classroom_id'), $get('academic_year_id')))
+                        ->visible(fn (Get $get): bool => filled($get('classroom_id')) && filled($get('academic_year_id'))),
+                ])
+                ->action(function (array $data, Action $action): void {
+                    try {
+                        $years = app(YearClosing::class)->closeClassroom(
+                            Classroom::query()->findOrFail($data['classroom_id']),
+                            AcademicYear::query()->findOrFail($data['academic_year_id']),
+                            Auth::user(),
+                        );
+                    } catch (ValidationException $exception) {
+                        Notification::make()->danger()->title('Ano não fechado')->body(collect($exception->errors())->flatten()->implode(' '))->persistent()->send();
+                        $action->halt();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title('Ano letivo fechado')
+                        ->body($years->count().' aluno(s): '.$years->countBy(fn ($year): string => $year->result->getLabel())
+                            ->map(fn (int $count, string $label): string => "{$count} {$label}")->implode(', ').'.')
+                        ->send();
+                }),
+        ];
+    }
+
+    private function closingPreview(mixed $classroomId, mixed $academicYearId): ?string
+    {
+        $classroom = Classroom::query()->find($classroomId);
+        $academicYear = AcademicYear::query()->find($academicYearId);
+
+        if (! $classroom || ! $academicYear) {
+            return null;
+        }
+
+        $preview = app(YearClosing::class)->preview($classroom, $academicYear, Auth::user());
+
+        if ($preview['total'] === 0) {
+            return 'Nenhuma matrícula ativa nesta turma e ano letivo.';
+        }
+
+        $summary = $preview['total'].' aluno(s): '.collect($preview['results'])->map(fn (int $count, string $label): string => "{$count} {$label}")->implode(', ').'.';
+
+        return $preview['pending']->isEmpty()
+            ? $summary
+            : $summary.' Faltam notas de '.$preview['pending']->count().' aluno(s), por exemplo '.$preview['pending']->first()['student'].' ('.$preview['pending']->first()['subjects'].'). Lance as notas antes de fechar.';
+    }
+
+    private function conceptLabel(): string
+    {
+        return 'Média ou conceito final';
+    }
+
     /** @return array<string, mixed> */
     private function reportCardState(Enrollment $enrollment): array
     {
@@ -198,6 +312,8 @@ class ReportCards extends Page implements HasTable
         $isNumeric = $report['assessmentMode'] === AssessmentMode::Numeric;
 
         return [
+            'result' => $report['annual']->result->getLabel(),
+            'rules' => $report['annual']->rulesLabel(),
             'student_name' => $report['student']->name,
             'classroom_name' => $report['classroom']->name,
             'academic_year' => $report['academicYear']?->description,
@@ -205,9 +321,8 @@ class ReportCards extends Page implements HasTable
             'subjects' => $report['subjects']->map(fn (array $subject): array => [
                 'name' => $subject['name'],
                 'results' => $report['terms']->map(fn ($term): string => $term->name.': '.($subject['grades'][$term->id] ?? '—'))->all(),
-                'annual_average' => $isNumeric
-                    ? ($subject['annual_average'] !== null ? number_format($subject['annual_average'], 2, ',', '.') : 'Pendente')
-                    : 'Não se aplica',
+                'annual_average' => $subject['final'] === '—' ? 'Pendente' : $subject['final'],
+                'status' => $subject['status_label'],
             ])->all(),
             'absences' => $report['attendance']['absences'],
             'justified_absences' => $report['attendance']['justified'],
@@ -220,7 +335,7 @@ class ReportCards extends Page implements HasTable
     private function enrollmentsQuery(): Builder
     {
         return Enrollment::query()
-            ->with(['student', 'classroom.level', 'academicYear'])
+            ->with(['student', 'classroom.level', 'classroom.classroomSubjects.subject', 'academicYear', 'transcriptYear'])
             ->where('status', 'active')
             ->when(Auth::user()->hasRole('teacher'), function (Builder $query): void {
                 $teacherId = Auth::user()->teacher?->id ?? 0;

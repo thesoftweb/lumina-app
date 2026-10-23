@@ -83,7 +83,7 @@ class Gradebook extends Page implements HasTable
                                 ->label('Bimestre')
                                 ->options(fn (): array => $this->availableTerms()->get()
                                     ->mapWithKeys(fn (Term $term): array => [
-                                        $term->id => $term->name.($term->year ? " ({$term->year})" : ''),
+                                        $term->id => $term->name.($term->year ? " ({$term->year})" : '').($term->isClosed() ? ' · fechado' : ''),
                                     ])->all())
                                 ->searchable()->preload()->native(false)->required()->live()
                                 ->afterStateUpdated(fn () => $this->resetTable()),
@@ -99,6 +99,8 @@ class Gradebook extends Page implements HasTable
         $termId = $this->selectedTermId();
         $assignment = $assignmentId ? TeacherPanel::ensureClassroomSubject(Auth::user(), $assignmentId) : null;
         $mode = $assignment?->classroom?->assessment_mode ?? AssessmentMode::Numeric;
+        // Bimestre fechado pela secretaria: as notas ficam só para consulta
+        $closed = (bool) ($termId ? Term::find($termId)?->isClosed() : false);
 
         return $table
             ->query(
@@ -119,9 +121,12 @@ class Gradebook extends Page implements HasTable
                     )
             )
             ->heading($assignment ? $assignment->classroom->name.' — '.$assignment->subject->name : 'Avaliações dos alunos')
-            ->description($assignment
-                ? ($mode === AssessmentMode::Numeric ? 'Modo numérico: N1, N2 e recuperação.' : 'Modo conceitual: conceito bimestral e observação.')
-                : 'Selecione a turma/disciplina e o bimestre.')
+            ->description(match (true) {
+                ! $assignment => 'Selecione a turma/disciplina e o bimestre.',
+                $closed => 'Bimestre fechado pela secretaria: as notas não podem mais ser alteradas. Para corrigir, procure a secretaria.',
+                $mode === AssessmentMode::Numeric => 'Modo numérico: N1, N2 e recuperação.',
+                default => 'Modo conceitual: conceito bimestral e observação.',
+            })
             ->columns([
                 TextColumn::make('student.name')
                     ->label('Aluno')->icon(Heroicon::OutlinedUser)->searchable()->sortable()->weight('medium'),
@@ -131,6 +136,7 @@ class Gradebook extends Page implements HasTable
                     ->getStateUsing(fn (Enrollment $record): mixed => $this->currentGrade($record)?->grade_1)
                     ->updateStateUsing(fn (Enrollment $record, mixed $state): mixed => $this->updateNumericGrade($record, 'grade_1', $state))
                     ->extraInputAttributes(['class' => 'text-center', 'min' => 0, 'max' => 10])
+                    ->disabled($closed)
                     ->visible($mode === AssessmentMode::Numeric),
                 TextInputColumn::make('grade_2')
                     ->label('N2')->type('number')->inputMode('decimal')->step(0.01)->placeholder('0,00')
@@ -138,6 +144,7 @@ class Gradebook extends Page implements HasTable
                     ->getStateUsing(fn (Enrollment $record): mixed => $this->currentGrade($record)?->grade_2)
                     ->updateStateUsing(fn (Enrollment $record, mixed $state): mixed => $this->updateNumericGrade($record, 'grade_2', $state))
                     ->extraInputAttributes(['class' => 'text-center', 'min' => 0, 'max' => 10])
+                    ->disabled($closed)
                     ->visible($mode === AssessmentMode::Numeric),
                 TextInputColumn::make('recovery_grade')
                     ->label('Recuperação')->type('number')->inputMode('decimal')->step(0.01)->placeholder('—')
@@ -145,6 +152,7 @@ class Gradebook extends Page implements HasTable
                     ->getStateUsing(fn (Enrollment $record): mixed => $this->currentGrade($record)?->recovery_grade)
                     ->updateStateUsing(fn (Enrollment $record, mixed $state): mixed => $this->updateNumericGrade($record, 'recovery_grade', $state))
                     ->extraInputAttributes(['class' => 'text-center', 'min' => 0, 'max' => 10])
+                    ->disabled($closed)
                     ->visible($mode === AssessmentMode::Numeric),
                 TextColumn::make('calculated_grade')
                     ->label('Média')->state(fn (Enrollment $record): mixed => $this->currentGrade($record)?->grade)
@@ -156,12 +164,14 @@ class Gradebook extends Page implements HasTable
                     ->placeholder('Selecione')
                     ->getStateUsing(fn (Enrollment $record): mixed => $this->currentGrade($record)?->concept_scale_id)
                     ->updateStateUsing(fn (Enrollment $record, mixed $state): mixed => $this->updateConcept($record, $state))
+                    ->disabled($closed)
                     ->visible($mode === AssessmentMode::Concept),
                 TextInputColumn::make('comments')
                     ->label('Observações')->placeholder('Opcional...')->rules(['nullable', 'string', 'max:2000'])
                     ->getStateUsing(fn (Enrollment $record): mixed => $this->currentGrade($record)?->comments)
                     ->updateStateUsing(fn (Enrollment $record, mixed $state): mixed => $this->updateComments($record, $state))
-                    ->extraInputAttributes(['maxlength' => 2000]),
+                    ->extraInputAttributes(['maxlength' => 2000])
+                    ->disabled($closed),
                 TextColumn::make('status')
                     ->label('Status')->state(fn (Enrollment $record): string => $this->isComplete($record, $mode) ? 'Completo' : 'Pendente')
                     ->badge()->color(fn (string $state): string => $state === 'Completo' ? 'success' : 'gray')
@@ -245,6 +255,7 @@ class Gradebook extends Page implements HasTable
         abort_unless($enrollment->classroom_id === $assignment->classroom_id && $enrollment->status->value === 'active', 403);
         // Impede lançar nota de um bimestre de outro ano letivo (ex.: 2026 em matrícula de 2027).
         abort_unless($enrollment->acceptsTerm($term), 422, 'O bimestre não pertence ao ano letivo desta matrícula.');
+        abort_if($term->isClosed(), 403, 'Bimestre fechado pela secretaria.');
 
         return [$assignmentId, $termId, $assignment->classroom->assessment_mode ?? AssessmentMode::Numeric];
     }

@@ -91,7 +91,7 @@ class TeacherPanelTest extends TestCase
             ->assertCanSeeTableRecords([$enrollment])
             ->assertSee($enrollment->student->name)
             ->assertSee('Prévia')
-            ->assertSee('Gerar PDF');
+            ->assertSee('Baixar PDF');
 
         $this->assertTrue($component->instance()->getTable()->getAction('preview')->isModalSlideOver());
     }
