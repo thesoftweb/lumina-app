@@ -254,6 +254,23 @@ class InvoiceService
     }
 
     /**
+     * Desconto da taxa de matrícula: não há regra de desconto para ela, então o valor informado é o
+     * valor cobrado. (O método era chamado sem existir, o que quebrava "Gerar Fatura de Matrícula".)
+     *
+     * @return array{final_amount: float, original_amount: float, discount_value: float, discount_type: null, discount_source: null}
+     */
+    private function calculateDiscount(Enrollment $enrollment, float $amount): array
+    {
+        return [
+            'final_amount' => $amount,
+            'original_amount' => $amount,
+            'discount_value' => 0,
+            'discount_type' => null,
+            'discount_source' => null,
+        ];
+    }
+
+    /**
      * Calcula desconto para mensalidades (tuition)
      * Regra: Se não houver desconto customizado, usa o desconto do plano
      * Se houver desconto customizado, usa o desconto da enrollment

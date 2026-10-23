@@ -66,7 +66,8 @@ class AsaasService
                 ->post("{$this->baseUrl}/customers", $payload);
 
             if ($response->failed()) {
-                $error = $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
+                // O Asaas manda o motivo em errors[].description
+                $error = $response->json('errors.0.description') ?? $response->json('errors.0.detail') ?? $response->json('message') ?? 'Unknown error';
                 Log::error("Asaas API error creating customer {$customer->id}: {$error}", $response->json() ?? []);
 
                 $customer->update([
@@ -605,12 +606,13 @@ class AsaasService
     }
 
     /**
-     * Construir payload de cobrança para Asaas
+     * Construir payload de cobrança para Asaas (público: as operações do sistema, em
+     * App\Services\Asaas\ChargeOperations, criam a cobrança com o mesmo payload)
      *
      * @param Invoice $invoice
      * @return array
      */
-    private function buildChargePayload(Invoice $invoice): array
+    public function buildChargePayload(Invoice $invoice): array
     {
         // Usar o valor original se existir desconto, caso contrário usar o valor atual
         $chargeValue = $invoice->original_amount ?? $invoice->balance ?? $invoice->amount;

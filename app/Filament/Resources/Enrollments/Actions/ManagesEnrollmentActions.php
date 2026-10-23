@@ -6,6 +6,8 @@ use App\Documents\AttendanceDeclaration;
 use App\Documents\EnrollmentDeclaration;
 use App\Enums\EnrollmentStatus;
 use App\Filament\Actions\IssueDocumentAction;
+use App\Services\Asaas\ChargeOperationException;
+use App\Services\Asaas\ChargeOperations;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -101,25 +103,30 @@ trait ManagesEnrollmentActions
             ->modalDescription('Tem certeza que deseja gerar a fatura de matrícula para este aluno?')
             ->modalSubmitActionLabel('Gerar')
             ->visible(fn () => $this->record->status !== EnrollmentStatus::Canceled)
-            ->action(function (InvoiceService $invoiceService, array $data) {
+            ->action(function (InvoiceService $invoiceService, ChargeOperations $operations, array $data) {
                 try {
-                    $invoice = $invoiceService->createEnrollmentInvoiceFromEnrollment(
+                    // A fatura nasce com a cobrança no Asaas; se o Asaas recusar, nada é criado
+                    $invoice = $operations->createInvoice(fn () => $invoiceService->createEnrollmentInvoiceFromEnrollment(
                         enrollment: $this->record,
                         amount: (float) $data['enrollment_amount'],
                         companyId: 1,
                         notes: 'Taxa de matrícula pelo sistema'
-                    );
+                    ));
 
                     Notification::make()
                         ->success()
                         ->title('Sucesso!')
-                        ->body("Fatura #{$invoice->number} gerada com sucesso")
+                        ->body("Fatura #{$invoice->number} gerada com sucesso, com a cobrança no Asaas")
                         ->send();
                 } catch (\Exception $e) {
+                    // A transação desfez a marcação da taxa de matrícula; o modelo em memória também
+                    $this->record->refresh();
+
                     Notification::make()
                         ->danger()
-                        ->title('Erro!')
-                        ->body("Erro ao gerar fatura: {$e->getMessage()}")
+                        ->title('A fatura não foi gerada')
+                        ->body($e->getMessage())
+                        ->persistent()
                         ->send();
                 }
             });
@@ -161,7 +168,7 @@ trait ManagesEnrollmentActions
                     ->default(1),
             ])
             ->visible(fn () => $this->record->status !== EnrollmentStatus::Canceled)
-            ->action(function (InvoiceService $invoiceService, array $data) {
+            ->action(function (InvoiceService $invoiceService, ChargeOperations $operations, array $data) {
                 try {
                     $quantity = (int) $data['quantity'];
                     $startMonth = (int) $data['start_month'];
@@ -183,30 +190,51 @@ trait ManagesEnrollmentActions
 
                     $planValue = (float) $plan->base_amount;
                     $createdCount = 0;
+                    $failures = [];
 
-                    // Create invoices for each month
+                    // Cada mês é criado com a sua cobrança no Asaas, ou não é criado (sem meio-termo)
                     for ($i = 0; $i < $quantity; $i++) {
                         $currentMonth = ($startMonth + $i - 1) % 12 + 1;
                         $currentYear = now()->year + (int) (($startMonth + $i - 1) / 12);
 
-                        $billingStart = Carbon::createFromDate($currentYear, $currentMonth, 1);
+                        $billingStart = Carbon::createFromDate($currentYear, $currentMonth, 1)->startOfDay();
                         $billingEnd = $billingStart->copy()->endOfMonth();
 
-                        $invoiceService->createTuitionInvoiceFromEnrollment(
-                            enrollment: $this->record,
-                            amount: $planValue,
-                            billingPeriodStart: $billingStart,
-                            billingPeriodEnd: $billingEnd,
-                            companyId: $companyId
-                        );
+                        try {
+                            $operations->createInvoice(fn () => $invoiceService->createTuitionInvoiceFromEnrollment(
+                                enrollment: $this->record,
+                                amount: $planValue,
+                                billingPeriodStart: $billingStart,
+                                billingPeriodEnd: $billingEnd,
+                                companyId: $companyId
+                            ));
 
-                        $createdCount++;
+                            $createdCount++;
+                        } catch (ChargeOperationException $e) {
+                            $failures[] = $billingStart->locale('pt_BR')->translatedFormat('F/Y').': '.$e->getMessage();
+                        }
+                    }
+
+                    $this->record->refresh();
+
+                    if ($failures === []) {
+                        Notification::make()
+                            ->success()
+                            ->title('Sucesso!')
+                            ->body("{$createdCount} fatura(s) de mensalidade gerada(s) com sucesso, com as cobranças no Asaas")
+                            ->send();
+
+                        return;
                     }
 
                     Notification::make()
-                        ->success()
-                        ->title('Sucesso!')
-                        ->body("{$createdCount} fatura(s) de mensalidade gerada(s) com sucesso")
+                        ->color($createdCount > 0 ? 'warning' : 'danger')
+                        ->icon('heroicon-o-exclamation-triangle')
+                        ->title($createdCount > 0
+                            ? "{$createdCount} mensalidade(s) gerada(s); ".count($failures).' não'
+                            : 'Nenhuma mensalidade foi gerada')
+                        ->body(collect(['Não geradas (nem no sistema, nem no Asaas):', ...$failures])->implode("\n"))
+                        ->persistent()
                         ->send();
                 } catch (\Exception $e) {
                     Notification::make()

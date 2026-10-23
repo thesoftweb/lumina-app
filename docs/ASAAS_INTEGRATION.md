@@ -23,6 +23,8 @@ Este documento descreve a implementação completa da integração com o gateway
 - **[app/Services/Asaas/PaymentSynchronizer.php](app/Services/Asaas/PaymentSynchronizer.php)** - Traduz o status de uma cobrança do Asaas para a fatura (ver "Conciliar com o Asaas")
 - **[app/Services/Asaas/ChargeImporter.php](app/Services/Asaas/ChargeImporter.php)** - Importa como fatura "Outro" a cobrança criada no painel do Asaas para um responsável cadastrado
 - **[app/Services/Asaas/WebhookProcessor.php](app/Services/Asaas/WebhookProcessor.php)** - Processa as notificações do webhook (ver "Webhook")
+- **[app/Services/Asaas/ChargeOperations.php](app/Services/Asaas/ChargeOperations.php)** - Operações de fatura feitas no sistema e refletidas no Asaas (ver "Operações pelo sistema")
+- **[app/Services/Asaas/AsaasApi.php](app/Services/Asaas/AsaasApi.php)** - Chamadas HTTP dessas operações; toda recusa vira `ChargeOperationException` com o `errors[].description` do Asaas
 
 ### Migrations
 - **[database/migrations/2026_01_27_225134_add_asaas_fields_to_invoices.php](database/migrations/2026_01_27_225134_add_asaas_fields_to_invoices.php)** - Adiciona colunas:
@@ -248,6 +250,45 @@ participante como pago (RECEIVED/CONFIRMED, uma vez só) ou cancelado (DELETED, 
 faturas de evento cobradas pelo id da fatura passam pelo sincronizador e o participante acompanha a
 fatura (paga → pago, cancelada → cancelado).
 
+### Operações pelo sistema
+
+A operação das faturas é feita **no sistema** e refletida no Asaas por
+[`ChargeOperations`](app/Services/Asaas/ChargeOperations.php). Regra: **Asaas primeiro**. Cada
+operação trava a fatura (`lockForUpdate`), confere as regras, chama o Asaas, valida a resposta e só
+então grava no sistema, na mesma transação. Se o Asaas recusar ou não responder, **nada muda** e o
+usuário vê o motivo (o `errors[].description` do Asaas) numa notificação.
+
+A trava fica de pé durante a chamada ao Asaas de propósito: o webhook que chega logo em seguida passa
+pelo `PaymentSynchronizer`, que trava a mesma fatura, espera a operação terminar e encontra a fatura já
+atualizada.
+
+| Operação | No Asaas | No sistema |
+|----------|----------|------------|
+| Criar fatura (página "Nova fatura", aba Faturas do responsável, "Gerar Fatura de Matrícula", "Gerar Mensalidades") | Cadastra o responsável, se preciso, e `POST /payments` | A fatura só é gravada se a cobrança for criada. Se a gravação falhar depois, a cobrança criada é excluída. Nas mensalidades em lote, cada mês é criado com a cobrança ou não é criado, e a notificação lista os meses recusados e o motivo |
+| Gerar cobrança (fatura antiga sem cobrança) | `POST /payments` (só do saldo, se já houver pagamento) | Vincula `asaas_invoice_id`, link e QR Code |
+| Editar valor, vencimento ou observações | `GET` (para manter o `billingType`) + `PUT /payments/{id}` com `billingType`, `value`, `dueDate` e `description` (as observações, até 500 caracteres) | Só em fatura **aberta/vencida sem pagamentos**. Em fatura paga, parcial ou cancelada, valor e vencimento ficam só leitura e as observações mudam só no sistema. Classificação financeira, referência e tipo nunca chamam o Asaas. O responsável de fatura com cobrança não pode ser trocado |
+| Receber **total** | `POST /payments/{id}/receiveInCash` com `paymentDate`, `value` e `notifyCustomer` | Quita com a forma escolhida (dinheiro por padrão; PIX, transferência ou cartão) e **referência = id da cobrança**: o `PAYMENT_RECEIVED` que vem depois não registra outro pagamento |
+| Receber **parcial** | `PUT /payments/{id}` com `value` = saldo restante (e desconto zerado) | Registra o pagamento parcial **sem** a referência da cobrança; quando o responsável pagar o restante por PIX/boleto, a sincronização registra esse restante como outro pagamento e quita a fatura. Cada pagamento tem o seu recibo |
+| Desfazer recebimento (baixa da cobrança) | `POST /payments/{id}/undoReceivedInCash` | Aplica a cobrança devolvida pelo mesmo caminho do webhook `PAYMENT_RECEIVED_IN_CASH_UNDONE` (`PaymentSynchronizer` com `undoReceipt`): o pagamento é desfeito, o recibo cancelado e a fatura volta a aberta, vencida ou parcial. O webhook que chega depois não acha mais pagamento ligado e não desfaz nada |
+| Desfazer pagamento parcial | `PUT /payments/{id}` com o saldo devolvido | Apaga o pagamento (recibo cancelado). Enquanto a cobrança estiver baixada, só a baixa pode ser desfeita |
+| Cancelar | `DELETE /payments/{id}` | Só sem pagamentos (com pagamento, desfaça o recebimento antes). A fatura é cancelada com o motivo nas observações |
+| Restaurar | `POST /payments/{id}/restore` | A fatura cancelada volta a ser cobrada (aberta ou vencida). Não vale para fatura de matrícula cancelada |
+| Excluir (só admin) | Nenhuma chamada | Bloqueado para fatura com cobrança ativa (use Cancelar). Sem cobrança, ou com a cobrança já excluída, funciona como antes |
+
+Faturas antigas **sem cobrança** no Asaas são operadas só no sistema. "Gerar Cobrança Asaas" vincula
+uma cobrança a elas.
+
+**Onde ficam as ações** (uma fonte só, em `app/Filament/Resources/Invoices/Actions`):
+- Edição da fatura: "Receber pagamento" no cabeçalho. "Desfazer recebimento", "Cancelar fatura",
+  "Restaurar fatura" e "Excluir fatura" ficam em "Mais ações". Salvar o formulário passa pela operação
+  de editar.
+- Listagem: grupo "Operações" em cada linha. A exclusão em lote recusa faturas com cobrança.
+- Aba Faturas do responsável: "Receber pagamento", "Editar" (valor, vencimento e observações) e, em
+  "Mais ações", desfazer, cancelar, restaurar e excluir. "Alterar dia de vencimento" em lote passa por
+  cada fatura pela operação de editar e lista as recusadas. Saíram as ações que mudavam só o banco
+  (pagamento/cancelamento manual, status em lote, desvincular). "Vincular fatura" só oferece faturas
+  sem cobrança.
+
 ### Interface Filament
 
 **Arquivo:** [app/Filament/Resources/Invoices/Pages/ViewInvoice.php](app/Filament/Resources/Invoices/Pages/ViewInvoice.php)
@@ -313,7 +354,8 @@ Customer cadastrado → Artisan Command → AsaasService::createOrUpdateCustomer
 
 ### 2. Geração de Cobrança
 ```
-Invoice criada → Artisan Command / Action Filament → AsaasService::createCharge() → Armazena asaas_invoice_id + PIX + Boleto
+Fatura criada no sistema → ChargeOperations::createInvoice() → POST /payments → grava a fatura com asaas_invoice_id + link + QR Code (recusa = fatura não criada)
+Comando asaas:generate-charges → AsaasService::createCharge() (faturas antigas sem cobrança)
 ```
 
 ### 3. Sincronização de Pagamento

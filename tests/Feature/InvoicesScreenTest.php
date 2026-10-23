@@ -19,6 +19,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -241,6 +242,7 @@ class InvoicesScreenTest extends TestCase
 
     public function test_edit_page_groups_the_header_actions_and_shows_the_summary_column(): void
     {
+        Http::fake();
         $invoice = $this->invoice('000078', ['asaas_invoice_id' => 'pay_1', 'asaas_sync_status' => 'failed']);
         InvoicePayment::create(['invoice_id' => $invoice->id, 'payment_date' => '2026-10-10', 'amount' => 30, 'payment_method' => 'pix']);
 
@@ -253,11 +255,18 @@ class InvoicesScreenTest extends TestCase
             ->assertActionVisible('sync_asaas_payment')
             ->assertActionHidden('generate_asaas_charge')
             ->assertActionVisible('view')
-            ->fillForm(['amount' => 150])
+            ->assertActionVisible('receivePayment')
+            ->assertActionVisible('undoPayment')
+            // Fatura com pagamento: valor e vencimento ficam só leitura; observações são só locais
+            ->assertFormFieldDisabled('amount')
+            ->assertFormFieldDisabled('due_date')
+            ->fillForm(['notes' => 'Combinado com a mãe'])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame('150.00', $invoice->fresh()->amount);
+        Http::assertNothingSent();
+        $this->assertSame('Combinado com a mãe', $invoice->fresh()->notes);
+        $this->assertSame('100.00', $invoice->fresh()->amount);
     }
 
     public function test_old_view_url_still_works(): void

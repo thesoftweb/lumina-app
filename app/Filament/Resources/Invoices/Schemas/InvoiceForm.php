@@ -8,6 +8,7 @@ use App\Models\AccountPlan;
 use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Services\Asaas\ChargeOperations;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -43,7 +44,12 @@ class InvoiceForm
                                     ->required()
                                     ->options(fn (): array => Customer::query()->orderBy('name')->pluck('name', 'id')->all())
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    // O Asaas não troca o cliente de uma cobrança
+                                    ->disabled(fn (?Invoice $record): bool => filled($record?->asaas_invoice_id))
+                                    ->helperText(fn (?Invoice $record): ?string => filled($record?->asaas_invoice_id)
+                                        ? 'A cobrança no Asaas é deste responsável; para trocar, cancele e crie outra fatura.'
+                                        : null),
                                 Select::make('billing_type')
                                     ->label('Tipo de cobrança')
                                     ->required()
@@ -57,6 +63,9 @@ class InvoiceForm
 
                         Section::make('Valor e datas')
                             ->icon(Heroicon::OutlinedCalendarDays)
+                            ->description(fn (?Invoice $record): ?string => ChargeOperations::canEditCharge($record)
+                                ? null
+                                : 'Fatura paga, parcial ou cancelada: valor e vencimento não podem mais ser alterados.')
                             ->columns(3)
                             ->schema([
                                 TextInput::make('amount')
@@ -64,14 +73,17 @@ class InvoiceForm
                                     ->required()
                                     ->numeric()
                                     ->inputMode('decimal')
-                                    ->prefix('R$'),
+                                    ->minValue(0.01)
+                                    ->prefix('R$')
+                                    ->disabled(fn (?Invoice $record): bool => ! ChargeOperations::canEditCharge($record)),
                                 DatePicker::make('issue_date')
                                     ->label('Emissão')
                                     ->required()
                                     ->default(now()),
                                 DatePicker::make('due_date')
                                     ->label('Vencimento')
-                                    ->required(),
+                                    ->required()
+                                    ->disabled(fn (?Invoice $record): bool => ! ChargeOperations::canEditCharge($record)),
                             ]),
 
                         Section::make('Classificação financeira')
@@ -96,6 +108,7 @@ class InvoiceForm
                             ->schema([
                                 Textarea::make('notes')
                                     ->hiddenLabel()
+                                    ->helperText('Vai para o Asaas como descrição da cobrança enquanto a fatura está em aberto.')
                                     ->rows(3),
                             ]),
                     ]),

@@ -43,7 +43,8 @@ class PaymentService
         float $amount,
         string $paymentMethod = 'other',
         ?string $reference = null,
-        ?string $notes = null
+        ?string $notes = null,
+        ?CarbonInterface $paymentDate = null,
     ): InvoicePayment {
         if ($amount <= 0) {
             throw new \Exception('Valor de pagamento deve ser maior que zero');
@@ -60,7 +61,8 @@ class PaymentService
             amount: $amount,
             paymentMethod: $paymentMethod,
             reference: $reference,
-            notes: $notes ?? "Pagamento parcial"
+            notes: $notes ?? "Pagamento parcial",
+            paymentDate: $paymentDate,
         );
 
         $newBalance = $balancePending - $amount;

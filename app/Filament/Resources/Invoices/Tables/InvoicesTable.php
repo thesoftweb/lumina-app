@@ -3,11 +3,16 @@
 namespace App\Filament\Resources\Invoices\Tables;
 
 use App\Enums\AsaasChargeState;
+use App\Filament\Resources\Invoices\Actions\CancelInvoiceAction;
+use App\Filament\Resources\Invoices\Actions\DeleteInvoiceActions;
+use App\Filament\Resources\Invoices\Actions\ReceivePaymentAction;
+use App\Filament\Resources\Invoices\Actions\RestoreInvoiceAction;
+use App\Filament\Resources\Invoices\Actions\UndoPaymentAction;
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Invoice;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -136,10 +141,17 @@ class InvoicesTable
                             ->url(InvoiceResource::getUrl('edit', ['record' => $record])),
                     ]),
                 EditAction::make()->label('Editar')->color('gray'),
+                // Operações da fatura (as mesmas do cabeçalho da edição), refletidas no Asaas
+                ActionGroup::make([
+                    ReceivePaymentAction::make(),
+                    UndoPaymentAction::make(),
+                    CancelInvoiceAction::make(),
+                    RestoreInvoiceAction::make(),
+                ])->label('Operações')->icon(Heroicon::OutlinedEllipsisVertical),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteInvoiceActions::bulk(),
                 ]),
             ]);
     }
