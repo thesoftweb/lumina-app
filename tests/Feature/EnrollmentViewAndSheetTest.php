@@ -8,6 +8,7 @@ use App\Filament\Resources\Enrollments\Pages\ViewEnrollment;
 use App\Models\AcademicYear;
 use App\Models\City;
 use App\Models\Classroom;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Enrollment;
 use App\Models\Level;
@@ -17,6 +18,8 @@ use App\Models\Student;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -123,6 +126,28 @@ class EnrollmentViewAndSheetTest extends TestCase
             ->assertSee(['Responsável legal · CPF 096.234.214-94', 'Secretaria escolar'])
             ->assertSee('por Secretária Teste')
             ->assertSee('window.print()', false);
+    }
+
+    public function test_sheet_header_and_signature_use_the_company_identity(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('company-logos/logo.png', UploadedFile::fake()->image('logo.png', 10, 10)->getContent());
+        Company::create([
+            'name' => 'Escola Ceci', 'email' => 'escola@example.test', 'tax_id' => '11.222.333/0001-81',
+            'inep_code' => '25012345', 'address' => 'Av. Principal', 'address_number' => '100', 'neighborhood' => 'Centro',
+            'city_id' => City::where('code', 2513703)->value('id'), 'postal_code' => '58300-000',
+            'logo_path' => 'company-logos/logo.png', 'document_signer_name' => 'Joana Diretora', 'document_signer_role' => 'Diretora',
+        ]);
+        $this->actingAsRole('secretary');
+
+        $this->get(route('enrollments.sheet', ['enrollment' => $this->enrollment]))
+            ->assertOk()
+            ->assertSee('src="data:image/png;base64,', false)
+            ->assertSee('CNPJ 11.222.333/0001-81 · INEP 25012345')
+            ->assertSee('Av. Principal, 100 - Centro - Santa Rita/PB - CEP 58300-000')
+            ->assertSee('Local e data: Santa Rita/PB,')
+            ->assertSee(['Joana Diretora', 'Diretora · Escola Ceci'])
+            ->assertDontSee('Secretaria escolar');
     }
 
     public function test_global_search_finds_enrollments_by_student_name(): void

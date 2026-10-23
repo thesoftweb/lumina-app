@@ -2,6 +2,11 @@
 
 namespace App\Filament\Resources\Companies\Schemas;
 
+use App\Models\City;
+use App\Models\Company;
+use App\Models\State;
+use App\Rules\Cnpj;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -23,6 +28,96 @@ class CompanyForm
                     ->schema([
                         TextInput::make('name')->label('Nome da instituição')->required()->maxLength(255)->autocomplete('organization'),
                         TextInput::make('email')->label('E-mail institucional')->email()->required()->maxLength(255)->unique(ignoreRecord: true)->autocomplete('email'),
+                        TextInput::make('tax_id')
+                            ->label('CNPJ')
+                            ->mask('**.***.***/****-99')
+                            ->placeholder('00.000.000/0000-00')
+                            ->formatStateUsing(fn (?string $state): ?string => $state ? strtoupper($state) : $state)
+                            ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtoupper($state) : null)
+                            ->rule(new Cnpj)
+                            ->unique(ignoreRecord: true),
+                        TextInput::make('inep_code')
+                            ->label('Código INEP')
+                            ->mask('99999999')
+                            ->placeholder('00000000')
+                            ->regex('/^\d{8}$/')
+                            ->validationMessages(['regex' => 'O código INEP tem 8 dígitos.'])
+                            ->helperText('Código da escola no Censo Escolar. Aparece nas declarações.'),
+                        TextInput::make('phone')
+                            ->label('Telefone')
+                            ->mask('(99) 99999-9999')
+                            ->placeholder('(00) 00000-0000')
+                            ->maxLength(15)
+                            ->autocomplete('tel'),
+                        TextInput::make('website')->label('Site')->url()->maxLength(255)->placeholder('https://'),
+                    ]),
+                Section::make('Endereço')
+                    ->description('Sai no cabeçalho dos documentos; a cidade também é usada no local e data.')
+                    ->icon('heroicon-o-map-pin')
+                    ->columns(['default' => 1, 'md' => 3])
+                    ->schema([
+                        TextInput::make('postal_code')
+                            ->label('CEP')
+                            ->mask('99999-999')
+                            ->placeholder('00000-000')
+                            ->maxLength(9),
+                        Select::make('state')
+                            ->label('Estado')
+                            ->options(fn (): array => State::query()->orderBy('name')->pluck('name', 'code')->all())
+                            ->searchable()
+                            ->live()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(fn (Select $component, ?Company $record) => $component->state($record?->city?->state_id))
+                            ->afterStateUpdated(fn (callable $set) => $set('city_id', null)),
+                        Select::make('city_id')
+                            ->label('Cidade')
+                            ->options(function (callable $get): array {
+                                $stateCode = $get('state');
+
+                                if (blank($stateCode)) {
+                                    return [];
+                                }
+
+                                return City::query()->where('state_id', $stateCode)->orderBy('name')->pluck('name', 'id')->all();
+                            })
+                            ->searchable()
+                            ->disabled(fn (callable $get): bool => blank($get('state'))),
+                        TextInput::make('address')
+                            ->label('Rua / avenida')
+                            ->maxLength(255)
+                            ->columnSpan(['default' => 1, 'md' => 2]),
+                        TextInput::make('address_number')->label('Número')->maxLength(20),
+                        TextInput::make('neighborhood')->label('Bairro')->maxLength(255),
+                    ]),
+                Section::make('Documentos e identidade visual')
+                    ->description('Logo e responsável que assina recibos, declarações e a ficha de matrícula.')
+                    ->icon('heroicon-o-document-check')
+                    ->columns(['default' => 1, 'md' => 2])
+                    ->schema([
+                        FileUpload::make('logo_path')
+                            ->label('Logo')
+                            ->image()
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->maxSize(2048)
+                            ->disk(Company::LOGO_DISK)
+                            ->directory(Company::LOGO_DIRECTORY)
+                            ->visibility('public')
+                            ->automaticallyResizeImagesMode('contain')
+                            ->automaticallyResizeImagesToWidth('800')
+                            ->automaticallyResizeImagesToHeight('800')
+                            ->imagePreviewHeight('120')
+                            ->helperText('PNG, JPG ou WebP de até 2 MB. Prefira fundo transparente ou branco.')
+                            ->columnSpanFull(),
+                        TextInput::make('document_signer_name')
+                            ->label('Quem assina')
+                            ->placeholder('Ex.: Maria da Silva')
+                            ->maxLength(255)
+                            ->requiredWith('document_signer_role'),
+                        TextInput::make('document_signer_role')
+                            ->label('Cargo')
+                            ->placeholder('Ex.: Diretora, Secretária escolar')
+                            ->maxLength(255)
+                            ->requiredWith('document_signer_name'),
                     ]),
                 Section::make('Avaliação escolar')
                     ->description('Configure a média mínima e os conceitos disponíveis para turmas de avaliação conceitual.')

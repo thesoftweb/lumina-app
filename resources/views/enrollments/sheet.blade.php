@@ -7,10 +7,12 @@
     $birth = $student?->date_of_birth;
     $companyContacts = collect([
         $company?->tax_id ? "CNPJ {$company->tax_id}" : null,
+        $company?->inep_code ? "INEP {$company->inep_code}" : null,
         $company?->phone,
         $company?->email,
         $company?->website,
     ])->filter()->implode(' · ');
+    $logo = $company?->logoDataUri();
 @endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -106,6 +108,19 @@
             padding-bottom: 10px;
             margin-bottom: 14px;
             border-bottom: 2px solid var(--ink);
+        }
+
+        .school {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .school-logo {
+            flex-shrink: 0;
+            max-width: 64px;
+            max-height: 64px;
+            object-fit: contain;
         }
 
         .school-name {
@@ -325,14 +340,19 @@
 
     <main class="sheet">
         <header class="doc-header">
-            <div>
-                <div class="school-name">{{ $company?->name ?? 'Instituição de ensino' }}</div>
-                @if ($companyContacts)
-                    <div class="school-info">{{ $companyContacts }}</div>
+            <div class="school">
+                @if ($logo)
+                    <img class="school-logo" src="{{ $logo }}" alt="Logo {{ $company->name }}">
                 @endif
-                @if ($company?->address)
-                    <div class="school-info">{{ $company->address }}</div>
-                @endif
+                <div>
+                    <div class="school-name">{{ $company?->name ?? 'Instituição de ensino' }}</div>
+                    @if ($companyContacts)
+                        <div class="school-info">{{ $companyContacts }}</div>
+                    @endif
+                    @if ($company?->full_address)
+                        <div class="school-info">{{ $company->full_address }}</div>
+                    @endif
+                </div>
             </div>
             <div class="doc-title">
                 <h1>Ficha de matrícula</h1>
@@ -414,7 +434,7 @@
             nas datas de vencimento acordadas.
         </p>
 
-        <p class="place-date">Local e data: ____________________________________, ______ / ______ / __________</p>
+        <p class="place-date">Local e data: {{ $company?->city_and_state ?? '____________________________________' }}, ______ / ______ / __________</p>
 
         <div class="signatures">
             <div class="signature">
@@ -422,8 +442,13 @@
                 Responsável legal{{ $customer?->document ? " · CPF {$customer->document}" : '' }}
             </div>
             <div class="signature">
-                <strong>{{ $company?->name ?? 'Instituição de ensino' }}</strong>
-                Secretaria escolar
+                @if ($company?->document_signer_name)
+                    <strong>{{ $company->document_signer_name }}</strong>
+                    {{ $company->document_signer_role }} · {{ $company->name }}
+                @else
+                    <strong>{{ $company?->name ?? 'Instituição de ensino' }}</strong>
+                    Secretaria escolar
+                @endif
             </div>
         </div>
 
