@@ -18,7 +18,7 @@ Antes da primeira emissão, preencha em **Configurações › Empresa › Docume
 
 ## Identificação e validade
 
-- **Número:** série e ano, sem repetir nem pular: `DEC-2026-000001` (declarações), `REC-2026-000001` (recibos) e `CAR-2026-000001` (carteirinhas).
+- **Número:** série e ano, sem repetir nem pular: `DEC-2026-000001` (declarações), `REC-2026-000001` (recibos), `CAR-2026-000001` (carteirinhas) e `HIS-2026-000001` (históricos escolares). Exceto as carteirinhas, todo documento também sai em PDF (`/documentos-emitidos/{id}/pdf`, com `?download=1` para baixar).
 - **Código de verificação:** 16 caracteres sem letras ambíguas, impresso no rodapé com o QR code.
 - **Conteúdo congelado:** na emissão são gravados os dados da escola, quem assina, uma cópia da logo e os dados do documento. Mudanças posteriores nos cadastros não alteram o que foi emitido. Um hash do conteúdo detecta alteração direta no banco.
 - **Correção:** documento emitido não se edita nem se exclui. O admin cancela e um novo é emitido.

@@ -34,7 +34,20 @@ class ClassroomForm
                             ->options(collect(AssessmentMode::cases())->mapWithKeys(fn (AssessmentMode $mode): array => [$mode->value => $mode->label()]))
                             ->default(AssessmentMode::Numeric->value)
                             ->required()
-                            ->helperText('Não poderá ser alterado depois que houver resultados lançados.'),                        Select::make('level_id')
+                            ->helperText('Não poderá ser alterado depois que houver resultados lançados.'),
+                        TextInput::make('grade_label')
+                            ->prefixIcon('heroicon-o-bookmark')
+                            ->label('Série / ano escolar')
+                            ->placeholder('3º ano')
+                            ->helperText('Como a série aparece no boletim e no histórico escolar.')
+                            ->maxLength(60),
+                        TextInput::make('school_days')
+                            ->prefixIcon('heroicon-o-calendar-days')
+                            ->label('Dias letivos no ano')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(366)
+                            ->placeholder('200'),                        Select::make('level_id')
                             ->prefixIcon('heroicon-o-book-open')
                             ->options(function () {
                                 return \App\Models\Level::all()->pluck('name', 'id');

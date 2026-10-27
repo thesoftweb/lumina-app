@@ -49,6 +49,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
 Route::get('documentos-emitidos/{issuedDocument}', [IssuedDocumentController::class, 'show'])
     ->middleware('auth')
     ->name('issued-documents.print');
+Route::get('documentos-emitidos/{issuedDocument}/pdf', [IssuedDocumentController::class, 'pdf'])
+    ->middleware('auth')
+    ->name('issued-documents.pdf');
 Route::get('carteirinhas/imprimir', [IssuedDocumentController::class, 'cards'])
     ->middleware('auth')
     ->name('pickup-cards.print');
@@ -65,5 +68,5 @@ Route::prefix('enrollments')->name('enrollments.')->group(function () {
 
 Route::middleware('auth')->prefix('report-cards')->name('report-cards.')->group(function () {
     Route::get('{enrollment}', [ReportCardController::class, 'show'])->name('show');
-    Route::get('{enrollment}/pdf', [ReportCardController::class, 'pdf'])->name('pdf');
+    Route::get('{enrollment}/pdf', [ReportCardController::class, 'download'])->name('pdf');
 });

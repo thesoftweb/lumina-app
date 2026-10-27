@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Documents\PickupCard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class Student extends Model
 {
@@ -49,6 +50,12 @@ class Student extends Model
 
         // As autorizações saem do banco em cascata, sem eventos: as carteirinhas são canceladas antes
         static::deleting(function (Student $student): void {
+            if ($student->transcriptYears()->exists()) {
+                throw ValidationException::withMessages([
+                    'student' => 'Este aluno tem histórico escolar registrado e não pode ser excluído.',
+                ]);
+            }
+
             $student->pickupAuthorizations->each(fn (StudentPickupAuthorization $authorization) => PickupCard::cancelFor(
                 $authorization,
                 'Cadastro do aluno excluído em '.now()->format('d/m/Y').'.',
@@ -60,6 +67,12 @@ class Student extends Model
                 Storage::disk(self::PHOTO_DISK)->delete($student->photo_path);
             }
         });
+    }
+
+    /** Anos da vida escolar para o histórico (desta e de outras escolas). */
+    public function transcriptYears()
+    {
+        return $this->hasMany(TranscriptYear::class)->orderBy('year')->orderBy('id');
     }
 
     public function pickupAuthorizations()

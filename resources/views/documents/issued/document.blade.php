@@ -134,6 +134,18 @@
         line-height: 1.4;
     }
 
+    .issued-doc .signatures {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 0 10mm;
+    }
+
+    .issued-doc .signatures .signature {
+        width: 70mm;
+        margin: 22mm 0 0;
+    }
+
     .issued-doc .signature strong {
         display: block;
         color: var(--ink);
@@ -276,10 +288,22 @@
 
     <p class="place-date">{{ filled($company['city'] ?? null) ? $company['city'].', ' : '' }}{{ $issuedOn }}.</p>
 
-    <div class="signature">
-        <strong>{{ $signer['name'] ?? '' }}</strong>
-        <small>{{ $signer['role'] ?? '' }}</small>
-    </div>
+    @if (filled($content['second_signer'] ?? null))
+        {{-- Histórico escolar: direção e secretaria escolar assinam lado a lado --}}
+        <div class="signatures">
+            @foreach ([$signer, $content['second_signer']] as $person)
+                <div class="signature">
+                    <strong>{{ $person['name'] ?? '' }}</strong>
+                    <small>{{ $person['role'] ?? '' }}</small>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <div class="signature">
+            <strong>{{ $signer['name'] ?? '' }}</strong>
+            <small>{{ $signer['role'] ?? '' }}</small>
+        </div>
+    @endif
 
     <footer>
         <img src="{{ $document->qrCodeDataUri() }}" alt="QR code para verificar este documento">

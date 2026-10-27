@@ -10,6 +10,8 @@ class Classroom extends Model
 {
     protected $fillable = [
         'name',
+        'grade_label',
+        'school_days',
         'level_id',
         'assessment_mode',
     ];

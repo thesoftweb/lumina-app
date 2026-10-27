@@ -73,6 +73,13 @@ class IssuedDocumentsTable
                     ->color('gray')
                     ->url(fn (IssuedDocument $record): string => route('issued-documents.print', ['issuedDocument' => $record, 'print' => 1]))
                     ->openUrlInNewTab(),
+                Action::make('pdf')
+                    ->label('PDF')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->visible(fn (IssuedDocument $record): bool => $record->type !== IssuedDocumentType::PickupCard)
+                    ->url(fn (IssuedDocument $record): string => route('issued-documents.pdf', ['issuedDocument' => $record, 'download' => 1]))
+                    ->openUrlInNewTab(),
                 Action::make('verification')
                     ->label('Verificação')
                     ->icon('heroicon-o-shield-check')

@@ -6,11 +6,13 @@ use App\Enums\DegreeOfKinship;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Students\Pages\EditStudent;
 use App\Filament\Resources\Students\RelationManagers\PickupAuthorizationsRelationManager;
+use App\Filament\Resources\Students\RelationManagers\TranscriptYearsRelationManager;
 use App\Models\City;
 use App\Models\State;
 use App\Models\Student;
 use App\Models\StudentPickupAuthorization;
 use App\Models\StudentProfile;
+use App\Models\TranscriptYear;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -178,6 +180,19 @@ class StudentForm
                                     'pageClass' => EditStudent::class,
                                 ],
                             )->key('student-pickup-authorizations'),
+                        ]),
+                    Tab::make('Histórico escolar')
+                        ->icon('heroicon-o-document-text')
+                        ->visibleOn('edit')
+                        ->visible(fn (): bool => Gate::allows('viewAny', TranscriptYear::class))
+                        ->schema([
+                            LivewireComponent::make(
+                                TranscriptYearsRelationManager::class,
+                                fn (Student $record): array => [
+                                    'ownerRecord' => $record,
+                                    'pageClass' => EditStudent::class,
+                                ],
+                            )->key('student-transcript-years'),
                         ]),
                     Tab::make('Informações adicionais')
                         ->icon('heroicon-o-clipboard-document-list')

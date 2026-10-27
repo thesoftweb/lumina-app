@@ -17,6 +17,7 @@ class Company extends Model
         'minimum_passing_grade' => 'decimal:2',
         'late_fine_percent' => 'decimal:2',
         'late_interest_monthly_percent' => 'decimal:2',
+        'minimum_attendance_percent' => 'decimal:2',
     ];
 
     protected $guarded = [];

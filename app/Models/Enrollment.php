@@ -169,6 +169,12 @@ class Enrollment extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    /** Ano gravado no histórico escolar ao fechar o ano letivo. */
+    public function transcriptYear()
+    {
+        return $this->hasOne(TranscriptYear::class);
+    }
+
     public function plan()
     {
         return $this->belongsTo(Plan::class);

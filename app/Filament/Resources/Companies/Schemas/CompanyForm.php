@@ -130,6 +130,15 @@ class CompanyForm
                                             ->placeholder('Ex.: Diretora, Secretária escolar')
                                             ->maxLength(255)
                                             ->requiredWith('document_signer_name'),
+                                        TextInput::make('school_secretary_name')
+                                            ->label('Secretário(a) escolar')
+                                            ->placeholder('Ex.: João Pereira')
+                                            ->helperText('Assina o histórico escolar junto com quem assina os documentos.')
+                                            ->maxLength(255),
+                                        TextInput::make('school_secretary_registration')
+                                            ->label('Registro / autorização do secretário(a)')
+                                            ->placeholder('Ex.: Portaria nº 123/2020')
+                                            ->maxLength(255),
                                     ]),
                             ]),
                         Tab::make('Avaliação')
@@ -146,7 +155,17 @@ class CompanyForm
                                             ->maxValue(10)
                                             ->step(0.01)
                                             ->default(6)
-                                            ->helperText('Nota de referência para avaliação numérica, de 0 a 10.')
+                                            ->helperText('Média anual mínima para aprovação na disciplina, de 0 a 10.')
+                                            ->required(),
+                                        TextInput::make('minimum_attendance_percent')
+                                            ->label('Frequência mínima')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->step(0.01)
+                                            ->default(75)
+                                            ->suffix('%')
+                                            ->helperText('Abaixo dela o aluno é reprovado por frequência (LDB: 75%).')
                                             ->required(),
                                         Repeater::make('conceptScales')
                                             ->label('Escala de conceitos')

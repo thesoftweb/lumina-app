@@ -45,8 +45,8 @@ class RolesTest extends TestCase
         Event::class, Schedule::class,
     ];
 
-    /** Registros lançados pelo professor: a secretaria só consulta. */
-    private const PEDAGOGICAL_MODELS = [Attendance::class, ClassDiary::class, LessonPlan::class, Grade::class];
+    /** Registros lançados pelo professor: a secretaria só consulta (notas ela corrige, com motivo registrado). */
+    private const PEDAGOGICAL_MODELS = [Attendance::class, ClassDiary::class, LessonPlan::class];
 
     /** Usuários, empresa, preços e contas a pagar: só a direção. */
     private const ADMIN_ONLY_MODELS = [User::class, Company::class, Plan::class, Supplier::class, AccountPlan::class];
@@ -91,6 +91,11 @@ class RolesTest extends TestCase
         foreach (self::ADMIN_ONLY_MODELS as $model) {
             $this->assertFalse($user->can('viewAny', $model), "{$model}: viewAny");
         }
+
+        // Notas: o professor lança pelo diário; a secretaria lança o que faltou e corrige, mas não exclui
+        $this->assertTrue($user->can('create', Grade::class));
+        $this->assertTrue($user->can('update', new Grade));
+        $this->assertFalse($user->can('delete', new Grade));
 
         // Documento emitido: a secretaria emite e reimprime; não se edita nem se exclui, e só o admin cancela
         $this->assertTrue($user->can('viewAny', IssuedDocument::class));

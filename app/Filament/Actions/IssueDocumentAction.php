@@ -74,6 +74,10 @@ class IssueDocumentAction
                             ->label('Abrir para imprimir')
                             ->button()
                             ->url(route('issued-documents.print', ['issuedDocument' => $document, 'print' => 1]), shouldOpenInNewTab: true),
+                        Action::make('download')
+                            ->label('Baixar PDF')
+                            ->link()
+                            ->url(route('issued-documents.pdf', ['issuedDocument' => $document, 'download' => 1]), shouldOpenInNewTab: true),
                     ])
                     ->persistent()
                     ->send();

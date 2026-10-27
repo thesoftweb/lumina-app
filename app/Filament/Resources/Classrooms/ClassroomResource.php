@@ -8,6 +8,7 @@ use App\Filament\Resources\Classrooms\Pages\CreateClassroom;
 use App\Filament\Resources\Classrooms\Pages\EditClassroom;
 use App\Filament\Resources\Classrooms\Pages\ListClassrooms;
 use App\Filament\Resources\Classrooms\Pages\ViewClassroom;
+use App\Filament\Resources\Classrooms\RelationManagers\SubjectWorkloadsRelationManager;
 use App\Filament\Resources\Classrooms\Schemas\ClassroomForm;
 use App\Filament\Resources\Classrooms\Schemas\ClassroomInfolist;
 use App\Filament\Resources\Classrooms\Tables\ClassroomsTable;
@@ -57,7 +58,7 @@ class ClassroomResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            SubjectWorkloadsRelationManager::class,
         ];
     }
 
