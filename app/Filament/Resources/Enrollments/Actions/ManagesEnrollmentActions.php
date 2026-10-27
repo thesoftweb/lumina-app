@@ -6,6 +6,7 @@ use App\Documents\AttendanceDeclaration;
 use App\Documents\EnrollmentDeclaration;
 use App\Enums\EnrollmentStatus;
 use App\Filament\Actions\IssueDocumentAction;
+use App\Services\Admissions\EnrollmentFee;
 use App\Services\Asaas\ChargeOperationException;
 use App\Services\Asaas\ChargeOperations;
 use App\Services\InvoiceService;
@@ -86,12 +87,17 @@ trait ManagesEnrollmentActions
             ->label('Gerar Fatura de Matrícula')
             ->icon('heroicon-o-document-text')
             ->schema([
+                // Novato paga a taxa configurada na vaga; na rematrícula ela é só a sugestão
                 TextInput::make('enrollment_amount')
                     ->label('Valor da Matrícula')
                     ->numeric()
                     ->required()
                     ->prefix('R$')
-                    ->helperText('Informe o valor da taxa de matrícula'),
+                    ->default(fn (): ?float => app(EnrollmentFee::class)->configured($this->record))
+                    ->readOnly(fn (): bool => app(EnrollmentFee::class)->isFixed($this->record))
+                    ->helperText(fn (): string => app(EnrollmentFee::class)->isFixed($this->record)
+                        ? 'Taxa configurada na vaga do ano letivo. Aluno novato não tem desconto.'
+                        : 'Informe o valor da taxa de matrícula'),
                 Checkbox::make('generate_invoice')
                     ->label('Gerar fatura')
                     ->default(true),
@@ -108,7 +114,7 @@ trait ManagesEnrollmentActions
                     // A fatura nasce com a cobrança no Asaas; se o Asaas recusar, nada é criado
                     $invoice = $operations->createInvoice(fn () => $invoiceService->createEnrollmentInvoiceFromEnrollment(
                         enrollment: $this->record,
-                        amount: (float) $data['enrollment_amount'],
+                        amount: app(EnrollmentFee::class)->resolve($this->record, (float) $data['enrollment_amount']),
                         companyId: 1,
                         notes: 'Taxa de matrícula pelo sistema'
                     ));

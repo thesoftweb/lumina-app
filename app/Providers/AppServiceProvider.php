@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\AcademicYear;
 use App\Models\AccountPlan;
+use App\Models\AdmissionOffer;
+use App\Models\PreEnrollment;
 use App\Models\Schedule;
 use App\Models\Attendance;
 use App\Models\ClassDiary;
@@ -84,6 +86,8 @@ class AppServiceProvider extends ServiceProvider
 
         foreach ([
             AcademicYear::class,
+            AdmissionOffer::class,
+            PreEnrollment::class,
             Schedule::class,
             ClassroomSubject::class,
             Customer::class,

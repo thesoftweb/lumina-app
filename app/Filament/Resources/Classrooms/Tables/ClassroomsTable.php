@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Classrooms\Tables;
 
 use App\Enums\AssessmentMode;
+use App\Models\AcademicYear;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class ClassroomsTable
@@ -20,6 +22,11 @@ class ClassroomsTable
                     ->label('Titulo')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('academicYear.description')
+                    ->label('Ano letivo')
+                    ->placeholder('Sem ano')
+                    ->badge()
+                    ->color('gray'),
                 TextColumn::make('level.name')
                     ->label('Nivel')
                     ->searchable()
@@ -40,7 +47,9 @@ class ClassroomsTable
                     ->sortable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('academic_year_id')
+                    ->label('Ano letivo')
+                    ->options(fn (): array => AcademicYear::query()->orderByDesc('year')->pluck('description', 'id')->all()),
             ])
             ->recordActions([
                 ViewAction::make(),

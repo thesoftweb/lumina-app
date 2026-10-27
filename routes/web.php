@@ -9,12 +9,28 @@ use App\Http\Controllers\PortalAgendaController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PortalEventController;
 use App\Http\Controllers\PortalPixQrCodeController;
+use App\Http\Controllers\PreEnrollmentController;
+use App\Http\Controllers\ReenrollmentController;
 use App\Http\Controllers\ReportCardController;
 use App\Http\Middleware\VerifyAsaasWebhookToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Pré-matrícula pública: uma ficha por ano letivo (/pre-matricula/2027); o protocolo só volta pela sessão
+Route::prefix('pre-matricula')->name('pre-enrollment.')->group(function () {
+    Route::get('/', [PreEnrollmentController::class, 'index'])->name('index');
+    Route::get('{year}', [PreEnrollmentController::class, 'create'])->whereNumber('year')->name('create');
+    Route::post('{year}', [PreEnrollmentController::class, 'store'])->whereNumber('year')->middleware('throttle:10,1')->name('store');
+    Route::get('{year}/enviada', [PreEnrollmentController::class, 'done'])->whereNumber('year')->name('done');
+
+    // Rematrícula: link próprio de cada família, enviado pela secretaria
+    Route::get('{year}/rematricula/{token}', [ReenrollmentController::class, 'show'])
+        ->whereNumber('year')->where('token', '[A-Za-z0-9]{20,64}')->name('reenrollment');
+    Route::post('{year}/rematricula/{token}', [ReenrollmentController::class, 'confirm'])
+        ->whereNumber('year')->where('token', '[A-Za-z0-9]{20,64}')->middleware('throttle:10,1')->name('reenrollment.store');
 });
 
 // Webhook do Asaas (sem CSRF; autenticado pelo token do cabeçalho asaas-access-token)

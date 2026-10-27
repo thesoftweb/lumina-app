@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 class Classroom extends Model
 {
     protected $fillable = [
+        'academic_year_id',
         'name',
         'grade_label',
         'school_days',
@@ -46,6 +47,17 @@ class Classroom extends Model
                 ]);
             }
         });
+    }
+
+    /** Turmas sem ano letivo são as anteriores à separação por ano (legado) e valem como antes. */
+    public function scopeForAcademicYear($query, ?int $academicYearId)
+    {
+        return $query->where(fn ($query) => $query->whereNull('classrooms.academic_year_id')->orWhere('classrooms.academic_year_id', $academicYearId));
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 
     public function level()

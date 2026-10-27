@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Classrooms\Schemas;
 
 use App\Enums\AssessmentMode;
+use App\Models\AcademicYear;
 use App\Models\Plan;
 use App\Models\Subject;
 use Filament\Forms\Components\CheckboxList;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class ClassroomForm
@@ -29,6 +31,13 @@ class ClassroomForm
                             ->label('Titulo')
                             ->required()
                             ->maxLength(255),
+                        Select::make('academic_year_id')
+                            ->prefixIcon('heroicon-o-calendar')
+                            ->label('Ano letivo')
+                            ->options(fn (): array => AcademicYear::query()->orderByDesc('year')->pluck('description', 'id')->all())
+                            ->default(fn () => request()->query('academic_year_id'))
+                            ->live()
+                            ->helperText('Deixe em branco só para turmas antigas sem ano. Turmas de um ano novo (ex.: 2027) são cadastros novos, não edições das turmas atuais.'),
                         Select::make('assessment_mode')
                             ->label('Modo de avaliação')
                             ->options(collect(AssessmentMode::cases())->mapWithKeys(fn (AssessmentMode $mode): array => [$mode->value => $mode->label()]))
@@ -85,7 +94,8 @@ class ClassroomForm
                             ->preload()
                             ->multiple()
                             ->required()
-                            ->relationship('plans', 'name'),
+                            ->relationship('plans', 'name', fn ($query, Get $get) => $query->forAcademicYear($get('academic_year_id')))
+                            ->helperText('Só aparecem os planos do ano letivo da turma e os planos antigos sem ano.'),
                         TextInput::make('whatsapp_group')
                             ->prefixIcon('heroicon-o-chat-bubble-left-right')
                             ->helperText('Enviado automaticamente após matricula.')

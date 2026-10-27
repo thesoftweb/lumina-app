@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Documents\PickupCard;
+use App\Enums\EnrollmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -103,6 +104,25 @@ class Student extends Model
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    /**
+     * Última matrícula não cancelada de um ano anterior ao informado. Sem ela o aluno é novato naquele ano.
+     * Matrículas sem ano letivo (legado) contam como anteriores.
+     */
+    public function previousEnrollmentBefore(AcademicYear $academicYear): ?Enrollment
+    {
+        return $this->enrollments()
+            ->where('status', '!=', EnrollmentStatus::Canceled->value)
+            ->where(fn ($query) => $query->whereNull('academic_year_id')
+                ->orWhereHas('academicYear', fn ($query) => $query->where('year', '<', $academicYear->year)))
+            ->orderByDesc('enrollment_date')->orderByDesc('id')
+            ->first();
+    }
+
+    public function isNewStudentIn(AcademicYear $academicYear): bool
+    {
+        return $this->previousEnrollmentBefore($academicYear) === null;
     }
 
     public function latestEnrollment()

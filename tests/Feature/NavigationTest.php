@@ -28,7 +28,7 @@ class NavigationTest extends TestCase
     {
         $groups = $this->navigationFor('admin');
 
-        $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
+        $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Pré-matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
         $this->assertSame(['Faturas', 'Inadimplência', 'Planos e mensalidades', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores', 'Fornecedores'], $groups['Cadastros']);
         $this->assertSame(['Empresa', 'Ano letivo', 'Bimestres', 'Níveis', 'Disciplinas'], $groups['Configurações']);
@@ -40,6 +40,7 @@ class NavigationTest extends TestCase
 
         $this->assertSame(['Sala de aula', 'Acadêmico', 'Financeiro'], array_values(array_filter(array_keys($groups))));
         $this->assertNotContains('Matrículas', $groups['Acadêmico']);
+        $this->assertNotContains('Pré-matrículas', $groups['Acadêmico']);
         $this->assertSame(['Eventos e contribuições'], $groups['Financeiro']);
         $this->assertContains('Fazer chamada', $groups['Sala de aula']);
         $this->assertContains('Lançar notas', $groups['Sala de aula']);
@@ -52,7 +53,7 @@ class NavigationTest extends TestCase
         $groups = $this->navigationFor('secretary');
 
         $this->assertSame(['Diário de classe', 'Planos de aula'], $groups['Sala de aula']);
-        $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
+        $this->assertSame(['Alunos', 'Turmas', 'Matrículas', 'Pré-matrículas', 'Boletins', 'Frequências', 'Agendas'], $groups['Acadêmico']);
         $this->assertSame(['Faturas', 'Inadimplência', 'Eventos e contribuições'], $groups['Financeiro']);
         $this->assertSame(['Clientes', 'Professores'], $groups['Cadastros']);
         $this->assertSame(['Documentos emitidos'], $groups['Documentos']);

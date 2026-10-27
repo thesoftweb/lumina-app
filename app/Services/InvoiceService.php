@@ -272,8 +272,8 @@ class InvoiceService
 
     /**
      * Calcula desconto para mensalidades (tuition)
-     * Regra: Se não houver desconto customizado, usa o desconto do plano
-     * Se houver desconto customizado, usa o desconto da enrollment
+     * Regra: Se houver desconto customizado, usa o desconto da enrollment
+     * Senão, usa o desconto do plano só se a matrícula o aplicou (negociado ao efetivar a matrícula)
      *
      * Armazena sempre:
      * - base_amount: valor base do plan (sem desconto)
@@ -290,7 +290,7 @@ class InvoiceService
             $discountValue = $enrollment->discount_value;
             $discountType = $enrollment->discount_type; // 'percentage' ou 'fixed'
             $discountSource = 'enrollment_custom';
-        } elseif ($enrollment->plan && $enrollment->plan->has_discount && $enrollment->plan->discount_type !== 'none' && $enrollment->plan->discount_value > 0) {
+        } elseif ($enrollment->apply_plan_discount && $enrollment->plan && $enrollment->plan->has_discount && $enrollment->plan->discount_type !== 'none' && $enrollment->plan->discount_value > 0) {
             // Desconto do plano
             $discountValue = $enrollment->plan->discount_value;
             $discountType = $enrollment->plan->discount_type; // 'percentage' ou 'fixed'
