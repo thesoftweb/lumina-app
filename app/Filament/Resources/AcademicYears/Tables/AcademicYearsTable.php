@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AcademicYears\Tables;
 
+use App\Models\AcademicYear;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -32,7 +33,16 @@ class AcademicYearsTable
                     ->date('d/m/Y')
                     ->label('Fim'),
                 ToggleColumn::make('is_default')
-                    ->label('Padrão')
+                    ->label('Padrão'),
+                TextColumn::make('admissions_status')
+                    ->label('Pré-matrícula')
+                    ->state(fn (AcademicYear $record): string => $record->acceptsPreEnrollments() ? 'Recebendo' : ($record->admissions_open ? 'Fora do período' : 'Fechada'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Recebendo' => 'success',
+                        'Fora do período' => 'warning',
+                        default => 'gray',
+                    }),
 
             ])
             ->filters([

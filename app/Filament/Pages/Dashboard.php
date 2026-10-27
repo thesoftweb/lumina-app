@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Widgets\BirthdaysWidget;
 use App\Filament\Widgets\EnrollmentsCountWidget;
+use App\Filament\Widgets\PreEnrollmentsStatsWidget;
 use App\Filament\Widgets\TeacherClassroomsWidget;
 use App\Filament\Widgets\TeacherStatsWidget;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -21,8 +22,9 @@ class Dashboard extends BaseDashboard
             ];
         }
 
-        return [
+        return array_values(array_filter([
             EnrollmentsCountWidget::class,
-        ];
+            PreEnrollmentsStatsWidget::canView() ? PreEnrollmentsStatsWidget::class : null,
+        ]));
     }
 }

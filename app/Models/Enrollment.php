@@ -12,6 +12,10 @@ class Enrollment extends Model
 {
     public const DUPLICATE_IN_YEAR_MESSAGE = 'Este aluno já possui uma matrícula não cancelada neste ano letivo.';
 
+    public const NEW_STUDENT_DISCOUNT_MESSAGE = 'Aluno novato não tem desconto: a matrícula e as mensalidades seguem o valor configurado no plano.';
+
+    public const DISCOUNT_CHOICE_MESSAGE = 'Escolha um desconto só: o do plano ou o negociado.';
+
     /** Documentos exigidos na matrícula, na ordem usada no formulário, na visualização e na ficha impressa. */
     public const DOCUMENTS = [
         'doc_historical_delivered' => 'Histórico escolar',
@@ -27,6 +31,9 @@ class Enrollment extends Model
     protected $casts = [
         'enrollment_date' => 'date',
         'status' => EnrollmentStatus::class,
+        'new_student' => 'boolean',
+        'use_custom_discount' => 'boolean',
+        'apply_plan_discount' => 'boolean',
         'doc_historical_delivered' => 'boolean',
         'doc_photo_3x4_delivered' => 'boolean',
         'doc_declaration_delivered' => 'boolean',
@@ -37,6 +44,25 @@ class Enrollment extends Model
 
     protected static function booted(): void
     {
+        // Desconto só se negocia com quem já é aluno; a regra vale ao gravar o desconto, sem mexer em matrículas antigas
+        static::saving(function (Enrollment $enrollment): void {
+            if (! $enrollment->isDirty(['new_student', 'use_custom_discount', 'apply_plan_discount', 'discount_type', 'discount_value'])) {
+                return;
+            }
+
+            if ($enrollment->new_student && ($enrollment->use_custom_discount || $enrollment->apply_plan_discount)) {
+                throw ValidationException::withMessages([
+                    'use_custom_discount' => self::NEW_STUDENT_DISCOUNT_MESSAGE,
+                ]);
+            }
+
+            if ($enrollment->use_custom_discount && $enrollment->apply_plan_discount) {
+                throw ValidationException::withMessages([
+                    'apply_plan_discount' => self::DISCOUNT_CHOICE_MESSAGE,
+                ]);
+            }
+        });
+
         static::saving(function (Enrollment $enrollment): void {
             if (! $enrollment->academic_year_id
                 || ! $enrollment->student_id
@@ -173,6 +199,18 @@ class Enrollment extends Model
     public function transcriptYear()
     {
         return $this->hasOne(TranscriptYear::class);
+    }
+
+    /** Matrícula do ano anterior, quando esta veio de uma rematrícula. */
+    public function previousEnrollment()
+    {
+        return $this->belongsTo(Enrollment::class, 'previous_enrollment_id');
+    }
+
+    /** Ficha de pré-matrícula ou rematrícula que originou esta matrícula. */
+    public function preEnrollment()
+    {
+        return $this->hasOne(PreEnrollment::class);
     }
 
     public function plan()

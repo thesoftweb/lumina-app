@@ -8,6 +8,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\IssuedDocuments\IssuedDocumentResource;
 use App\Filament\Resources\Levels\LevelResource;
 use App\Filament\Resources\Plans\PlanResource;
+use App\Filament\Resources\PreEnrollments\PreEnrollmentResource;
 use App\Filament\Resources\Subjects\SubjectResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\Teachers\TeacherResource;
@@ -38,6 +39,7 @@ return [
     'access' => [
         // Secretaria: matrículas, cobranças, cadastros, documentos e estrutura do ano (professor não vê)
         EnrollmentResource::class => $office,
+        PreEnrollmentResource::class => $office,
         InvoiceResource::class => $office,
         CustomerResource::class => $office,
         TeacherResource::class => $office,

@@ -9,6 +9,7 @@ use App\Filament\Resources\AcademicYears\Pages\CreateAcademicYear;
 use App\Filament\Resources\AcademicYears\Pages\EditAcademicYear;
 use App\Filament\Resources\AcademicYears\Pages\ListAcademicYears;
 use App\Filament\Resources\AcademicYears\Pages\ViewAcademicYear;
+use App\Filament\Resources\AcademicYears\RelationManagers\AdmissionOffersRelationManager;
 use App\Filament\Resources\AcademicYears\Schemas\AcademicYearForm;
 use App\Filament\Resources\AcademicYears\Schemas\AcademicYearInfolist;
 use App\Filament\Resources\AcademicYears\Tables\AcademicYearsTable;
@@ -58,7 +59,7 @@ class AcademicYearResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            AdmissionOffersRelationManager::class,
         ];
     }
 

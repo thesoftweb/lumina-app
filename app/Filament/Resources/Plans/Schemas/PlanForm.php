@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Plans\Schemas;
 
+use App\Models\AcademicYear;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
@@ -24,6 +26,11 @@ class PlanForm
                         TextInput::make('name')
                             ->prefixIcon('heroicon-o-tag')
                             ->label('Descrição do Plano'),
+                        Select::make('academic_year_id')
+                            ->prefixIcon('heroicon-o-calendar')
+                            ->label('Ano letivo')
+                            ->options(fn (): array => AcademicYear::query()->orderByDesc('year')->pluck('description', 'id')->all())
+                            ->helperText('Deixe em branco só para planos antigos sem ano. Para reajustar valores, crie um plano novo no ano seguinte em vez de editar este.'),
                         TextInput::make('base_amount')
                             ->prefix('R$')
                             ->label('Valor Base')
@@ -36,6 +43,7 @@ class PlanForm
                         ToggleButtons::make('discount_type')
                             ->columnSpanFull()
                             ->label('Tipo de Desconto')
+                            ->helperText('O desconto do plano não é automático: ele só vale na matrícula em que for negociado (rematrícula). Aluno novato paga o valor base.')
                             ->inline()
                             ->options([
                                 'percentage' => 'Percentual',
@@ -44,11 +52,21 @@ class PlanForm
                             ])
                             ->default('none')
                             ->reactive()
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                if ($get('discount_type') === 'none') {
+                                    $set('discount_value', 0);
+                                }
+
+                                self::calculateFinalValue($set, $get);
+                            })
                             ->required(),
+                        // Escondido no "Nenhum", o campo não é enviado; o modelo grava 0 nesse caso
                         TextInput::make('discount_value')
                             ->prefix(fn(Get $get) => $get('discount_type') === 'percentage' ? '%' : 'R$')
                             ->label('Valor do Desconto')
                             ->numeric()
+                            ->minValue(0.01)
+                            ->maxValue(fn (Get $get): ?float => $get('discount_type') === 'percentage' ? 100 : ((float) $get('base_amount') ?: null))
                             ->reactive()
                             ->required()
                             ->afterStateUpdated(function (Set $set, Get $get) {
@@ -57,7 +75,7 @@ class PlanForm
                             ->hidden(fn(Get $get) => $get('discount_type') === 'none'),
                         TextInput::make('final_value')
                             ->prefix('R$')
-                            ->label('Valor Final')
+                            ->label(fn (Get $get): string => $get('discount_type') === 'none' ? 'Valor Final' : 'Valor com desconto (quando negociado)')
                             ->numeric()
                             ->readOnly()
                             ->reactive()
